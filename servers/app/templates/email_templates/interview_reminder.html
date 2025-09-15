@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Reminder - Recruitment Pro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            color: #e53935;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .reminder-banner {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .interview-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #e53935;
+        }
+        .detail-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        .detail-item i {
+            color: #e53935;
+            margin-right: 10px;
+            width: 20px;
+        }
+        .button {
+            display: inline-block;
+            background: #e53935;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .checklist {
+            background: #e8f5e8;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Recruitment Pro</div>
+            <h2>Interview Reminder</h2>
+        </div>
+
+        <div class="reminder-banner">
+            <h3 style="margin: 0; color: #ff9800;">⏰ Friendly Reminder</h3>
+            <p style="margin: 10px 0 0 0; font-weight: bold;">Your interview is coming up soon!</p>
+        </div>
+
+        <p>Dear {{candidate_name}},</p>
+        
+        <p>This is a friendly reminder about your upcoming interview for the <strong>{{position_title}}</strong> position.</p>
+
+        <div class="interview-details">
+            <h3 style="margin-top: 0; color: #e53935;">Interview Details</h3>
+            
+            <div class="detail-item">
+                <i>📅</i> <strong>Date:</strong> {{interview_date}}
+            </div>
+            
+            <div class="detail-item">
+                <i>⏰</i> <strong>Time:</strong> {{interview_time}} ({{timezone}})
+            </div>
+            
+            <div class="detail-item">
+                <i>🎯</i> <strong>Type:</strong> {{interview_type}} Interview
+            </div>
+            
+            <div class="detail-item">
+                <i>⏱️</i> <strong>Duration:</strong> {{duration}} minutes
+            </div>
+            
+            {% if meeting_link %}
+            <div class="detail-item">
+                <i>🔗</i> <strong>Meeting Link:</strong> 
+                <a href="{{meeting_link}}">{{meeting_link}}</a>
+            </div>
+            {% endif %}
+            
+            {% if interviewer_name %}
+            <div class="detail-item">
+                <i>👤</i> <strong>Interviewer:</strong> {{interviewer_name}}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="checklist">
+            <h3 style="margin-top: 0; color: #2e7d32;">✅ Preparation Checklist</h3>
+            <ul style="margin: 0;">
+                <li>Test your camera and microphone</li>
+                <li>Ensure stable internet connection</li>
+                <li>Have your resume and portfolio ready</li>
+                <li>Prepare questions for the interviewer</li>
+                <li>Join 5 minutes early</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{meeting_link}}" class="button">Join Interview</a>
+        </div>
+
+        <p><strong>Need to reschedule?</strong><br>
+        If you need to reschedule, please reply to this email as soon as possible.</p>
+
+        <p>We look forward to speaking with you!</p>
+
+        <p>Best regards,<br>
+        The Hiring Team<br>
+        {{company_name}}</p>
+
+        <div class="footer">
+            <p>© 2024 Recruitment Pro. All rights reserved.</p>
+            <p>This is an automated reminder. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
