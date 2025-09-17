@@ -4,11 +4,21 @@ import docx
 import re
 from datetime import datetime
 from app.extensions import mongo_db
+from spacy.util import is_package, get_package_path
+from spacy.cli import download as spacy_download
 
 class CVParser:
     def __init__(self):
-        self.nlp = spacy.load("en_core_web_sm")
-    
+        model_name = "en_core_web_sm"
+        try:
+            # Check if model is installed
+            if not is_package(model_name):
+                print(f"spaCy model '{model_name}' not found. Downloading...")
+                spacy_download(model_name)
+            self.nlp = spacy.load(model_name)
+        except Exception as e:
+            raise Exception(f"Failed to load spaCy model '{model_name}': {str(e)}")
+
     def extract_text_from_file(self, file_path, file_type):
         try:
             text = ""
@@ -27,59 +37,37 @@ class CVParser:
             return text
         except Exception as e:
             raise Exception(f"Error extracting text from file: {str(e)}")
-    
+
     def parse_cv(self, cv_text):
         try:
             doc = self.nlp(cv_text)
-            
-            # Extract name
-            name = self.extract_name(doc)
-            
-            # Extract email
-            email = self.extract_email(cv_text)
-            
-            # Extract phone
-            phone = self.extract_phone(cv_text)
-            
-            # Extract skills
-            skills = self.extract_skills(doc)
-            
-            # Extract experience
-            experience = self.extract_experience(doc)
-            
-            # Extract education
-            education = self.extract_education(doc)
-            
             return {
-                'name': name,
-                'email': email,
-                'phone': phone,
-                'skills': skills,
-                'experience': experience,
-                'education': education,
+                'name': self.extract_name(doc),
+                'email': self.extract_email(cv_text),
+                'phone': self.extract_phone(cv_text),
+                'skills': self.extract_skills(doc),
+                'experience': self.extract_experience(doc),
+                'education': self.extract_education(doc),
                 'raw_text': cv_text
             }
         except Exception as e:
             raise Exception(f"Error parsing CV: {str(e)}")
-    
+
     def extract_name(self, doc):
         for ent in doc.ents:
             if ent.label_ == "PERSON":
                 return ent.text
         return ""
-    
+
     def extract_email(self, text):
-        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        match = re.search(email_pattern, text)
+        match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
         return match.group(0) if match else ""
-    
+
     def extract_phone(self, text):
-        phone_pattern = r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
-        match = re.search(phone_pattern, text)
+        match = re.search(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
         return match.group(0) if match else ""
-    
+
     def extract_skills(self, doc):
-        # Common skills dictionary
         common_skills = {
             'programming': ['python', 'java', 'javascript', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin', 'go'],
             'web': ['html', 'css', 'react', 'angular', 'vue', 'django', 'flask', 'node.js', 'express'],
@@ -87,54 +75,37 @@ class CVParser:
             'devops': ['docker', 'kubernetes', 'aws', 'azure', 'gcp', 'jenkins', 'git', 'ci/cd'],
             'data': ['pandas', 'numpy', 'tensorflow', 'pytorch', 'scikit-learn', 'ml', 'ai']
         }
-        
         skills = set()
         text_lower = doc.text.lower()
-        
-        for category, skill_list in common_skills.items():
+        for skill_list in common_skills.values():
             for skill in skill_list:
                 if skill in text_lower:
                     skills.add(skill)
-        
         return list(skills)
-    
+
     def extract_experience(self, doc):
         experience = []
-        experience_patterns = [
-            r'(\d+)\s*(?:years?|yrs?)\s*(?:of)?\s*experience',
-            r'experience.*?(\d+)\s*(?:years?|yrs?)',
-            r'(\d+)\s*\+?\s*years?'
-        ]
-        
-        text = doc.text.lower()
+        patterns = [r'(\d+)\s*(?:years?|yrs?)\s*(?:of)?\s*experience',
+                    r'experience.*?(\d+)\s*(?:years?|yrs?)',
+                    r'(\d+)\s*\+?\s*years?']
         total_experience = 0
-        
-        for pattern in experience_patterns:
-            matches = re.findall(pattern, text)
-            for match in matches:
+        text = doc.text.lower()
+        for pattern in patterns:
+            for match in re.findall(pattern, text):
                 try:
                     years = float(match)
-                    if years > total_experience:
-                        total_experience = years
-                except ValueError:
+                    total_experience = max(total_experience, years)
+                except:
                     continue
-        
-        # Extract job experiences
         for sent in doc.sents:
             if any(word in sent.text.lower() for word in ['worked', 'experience', 'job', 'position', 'role']):
                 experience.append(sent.text)
-        
-        return {
-            'total_years': total_experience,
-            'details': experience[:5]  # Limit to 5 most relevant experiences
-        }
-    
+        return {'total_years': total_experience, 'details': experience[:5]}
+
     def extract_education(self, doc):
         education = []
-        education_keywords = ['university', 'college', 'institute', 'bachelor', 'master', 'phd', 'degree', 'diploma']
-        
+        keywords = ['university', 'college', 'institute', 'bachelor', 'master', 'phd', 'degree', 'diploma']
         for sent in doc.sents:
-            if any(keyword in sent.text.lower() for keyword in education_keywords):
+            if any(k in sent.text.lower() for k in keywords):
                 education.append(sent.text)
-        
         return education

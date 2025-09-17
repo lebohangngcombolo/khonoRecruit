@@ -1,5 +1,5 @@
 from flask import Flask
-from .extensions import db, jwt, mail, redis_client, cloudinary_client, mongo_client,migrate, cors, socketio
+from .extensions import db, jwt, mail, redis_client, cloudinary_client, mongo_client, migrate, cors, socketio
 from .routes import candidate_routes, job_routes, assessment_routes, admin_routes, auth
 from .models import *
 
@@ -14,9 +14,11 @@ def create_app():
     redis_client.init_app(app)
     cloudinary_client.init_app(app)
     migrate.init_app(app, db)
-    cors.init_app(app)
+    
+    # CORS with allowed frontend origin
+    cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:55550"}}, supports_credentials=True)
+    
     socketio.init_app(app, cors_allowed_origins="*", message_queue=app.config['REDIS_URL'])
-
 
     # Register routes
     candidate_routes.init_candidate_routes(app)
