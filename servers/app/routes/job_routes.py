@@ -42,12 +42,17 @@ def init_job_routes(app):
         for app_entry in applications:
             candidate = Candidate.query.get(app_entry.candidate_id)
             candidates_data.append({
-                'candidate_id': candidate.id,
+                'id': candidate.id,  # <-- for Flutter User model
+                'name': candidate.profile.get('name', ''),
+                'email': candidate.profile.get('email', ''),
+                'role': 'candidate',
+                'application_id': app_entry.id,  # <-- add this line
                 'profile': candidate.profile,
                 'cv_url': candidate.cv_url,
                 'application_status': app_entry.status
             })
-        return jsonify({'candidates': candidates_data}), 200
+        return jsonify(candidates_data), 200
+
 
     @app.route('/api/jobs/<int:job_id>/shortlist', methods=['POST'])
     @jwt_required()
