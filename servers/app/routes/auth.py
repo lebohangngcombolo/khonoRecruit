@@ -21,7 +21,6 @@ ROLE_DASHBOARD_MAP = {
     "candidate": "/dashboard/candidate"
 }
 
-
 def init_auth_routes(app):
 
     # ------------------- REGISTER -------------------
@@ -107,8 +106,11 @@ def init_auth_routes(app):
             user.is_verified = True
             db.session.commit()
 
-            access_token = create_access_token(identity=str(user.id))
-            refresh_token = create_refresh_token(identity=str(user.id))
+            # Embed role in JWT claims
+            additional_claims = {"role": user.role}
+
+            access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+            refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
             dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
@@ -145,8 +147,11 @@ def init_auth_routes(app):
             if not user.is_verified:
                 return jsonify({'error': 'Please verify your email first'}), 403
 
-            access_token = create_access_token(identity=str(user.id))
-            refresh_token = create_refresh_token(identity=str(user.id))
+            # Embed role inside JWT claims
+            additional_claims = {"role": user.role}
+
+            access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+            refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
             dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
@@ -172,7 +177,8 @@ def init_auth_routes(app):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
 
-            new_access_token = create_access_token(identity=str(current_user_id))
+            additional_claims = {"role": user.role}
+            new_access_token = create_access_token(identity=str(current_user_id), additional_claims=additional_claims)
 
             return jsonify({
                 'access_token': new_access_token,
