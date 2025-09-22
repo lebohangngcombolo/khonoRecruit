@@ -16,7 +16,7 @@ def create_app():
     migrate.init_app(app, db)
     
     # CORS with allowed frontend origin
-    cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:55550"}}, supports_credentials=True)
+    cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:59581"}}, supports_credentials=True)
     
     socketio.init_app(app, cors_allowed_origins="*", message_queue=app.config['REDIS_URL'])
 

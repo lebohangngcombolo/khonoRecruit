@@ -42,22 +42,27 @@ def init_job_routes(app):
         for app_entry in applications:
             candidate = Candidate.query.get(app_entry.candidate_id)
             candidates_data.append({
-                'id': candidate.id,  # <-- for Flutter User model
+                'id': candidate.id,
                 'name': candidate.profile.get('name', ''),
                 'email': candidate.profile.get('email', ''),
                 'role': 'candidate',
-                'application_id': app_entry.id,  # <-- add this line
+                'application_id': app_entry.id,
                 'profile': candidate.profile,
                 'cv_url': candidate.cv_url,
                 'application_status': app_entry.status
             })
         return jsonify(candidates_data), 200
 
-
-    @app.route('/api/jobs/<int:job_id>/shortlist', methods=['POST'])
+    # --- Shortlist endpoint with alias ---
+    @app.route('/api/jobs/<int:job_id>/shortlist', methods=['POST', 'OPTIONS'])
+    @app.route('/api/admin/jobs/<int:job_id>/shortlist', methods=['POST', 'OPTIONS'])
     @jwt_required()
     @role_required('hiring_manager', 'admin')
     def shortlist_candidates(job_id):
+        if request.method == 'OPTIONS':
+            # Handle CORS preflight
+            return '', 200
+
         job = Requisition.query.get_or_404(job_id)
         applications = Application.query.filter_by(requisition_id=job_id, status='applied').all()
         matching_service = MatchingService()
@@ -67,6 +72,7 @@ def init_job_routes(app):
             candidate = Candidate.query.get(app_entry.candidate_id)
             if not candidate:
                 continue
+
             cv_score = matching_service.calculate_cv_match_score(
                 candidate.profile.get('skills', []),
                 candidate.profile.get('experience', 0),
@@ -74,14 +80,16 @@ def init_job_routes(app):
             )
             overall_score = matching_service.calculate_overall_score(cv_score, 0, job.weightings)
             recommendation = matching_service.get_recommendation(overall_score)
+
             app_entry.overall_score = overall_score
             app_entry.recommendation = recommendation
             if recommendation == 'proceed':
                 app_entry.status = 'shortlisted'
                 shortlisted.append(candidate)
-            db.session.commit()
 
-        # Send interview emails
+        db.session.commit()
+
+        # Notify shortlisted candidates
         for candidate in shortlisted:
             EmailService.send_interview_invitation(
                 candidate.profile.get('email'),

@@ -12,4 +12,8 @@ class Job {
       description: json['description'],
     );
   }
+
+  get skills => null;
+
+  get minExperience => null;
 }
