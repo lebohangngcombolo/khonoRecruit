@@ -10,18 +10,22 @@ class ApiEndpoints {
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
 
+  // Candidate
+  static const String uploadCV = '/candidate/upload-cv';
+  static const String updateCandidateProfile = '/candidate/profile';
+  static const String jobs = '/jobs';
+  static const String appliedJobs = '/candidate/applied-jobs'; // ✅ add this
+  static const String applyJob = '/jobs'; // append /<job_id>/apply
+  static const String applicationAssessment =
+      '/applications'; // append /<application_id>/assessment
+  static const String getProfile = "/candidate/profile";
+
+  // Dynamic endpoint for job candidates
+  static String jobCandidates(int jobId) => '/jobs/$jobId/candidates';
+
   // Admin
   static const String adminUsers = '/admin/users';
   static const String adminJobs = '/admin/jobs';
   static const String adminApplications = '/admin/applications';
   static const String updateRole = '/admin/role';
-
-  // Jobs
-  static const String jobs = '/jobs';
-  static const String jobCandidates = '/jobs'; // append /<job_id>/candidates
-  static const String jobShortlist = '/jobs'; // append /<job_id>/shortlist
-
-  // Applications
-  static const String applicationAssessment =
-      '/applications'; // append /<application_id>/assessment
 }

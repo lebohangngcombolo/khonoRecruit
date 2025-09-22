@@ -13,14 +13,20 @@ class AuthService {
   );
 
   /// Login
-  static Future<String> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
     final res = await _dio.post(ApiEndpoints.login, data: {
       'email': email,
       'password': password,
     });
+
     final token = res.data['access_token'];
+    final role =
+        res.data['user']['role']; // make sure backend returns user info
+
     await saveToken(token);
-    return token;
+
+    return {'token': token, 'role': role};
   }
 
   /// Register
@@ -40,7 +46,7 @@ class AuthService {
       if (res.statusCode != 201) {
         throw Exception('Registration failed');
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       String message = 'Registration failed';
       if (e.response != null && e.response!.data != null) {
         final data = e.response!.data;
@@ -63,7 +69,7 @@ class AuthService {
         'email': email,
         'code': code,
       });
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       throw Exception(e.message ?? 'Verification failed');
     }
   }
@@ -72,7 +78,7 @@ class AuthService {
   static Future<void> forgotPassword(String email) async {
     try {
       await _dio.post(ApiEndpoints.forgotPassword, data: {'email': email});
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       throw Exception(e.message ?? 'Forgot password failed');
     }
   }
@@ -84,7 +90,7 @@ class AuthService {
         'token': token,
         'new_password': newPassword,
       });
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       throw Exception(e.message ?? 'Reset password failed');
     }
   }

@@ -14,7 +14,8 @@ jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
 cors = CORS()
-socketio = SocketIO(async_mode='threading')
+socketio = SocketIO(async_mode='eventlet')
+
 
 # Redis client
 class RedisClient:

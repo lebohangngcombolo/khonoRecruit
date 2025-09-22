@@ -2,6 +2,7 @@ from app.extensions import db
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON
 
+# ------------------- USER -------------------
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -11,6 +12,9 @@ class User(db.Model):
     profile = db.Column(JSON, default={})
     is_verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    candidates = db.relationship('Candidate', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
 
     def to_dict(self):
         return {
@@ -22,6 +26,7 @@ class User(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+# ------------------- REQUISITION -------------------
 class Requisition(db.Model):
     __tablename__ = 'requisitions'
     id = db.Column(db.Integer, primary_key=True)
@@ -31,6 +36,7 @@ class Requisition(db.Model):
     min_experience = db.Column(db.Float, default=0)
     knockout_rules = db.Column(JSON, default=[])
     weightings = db.Column(JSON, default={'cv': 60, 'assessment': 40})
+    assessment_pack = db.Column(JSON, default={"questions": []})
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -43,10 +49,12 @@ class Requisition(db.Model):
             "min_experience": self.min_experience,
             "knockout_rules": self.knockout_rules,
             "weightings": self.weightings,
+            "assessment_pack": self.assessment_pack,
             "created_by": self.created_by,
             "created_at": self.created_at.isoformat()
         }
 
+# ------------------- CANDIDATE -------------------
 class Candidate(db.Model):
     __tablename__ = 'candidates'
     id = db.Column(db.Integer, primary_key=True)
@@ -55,15 +63,25 @@ class Candidate(db.Model):
     cv_text = db.Column(db.Text)
     profile = db.Column(JSON, default={})
 
+    applications = db.relationship('Application', backref='candidate', lazy=True)
+    interviews = db.relationship('Interview', backref='candidate', lazy=True)
+
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "cv_url": self.cv_url,
             "cv_text": self.cv_text,
-            "profile": self.profile
+            "profile": self.profile,
+            "name": self.profile.get("name") if self.profile else None,
+            "email": self.profile.get("email") if self.profile else None,
+            "phone": self.profile.get("phone") if self.profile else None,
+            "skills": self.profile.get("skills") if self.profile else [],
+            "experience": self.profile.get("experience") if self.profile else None,
+            "education": self.profile.get("education") if self.profile else [],
         }
 
+# ------------------- APPLICATION -------------------
 class Application(db.Model):
     __tablename__ = 'applications'
     id = db.Column(db.Integer, primary_key=True)
@@ -75,6 +93,9 @@ class Application(db.Model):
     recommendation = db.Column(db.String(50))
     assessed_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    assessment_results = db.relationship('AssessmentResult', backref='application', lazy=True)
+    interviews = db.relationship('Interview', backref='application', lazy=True)
 
     def to_dict(self):
         return {
@@ -89,6 +110,7 @@ class Application(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+# ------------------- ASSESSMENT RESULT -------------------
 class AssessmentResult(db.Model):
     __tablename__ = 'assessment_results'
     id = db.Column(db.Integer, primary_key=True)
@@ -97,8 +119,6 @@ class AssessmentResult(db.Model):
     total_score = db.Column(db.Float, default=0)
     recommendation = db.Column(db.String(50))
     assessed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    application = db.relationship('Application', backref=db.backref('assessment_results', lazy=True))
 
     def to_dict(self):
         return {
@@ -110,6 +130,7 @@ class AssessmentResult(db.Model):
             "assessed_at": self.assessed_at.isoformat()
         }
 
+# ------------------- VERIFICATION CODE -------------------
 class VerificationCode(db.Model):
     __tablename__ = 'verification_codes'
     id = db.Column(db.Integer, primary_key=True)
@@ -130,4 +151,44 @@ class VerificationCode(db.Model):
             "is_used": self.is_used,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat()
+        }
+
+# ------------------- INTERVIEW -------------------
+class Interview(db.Model):
+    __tablename__ = 'interviews'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
+    hiring_manager_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    application_id = db.Column(db.Integer, db.ForeignKey('applications.id'), nullable=True)
+    scheduled_time = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(50), default='scheduled')  # scheduled, completed, cancelled
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "candidate_id": self.candidate_id,
+            "hiring_manager_id": self.hiring_manager_id,
+            "application_id": self.application_id,
+            "scheduled_time": self.scheduled_time.isoformat(),
+            "status": self.status,
+            "created_at": self.created_at.isoformat()
+        }
+
+# ------------------- NOTIFICATION -------------------
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.String(500), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "message": self.message,
+            "is_read": self.is_read,
+            "created_at": self.created_at.isoformat()
         }
