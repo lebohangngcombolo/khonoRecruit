@@ -3,7 +3,6 @@ from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 from app.models import User
 
-
 def role_required(*roles):
     """
     Restrict access to users with specific roles.
@@ -17,21 +16,30 @@ def role_required(*roles):
         @wraps(fn)
         def decorator(*args, **kwargs):
             try:
-                # 🔑 Ensure JWT is valid
+                # Verify the token
                 verify_jwt_in_request()
                 claims = get_jwt()
-                user_id = get_jwt_identity()
+                identity = get_jwt_identity()
 
-                # 1. First try role from JWT claims (faster, no DB hit)
+                # Check role in token claims first
                 token_role = claims.get("role")
+                if token_role:
+                    if token_role in roles:
+                        return fn(*args, **kwargs)
+                    else:
+                        return jsonify({
+                            "error": "Unauthorized access",
+                            "required_roles": roles,
+                            "your_role": token_role
+                        }), 403
 
-                if token_role and token_role in roles:
-                    return fn(*args, **kwargs)
+                # Fallback: query the DB for user role
+                if not identity:
+                    return jsonify({"error": "Token identity missing"}), 401
 
-                # 2. If role missing in token, fallback to DB
                 try:
-                    user_id = int(user_id)
-                except (ValueError, TypeError):
+                    user_id = int(identity)
+                except (TypeError, ValueError):
                     return jsonify({"error": "Invalid token identity"}), 422
 
                 user = User.query.get(user_id)
@@ -39,12 +47,18 @@ def role_required(*roles):
                     return jsonify({"error": "User not found"}), 404
 
                 if user.role not in roles:
-                    return jsonify({"error": "Unauthorized access"}), 403
+                    return jsonify({
+                        "error": "Unauthorized access",
+                        "required_roles": roles,
+                        "your_role": user.role
+                    }), 403
 
                 return fn(*args, **kwargs)
 
             except Exception as e:
-                return jsonify({"error": "Invalid or expired token"}), 401
+                # Return detailed info for debugging
+                return jsonify({"error": "Invalid or expired token", "details": str(e)}), 401
 
         return decorator
     return wrapper
+

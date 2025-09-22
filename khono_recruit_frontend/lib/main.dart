@@ -23,9 +23,9 @@ class KhonoRecruitApp extends StatelessWidget {
             theme: themeProvider.currentTheme,
             initialRoute: '/',
             routes: {
-              '/': (_) => const LandingScreen(),
+              '/': (_) => LandingScreen(),
               '/login': (_) =>
-                  const LandingScreen(), // redirect handled in LandingScreen
+                  LandingScreen(), // redirect handled in LandingScreen
             },
             onGenerateRoute: AppRoutes.generateRoute,
           );

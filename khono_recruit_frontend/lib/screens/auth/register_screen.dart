@@ -43,9 +43,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       String message = 'Registration failed';
-
       if (e.response != null && e.response!.data != null) {
         final data = e.response!.data;
         if (data is Map<String, dynamic> && data.containsKey('error')) {
@@ -54,13 +53,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           message = data.toString();
         }
       } else {
-        // ✅ Null-safe assignment
         message = e.message ?? 'Registration failed';
       }
 
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
-      print('Registration error: ${e.response?.data}');
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Registration failed: $e')));
@@ -69,82 +66,150 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      prefixIcon: Icon(icon, color: Colors.redAccent),
+      labelText: label,
+      filled: true,
+      fillColor: Colors.grey.shade100.withOpacity(0.9),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/register_bg.jpg'),
-            fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: themeProvider.isDarkMode
+                ? [Colors.black87, Colors.black54]
+                : [Colors.white, Colors.grey.shade200],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Center(
           child: SingleChildScrollView(
             child: Container(
+              width: size.width < 500 ? size.width * 0.9 : 400,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: themeProvider.isDarkMode
-                    ? Colors.black.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.5),
+                    ? Colors.black.withOpacity(0.7)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Register',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    "Create Account",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.redAccent,
+                    ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
+
+                  // First name
                   TextField(
                     controller: _firstNameController,
-                    decoration: const InputDecoration(labelText: 'First Name'),
+                    decoration: _inputDecoration("First Name", Icons.person),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+
+                  // Last name
                   TextField(
                     controller: _lastNameController,
-                    decoration: const InputDecoration(labelText: 'Last Name'),
+                    decoration:
+                        _inputDecoration("Last Name", Icons.person_outline),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+
+                  // Email
                   TextField(
                     controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: _inputDecoration("Email", Icons.email),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+
+                  // Password
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: _inputDecoration("Password", Icons.lock),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+
+                  // Register button
                   _loading
-                      ? const CircularProgressIndicator()
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.redAccent),
+                        )
                       : ElevatedButton(
                           onPressed: _register,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 40),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(14),
                             ),
+                            elevation: 4,
                           ),
                           child: const Text(
-                            'Register',
-                            style: TextStyle(fontSize: 16),
+                            "Register",
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
-                    child: const Text('Already have an account? Login'),
+
+                  const SizedBox(height: 20),
+
+                  // Login link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Already have an account? "),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const LoginScreen()),
+                          );
+                        },
+                        child: const Text(
+                          "Login",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
