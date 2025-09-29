@@ -16,7 +16,7 @@ class Config:
     MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/recruitment_cv')
     
     # Redis
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    #REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
     
     # JWT
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)

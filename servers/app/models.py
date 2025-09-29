@@ -11,6 +11,7 @@ class User(db.Model):
     role = db.Column(db.String(50), default='candidate')  # candidate, hiring_manager, admin
     profile = db.Column(JSON, default={})
     is_verified = db.Column(db.Boolean, default=False)
+    enrollment_completed = db.Column(db.Boolean, default=False)  # ✅ new flag
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     candidates = db.relationship('Candidate', backref='user', lazy=True)
@@ -23,6 +24,7 @@ class User(db.Model):
             "role": self.role,
             "profile": self.profile,
             "is_verified": self.is_verified,
+            "enrollment_completed": self.enrollment_completed,
             "created_at": self.created_at.isoformat()
         }
 
@@ -39,6 +41,8 @@ class Requisition(db.Model):
     assessment_pack = db.Column(JSON, default={"questions": []})
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    published_on = db.Column(db.DateTime, default=datetime.utcnow)
+    vacancy = db.Column(db.Integer, default=1)
 
     def to_dict(self):
         return {
@@ -61,6 +65,14 @@ class Candidate(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     cv_url = db.Column(db.String(500))
     cv_text = db.Column(db.Text)
+
+    # ✅ Expanded fields for enrollment
+    full_name = db.Column(db.String(150))
+    phone = db.Column(db.String(50))
+    education = db.Column(JSON, default=[])       # list of schools/degrees
+    skills = db.Column(JSON, default=[])          # list of skills
+    work_experience = db.Column(JSON, default=[]) # list of jobs/roles
+    cv_score = db.Column(db.Integer, default=0)
     profile = db.Column(JSON, default={})
 
     applications = db.relationship('Application', backref='candidate', lazy=True)
@@ -72,13 +84,12 @@ class Candidate(db.Model):
             "user_id": self.user_id,
             "cv_url": self.cv_url,
             "cv_text": self.cv_text,
-            "profile": self.profile,
-            "name": self.profile.get("name") if self.profile else None,
-            "email": self.profile.get("email") if self.profile else None,
-            "phone": self.profile.get("phone") if self.profile else None,
-            "skills": self.profile.get("skills") if self.profile else [],
-            "experience": self.profile.get("experience") if self.profile else None,
-            "education": self.profile.get("education") if self.profile else [],
+            "full_name": self.full_name,
+            "phone": self.phone,
+            "education": self.education,
+            "skills": self.skills,
+            "work_experience": self.work_experience,
+            "profile": self.profile
         }
 
 # ------------------- APPLICATION -------------------
@@ -86,7 +97,7 @@ class Application(db.Model):
     __tablename__ = 'applications'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'))
-    requisition_id = db.Column(db.Integer, db.ForeignKey('requisitions.id'))
+    requisition_id = db.Column(db.Integer, db.ForeignKey('requisitions.id'))  # already exists
     status = db.Column(db.String(50), default='applied')
     assessment_score = db.Column(db.Float, default=0)
     overall_score = db.Column(db.Float, default=0)
@@ -96,6 +107,9 @@ class Application(db.Model):
 
     assessment_results = db.relationship('AssessmentResult', backref='application', lazy=True)
     interviews = db.relationship('Interview', backref='application', lazy=True)
+
+    # ✅ Add this relationship:
+    requisition = db.relationship('Requisition', backref='applications', lazy=True)
 
     def to_dict(self):
         return {
@@ -110,25 +124,39 @@ class Application(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+
 # ------------------- ASSESSMENT RESULT -------------------
 class AssessmentResult(db.Model):
     __tablename__ = 'assessment_results'
     id = db.Column(db.Integer, primary_key=True)
+
     application_id = db.Column(db.Integer, db.ForeignKey('applications.id'), nullable=False)
-    scores = db.Column(JSON, default={})
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
+
+    # Store candidate answers
+    answers = db.Column(db.JSON, default={})
+
+    # Per-question/section scores
+    scores = db.Column(db.JSON, default={})
+
+    # Aggregated evaluation
     total_score = db.Column(db.Float, default=0)
     recommendation = db.Column(db.String(50))
+
     assessed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
             "id": self.id,
             "application_id": self.application_id,
+            "candidate_id": self.candidate_id,
+            "answers": self.answers,
             "scores": self.scores,
             "total_score": self.total_score,
             "recommendation": self.recommendation,
             "assessed_at": self.assessed_at.isoformat()
         }
+
 
 # ------------------- VERIFICATION CODE -------------------
 class VerificationCode(db.Model):

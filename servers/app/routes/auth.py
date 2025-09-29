@@ -6,13 +6,14 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from app.extensions import db
-from app.models import User, VerificationCode
+from app.models import User, VerificationCode, Candidate
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.utils.decorators import role_required
 from datetime import datetime, timedelta
 import random
 import string
+import secrets
 
 # ------------------- ROLE DASHBOARD MAP -------------------
 ROLE_DASHBOARD_MAP = {
@@ -20,6 +21,7 @@ ROLE_DASHBOARD_MAP = {
     "hiring_manager": "/dashboard/hiring-manager",
     "candidate": "/dashboard/candidate"
 }
+
 
 def init_auth_routes(app):
 
@@ -48,9 +50,12 @@ def init_auth_routes(app):
             # Create user
             user = AuthService.create_user(email, password, first_name, last_name, role)
 
-            # Generate verification code
-            code = ''.join(random.choices(string.digits, k=6))
+            # Generate secure verification code
+            code = f"{secrets.randbelow(1000000):06d}"
             expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+            # Remove old codes for this email
+            VerificationCode.query.filter_by(email=email, is_used=False).delete()
 
             verification_code = VerificationCode(
                 email=email,
@@ -63,7 +68,9 @@ def init_auth_routes(app):
             # Send email
             EmailService.send_verification_email(email, code)
 
-            current_app.logger.info(f'User registered: {user.email}, ID: {user.id}, Role: {user.role}')
+            current_app.logger.info(
+                f'User registered: {user.email}, ID: {user.id}, Role: {user.role}'
+            )
 
             return jsonify({
                 'message': 'User registered successfully. Please check your email for verification code.',
@@ -108,11 +115,13 @@ def init_auth_routes(app):
 
             # Embed role in JWT claims
             additional_claims = {"role": user.role}
-
             access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
             refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
-            dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            dashboard_url = (
+                "/enrollment" if user.role == "candidate" and not user.enrollment_completed
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
 
             return jsonify({
                 'message': 'Email verified successfully',
@@ -149,11 +158,13 @@ def init_auth_routes(app):
 
             # Embed role inside JWT claims
             additional_claims = {"role": user.role}
-
             access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
             refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
-            dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            dashboard_url = (
+                "/enrollment" if user.role == "candidate" and not user.enrollment_completed
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
 
             return jsonify({
                 'access_token': access_token,
@@ -180,10 +191,15 @@ def init_auth_routes(app):
             additional_claims = {"role": user.role}
             new_access_token = create_access_token(identity=str(current_user_id), additional_claims=additional_claims)
 
+            dashboard_url = (
+                "/enrollment" if user.role == "candidate" and not user.enrollment_completed
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
+
             return jsonify({
                 'access_token': new_access_token,
                 'role': user.role,
-                'dashboard': ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+                'dashboard': dashboard_url
             }), 200
 
         except Exception as e:
@@ -257,14 +273,59 @@ def init_auth_routes(app):
             if not user:
                 return jsonify({"error": "User not found"}), 404
 
+            dashboard_url = (
+                "/enrollment" if user.role == "candidate" and not user.enrollment_completed
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
+
             return jsonify({
                 "user": user.to_dict(),
                 "role": user.role,
-                "dashboard": ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+                "dashboard": dashboard_url
             }), 200
 
         except Exception as e:
             current_app.logger.error(f"Get current user error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+
+    # ------------------- CANDIDATE ENROLLMENT -------------------
+    @app.route("/api/candidate/enrollment", methods=["POST"])
+    @jwt_required()
+    @role_required("candidate")
+    def candidate_enrollment():
+        try:
+            user_id = int(get_jwt_identity())
+            user = User.query.get(user_id)
+
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+
+            if user.enrollment_completed:
+                return jsonify({"error": "Enrollment already completed"}), 400
+
+            data = request.get_json()
+
+            profile = Candidate(
+                user_id=user.id,
+                full_name=data.get("full_name"),
+                phone=data.get("phone"),
+                education=data.get("education"),
+                skills=data.get("skills"),
+                work_experience=data.get("work_experience"),
+            )
+
+            db.session.add(profile)
+            user.enrollment_completed = True
+            db.session.commit()
+
+            return jsonify({
+                "message": "Enrollment completed successfully",
+                "dashboard": ROLE_DASHBOARD_MAP["candidate"]
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Enrollment error: {str(e)}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
 
     # ------------------- DASHBOARDS -------------------

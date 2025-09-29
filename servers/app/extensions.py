@@ -5,8 +5,6 @@ from flask_jwt_extended import JWTManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_socketio import SocketIO
-import redis
 from pymongo import MongoClient
 
 db = SQLAlchemy()
@@ -14,19 +12,9 @@ jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
 cors = CORS()
-socketio = SocketIO(async_mode='eventlet')
 
 
-# Redis client
-class RedisClient:
-    def init_app(self, app):
-        self.client = redis.Redis(host='localhost', port=6379, db=0)
-    def get(self, key):
-        return self.client.get(key)
-    def setex(self, key, ttl, value):
-        self.client.setex(key, ttl, value)
 
-redis_client = RedisClient()
 
 # Cloudinary client
 class CloudinaryClient:

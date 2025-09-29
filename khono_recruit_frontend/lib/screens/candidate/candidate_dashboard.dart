@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+
+import '../../widgets/custom_card.dart';
+import '../../providers/theme_provider.dart';
+import 'job_details_page.dart';
 import '../../services/candidate_service.dart';
-import '../../models/job_model.dart';
-import '../../models/api_response.dart';
-import '../../models/application_model.dart';
-import '../../utils/theme_utils.dart';
+import 'assessments_results_screen.dart';
 
 class CandidateDashboard extends StatefulWidget {
   final String token;
-
   const CandidateDashboard({super.key, required this.token});
 
   @override
@@ -16,225 +17,35 @@ class CandidateDashboard extends StatefulWidget {
 }
 
 class _CandidateDashboardState extends State<CandidateDashboard> {
-  bool _loading = true;
-  List<Job> _jobs = [];
+  int selectedIndex = 0;
+  List<String> sidebarItems = [
+    "Dashboard",
+    "Jobs Applied",
+    "Assessment Results",
+    "Profile",
+  ];
+
+  List<Map<String, dynamic>> availableJobs = [];
+  bool loadingJobs = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchJobs();
+    fetchAvailableJobs();
   }
 
-  Future<void> _fetchJobs() async {
-    setState(() => _loading = true);
+  Future<void> fetchAvailableJobs() async {
+    setState(() => loadingJobs = true);
     try {
-      final apiRes = await CandidateService.getJobs(widget.token);
-      if (apiRes.success && apiRes.data != null) {
-        setState(() {
-          _jobs = apiRes.data!;
-          _loading = false;
-        });
-      } else {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed: ${apiRes.message}")),
-        );
-      }
+      final jobs = await CandidateService.getAvailableJobs(widget.token);
+      setState(() {
+        availableJobs = List<Map<String, dynamic>>.from(jobs);
+      });
     } catch (e) {
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    }
-  }
-
-  Future<void> _applyJob(Job job) async {
-    setState(() => _loading = true);
-    try {
-      final ApiResponse<void> response =
-          await CandidateService.applyJob(widget.token, job.id);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.success
-              ? 'Applied to ${job.title} successfully!'
-              : 'Failed to apply: ${response.message}'),
-          backgroundColor: response.success ? Colors.green : Colors.redAccent,
-        ),
-      );
-
-      if (response.success) {
-        _fetchJobs();
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error applying: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      debugPrint("Error fetching jobs: $e");
     } finally {
-      setState(() => _loading = false);
+      setState(() => loadingJobs = false);
     }
-  }
-
-  Future<List<Application>> _fetchAppliedJobs() async {
-    try {
-      final ApiResponse<List<Application>> response =
-          await CandidateService.getAppliedJobs(widget.token);
-      if (response.success && response.data != null) {
-        return response.data!;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${response.message}')),
-        );
-        return [];
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching applied jobs: $e')),
-      );
-      return [];
-    }
-  }
-
-  Widget _sidebarItem(IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(width: 16),
-            Text(label,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidebar() {
-    return Container(
-      width: 220,
-      color: const Color(0xFFD50000),
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.person, color: Colors.white, size: 28),
-              SizedBox(width: 10),
-              Text(
-                "Candidate",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-          _sidebarItem(Icons.upload_file, "Upload CV", () {
-            Navigator.pushNamed(context, '/candidate/cv_upload');
-          }),
-          _sidebarItem(Icons.work, "Jobs", () {
-            Navigator.pushNamed(context, '/candidate/jobs');
-          }),
-          _sidebarItem(Icons.assignment, "Assessments", () async {
-            final appliedJobs = await _fetchAppliedJobs();
-            if (appliedJobs.isNotEmpty) {
-              showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                        title: const Text('Select Assessment'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: appliedJobs.length,
-                            itemBuilder: (_, index) {
-                              final app = appliedJobs[index];
-                              return ListTile(
-                                title: Text(app.jobTitle),
-                                subtitle: Text(app.candidateName),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/candidate/assessment',
-                                    arguments: {
-                                      'applicationId': app.id,
-                                      'jobId': app.jobId,
-                                      'token': widget.token,
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ));
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("No assessments available.")),
-              );
-            }
-          }),
-          const Spacer(),
-          _sidebarItem(Icons.logout, "Logout", () {
-            Navigator.pushReplacementNamed(context, '/login');
-          }),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildJobCard(Job job) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withOpacity(0.1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ListTile(
-        title: Text(
-          job.title,
-          style: const TextStyle(
-              color: Colors.redAccent, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(job.description,
-            style: const TextStyle(color: Colors.white70)),
-        trailing: ElevatedButton(
-          onPressed: () => _applyJob(job),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text("Apply"),
-        ),
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            '/candidate/job_detail',
-            arguments: {'job': job, 'token': widget.token},
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -244,59 +55,196 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
     return Scaffold(
       body: Row(
         children: [
-          _buildSidebar(),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1C1C1C), Color(0xFF2C2C2C)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          // ---------------- Glass Sidebar ----------------
+          Container(
+            width: 220,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(24),
+                  bottomRight: Radius.circular(24)),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                const Text(
+                  "Khono Recruite",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
                 ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 40),
+                ...List.generate(
+                  sidebarItems.length,
+                  (index) => ListTile(
+                    leading: Icon(
+                      index == 0
+                          ? Icons.dashboard
+                          : index == 1
+                              ? Icons.work_outline
+                              : index == 2
+                                  ? Icons.assessment
+                                  : Icons.person,
+                      color: Colors.white,
+                    ),
+                    title: Text(
+                      sidebarItems[index],
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    selected: selectedIndex == index,
+                    selectedTileColor: Colors.red.shade700.withOpacity(0.5),
+                    onTap: () => setState(() => selectedIndex = index),
+                  ),
+                ),
+                const Spacer(),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.white),
+                  title: const Text("Logout",
+                      style: TextStyle(color: Colors.white)),
+                  onTap: () {},
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+
+          // ---------------- Main Content ----------------
+          Expanded(
+            child: Column(
+              children: [
+                // ---------- Top Navbar ----------
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  height: 70,
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade900
+                      : Colors.white,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const Text(
-                        "Available Jobs",
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                      IconButton(
+                        icon: const Icon(Icons.search, color: Colors.red),
+                        onPressed: () {},
                       ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: _loading
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                color: Colors.redAccent,
-                              ))
-                            : _jobs.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                    "No jobs available",
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 18),
-                                  ))
-                                : ListView.separated(
-                                    itemCount: _jobs.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 12),
-                                    itemBuilder: (_, index) =>
-                                        _buildJobCard(_jobs[index]),
-                                  ),
+                      Stack(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.notifications,
+                                color: Colors.red),
+                            onPressed: () {},
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          themeProvider.isDarkMode
+                              ? Icons.light_mode
+                              : Icons.dark_mode,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => themeProvider.toggleTheme(),
                       ),
                     ],
                   ),
                 ),
-              ),
+
+                // ---------- Dashboard Body ----------
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: getSelectedPage(),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget getSelectedPage() {
+    switch (selectedIndex) {
+      case 0:
+        return dashboardPage();
+      case 1:
+        return jobsAppliedPage();
+      case 2:
+        return AssessmentResultsPage(token: widget.token);
+      case 3:
+        return profilePage();
+      default:
+        return dashboardPage();
+    }
+  }
+
+  // ---------- Pages ----------
+  Widget dashboardPage() {
+    if (loadingJobs) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (availableJobs.isEmpty) {
+      return const Center(child: Text("No jobs available at the moment"));
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Available Jobs",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: availableJobs.map((job) {
+              return SizedBox(
+                width: 300,
+                height: 180,
+                child: CustomCard(
+                  title: job["title"] ?? "",
+                  subtitle:
+                      "${job["company"] ?? ""} - ${job["location"] ?? ""}",
+                  color: Colors.red.shade50,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => JobDetailsPage(job: job),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget jobsAppliedPage() {
+    return const Center(child: Text("Jobs Applied Page"));
+  }
+
+  Widget profilePage() {
+    return const Center(child: Text("Profile Page"));
   }
 }

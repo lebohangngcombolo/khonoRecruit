@@ -1,295 +1,306 @@
-from flask import request, jsonify, current_app
-from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
-from werkzeug.utils import secure_filename
-import os
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import get_jwt_identity
+from app.extensions import db, cloudinary_client
+from app.models import User, Candidate, Requisition, Application, AssessmentResult, Notification
 from datetime import datetime
-from functools import wraps
-from flask_cors import cross_origin
-
-from app.extensions import db, cloudinary_client, redis_client
-from app.models import Candidate, Application, Requisition, AssessmentResult
+import cloudinary.uploader
+from app.services.cv_parser_service import analyse_resume_openrouter
 from app.utils.decorators import role_required
-from app.services.cv_parser import CVParser
-from app.services.matching_service import MatchingService
 
-matching_service = MatchingService()
+candidate_bp = Blueprint("candidate_bp", __name__)
 
+# ----------------- APPLY FOR JOB -----------------
+@candidate_bp.route("/apply/<int:job_id>", methods=["POST"])
+@role_required(["candidate"])
+def apply_for_job(job_id):
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get_or_404(user_id)
+        job = Requisition.query.get_or_404(job_id)
 
-# -------------------------
-# JWT decorator that skips OPTIONS
-# -------------------------
-def jwt_required_for_non_options(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        if request.method != 'OPTIONS':
-            verify_jwt_in_request()
-        return fn(*args, **kwargs)
-    return wrapper
-
-
-def init_candidate_routes(app):
-
-    # -------------------------
-    # Upload CV
-    # -------------------------
-    @app.route('/api/candidate/upload-cv', methods=['POST', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def upload_cv():
-        if request.method == 'OPTIONS':
-            return '', 200
-
-        try:
-            candidate_id = get_jwt_identity()
-            file = request.files.get('cv')
-            if not file:
-                return jsonify({'error': 'No file uploaded'}), 400
-
-            filename = secure_filename(file.filename)
-            if not filename:
-                return jsonify({'error': 'Invalid file name'}), 400
-
-            file_type = filename.split('.')[-1].lower()
-            file_path = os.path.join('/tmp', filename)
-            file.save(file_path)
-
-            # Parse CV
-            parser = CVParser()
-            cv_text = parser.extract_text_from_file(file_path, file_type)
-            parsed_data = parser.parse_cv(cv_text)
-
-            # Upload to Cloudinary
-            cloud_url = cloudinary_client.upload(file_path)
-
-            # Update candidate record
-            candidate = Candidate.query.filter_by(user_id=candidate_id).first()
-            if not candidate:
-                candidate = Candidate(user_id=candidate_id)
-                db.session.add(candidate)
-
-            candidate.cv_url = cloud_url['secure_url']
-            candidate.cv_text = parsed_data['raw_text']
-            candidate.profile = {
-                'name': parsed_data['name'],
-                'email': parsed_data['email'],
-                'phone': parsed_data['phone'],
-                'skills': parsed_data['skills'],
-                'experience': parsed_data['experience']['total_years'],
-                'education': parsed_data['education'],
-                'certificates': parsed_data.get('certificates', []),
-            }
-            db.session.commit()
-
-            # Cache CV text
-            redis_client.setex(f'candidate_text:{candidate_id}', 3600, cv_text)
-
-            # Cleanup temp file
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-            return jsonify({
-                'message': 'CV uploaded and parsed successfully',
-                'cv_url': cloud_url['secure_url'],
-                'parsed_profile': candidate.profile
-            }), 200
-
-        except Exception as e:
-            current_app.logger.error(f"CV upload failed: {str(e)}", exc_info=True)
-            return jsonify({'error': 'Internal server error'}), 500
-
-    # -------------------------
-    # Update Candidate Profile
-    # -------------------------
-    @app.route('/api/candidate/profile', methods=['GET', 'PUT', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def candidate_profile():
-        if request.method == 'OPTIONS':
-            return '', 200
-
-        candidate_id = get_jwt_identity()
-        candidate = Candidate.query.filter_by(user_id=candidate_id).first()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
         if not candidate:
-            return jsonify({'error': 'Candidate not found'}), 404
-
-        if request.method == 'GET':
-            profile_data = candidate.profile or {}
-            profile_data['cv_url'] = candidate.cv_url if candidate.cv_url else ''
-            return jsonify({'profile': profile_data}), 200
-
-        if request.method == 'PUT':
-            try:
-                data = request.get_json()
-                if not candidate.profile:
-                    candidate.profile = {}
-                candidate.profile.update(data)
-                db.session.commit()
-                return jsonify({'message': 'Profile updated successfully', 'profile': candidate.profile}), 200
-            except Exception as e:
-                current_app.logger.error(f"Profile update failed: {str(e)}", exc_info=True)
-                return jsonify({'error': 'Internal server error'}), 500
-
-    # -------------------------
-    # Get All Available Jobs
-    # -------------------------
-    @app.route('/api/jobs', methods=['GET', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def get_available_jobs():
-        if request.method == 'OPTIONS':
-            return '', 200
-
-        try:
-            jobs = Requisition.query.all()
-            jobs_data = [job.to_dict() for job in jobs]
-            return jsonify({'jobs': jobs_data}), 200
-        except Exception as e:
-            current_app.logger.error(f"Failed to fetch jobs: {str(e)}", exc_info=True)
-            return jsonify({'error': 'Internal server error'}), 500
-
-    # -------------------------
-    # Get Candidate Applied Jobs
-    # -------------------------
-    @app.route('/api/candidate/applied-jobs', methods=['GET', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def get_applied_jobs():
-        if request.method == 'OPTIONS':
-            return '', 200
-
-        try:
-            candidate_id = get_jwt_identity()
-            candidate = Candidate.query.filter_by(user_id=candidate_id).first()
-            if not candidate:
-                return jsonify({'error': 'Candidate not found'}), 404
-
-            applications = Application.query.filter_by(candidate_id=candidate.id).all()
-            jobs_data = []
-            for app_entry in applications:
-                requisition = Requisition.query.get(app_entry.requisition_id)
-                jobs_data.append({
-                    'application_id': app_entry.id,
-                    'job_id': requisition.id,
-                    'title': requisition.title,
-                    'status': app_entry.status,
-                    'applied_at': app_entry.created_at.isoformat()
-                })
-
-            return jsonify({'applied_jobs': jobs_data}), 200
-        except Exception as e:
-            current_app.logger.error(f"Failed to fetch applied jobs: {str(e)}", exc_info=True)
-            return jsonify({'error': 'Internal server error'}), 500
-
-    # -------------------------
-    # Apply for a Job
-    # -------------------------
-    @app.route('/api/jobs/<int:job_id>/apply', methods=['POST', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def apply_for_job(job_id):
-        if request.method == 'OPTIONS':
-            return '', 200
-
-        try:
-            candidate_id = get_jwt_identity()
-            candidate = Candidate.query.filter_by(user_id=candidate_id).first()
-            if not candidate:
-                return jsonify({'error': 'Candidate profile not found'}), 404
-
-            existing = Application.query.filter_by(candidate_id=candidate.id, requisition_id=job_id).first()
-            if existing:
-                return jsonify({'error': 'Already applied'}), 400
-
-            app_entry = Application(candidate_id=candidate.id, requisition_id=job_id, status='applied')
-            db.session.add(app_entry)
+            candidate = Candidate(user_id=user_id)
+            db.session.add(candidate)
             db.session.commit()
-            return jsonify({'message': 'Applied successfully'}), 200
 
-        except Exception as e:
-            current_app.logger.error(f"Job application failed: {str(e)}", exc_info=True)
-            return jsonify({'error': 'Internal server error'}), 500
+        data = request.get_json()
+        candidate.full_name = data.get("full_name", candidate.full_name)
+        candidate.phone = data.get("phone", candidate.phone)
+        candidate.profile.update({
+            "cover_letter": data.get("cover_letter"),
+            "portfolio": data.get("portfolio")
+        })
+        db.session.commit()
 
-    # -------------------------
-    # Submit Assessment
-    # -------------------------
-    @app.route('/api/applications/<int:application_id>/assessment', methods=['GET', 'POST', 'OPTIONS'])
-    @cross_origin()
-    @jwt_required_for_non_options
-    @role_required('candidate')
-    def handle_assessment(application_id):
-        if request.method == 'OPTIONS':
-            return '', 200
+        application = Application(candidate_id=candidate.id, requisition_id=job.id, status="applied")
+        db.session.add(application)
+        db.session.commit()
 
-        if request.method == 'GET':
-            try:
-                result = AssessmentResult.query.filter_by(application_id=application_id).first()
-                if not result:
-                    return jsonify({'error': 'Assessment not found'}), 404
+        return jsonify({"message": "Application submitted", "application_id": application.id}), 201
+    except Exception as e:
+        current_app.logger.error(f"Apply for job error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    
+# ----------------- GET AVAILABLE JOBS -----------------
+# ----------------- GET AVAILABLE JOBS -----------------
+@candidate_bp.route("/jobs", methods=["GET"])
+@role_required(["candidate"])
+def get_available_jobs():
+    try:
+        jobs = Requisition.query.all()
+        result = []
 
-                return jsonify({
-                    'id': result.id,
-                    'application_id': application_id,
-                    'scores': result.scores,
-                    'total_score': result.total_score,
-                    'recommendation': result.recommendation,
-                    'assessed_at': result.assessed_at.isoformat()
-                }), 200
-            except Exception as e:
-                current_app.logger.error(f"Failed to fetch assessment: {str(e)}", exc_info=True)
-                return jsonify({'error': 'Internal server error'}), 500
+        for job in jobs:
+            result.append({
+                "id": job.id,
+                "title": job.title or "",
+                "description": job.description or "",
+                "required_skills": job.required_skills or [],
+                "min_experience": job.min_experience or 0,
+                "knockout_rules": job.knockout_rules or [],
+                "weightings": job.weightings or {"cv": 60, "assessment": 40},
+                "assessment_pack": job.assessment_pack or {"questions": []},
+                "company": getattr(job, "company", ""),  # optional
+                "location": getattr(job, "location", ""),  # optional
+                "type": getattr(job, "job_type", ""),  # optional
+                "salary": getattr(job, "salary", ""),  # optional
+                "published_on": job.published_on.strftime("%d %b, %Y") if job.published_on else "",
+                "vacancy": str(job.vacancy or 0),
+                "responsibility": getattr(job, "responsibility", ""),
+                "qualifications": getattr(job, "qualifications", ""),
+                "created_by": job.created_by
+            })
+        return jsonify(result), 200
 
-        if request.method == 'POST':
-            try:
-                application = Application.query.get_or_404(application_id)
-                if application.status != 'shortlisted':
-                    return jsonify({'error': 'Application not ready for assessment'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Get available jobs error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
 
-                data = request.get_json()
-                answers = data.get('answers', [])
-                time_taken = data.get('time_taken', 0)
 
-                requisition = Requisition.query.get(application.requisition_id)
-                assessment_pack = getattr(requisition, "assessment_pack", {"questions": []})
-                correct_answers = [q.get('correct_answer') for q in assessment_pack.get('questions', [])]
 
-                score = matching_service.calculate_assessment_score(answers, correct_answers)
-                overall_score = matching_service.calculate_overall_score(score, 0, requisition.weightings)
-                recommendation = matching_service.get_recommendation(overall_score)
+# ----------------- UPLOAD RESUME -----------------
+@candidate_bp.route("/upload_resume/<int:application_id>", methods=["POST"])
+@role_required(["candidate"])
+def upload_resume(application_id):
+    try:
+        # Fetch application, candidate, and job
+        application = Application.query.get_or_404(application_id)
+        candidate = application.candidate
+        job = application.requisition
 
-                application.assessment_score = score
-                application.overall_score = overall_score
-                application.recommendation = recommendation
-                application.status = 'assessed'
-                application.assessed_date = datetime.utcnow()
+        if "resume" not in request.files:
+            return jsonify({"error": "No resume uploaded"}), 400
 
-                result = AssessmentResult(
-                    application_id=application.id,
-                    scores={'answers': answers, 'score': score, 'time_taken': time_taken},
-                    total_score=score,
-                    recommendation=recommendation,
-                    assessed_at=datetime.utcnow()
-                )
+        file = request.files["resume"]
+        upload_result = cloudinary.uploader.upload(file, folder="resumes", resource_type="raw")
+        resume_url = upload_result.get("secure_url")
+        candidate.cv_url = resume_url
 
-                db.session.add(result)
-                db.session.commit()
+        # Optional: get text version from form; if not provided, you could parse PDF later
+        resume_content = request.form.get("resume_text", "")
 
-                return jsonify({
-                    'message': 'Assessment submitted successfully',
-                    'assessment_result': {
-                        'id': result.id,
-                        'application_id': result.application_id,
-                        'scores': result.scores,
-                        'total_score': result.total_score,
-                        'recommendation': result.recommendation,
-                        'assessed_at': result.assessed_at.isoformat()
-                    }
-                }), 200
+        # Analyse resume automatically using job_id
+        parser_result = analyse_resume_openrouter(resume_content, job_id=job.id)
 
-            except Exception as e:
-                current_app.logger.error(f"Assessment submission failed: {str(e)}", exc_info=True)
-                return jsonify({'error': 'Internal server error'}), 500
+        # Ensure profile dict exists and update parser info
+        profile = candidate.profile or {}
+        profile.update({
+            "cv_parser_result": parser_result
+        })
+        candidate.profile = profile
+
+        # Update dedicated cv_score column
+        candidate.cv_score = parser_result.get("match_score", 0)
+
+        db.session.commit()
+
+        # Notify admins
+        admins = User.query.filter_by(role="admin").all()
+        for admin in admins:
+            notif = Notification(
+                user_id=admin.id,
+                message=f"{candidate.full_name} submitted resume for {job.title}."
+            )
+            db.session.add(notif)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Resume uploaded and analyzed",
+            "cv_url": resume_url,
+            "parser_result": parser_result
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Upload resume error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+# ----------------- CANDIDATE APPLICATION STATUS -----------------
+@candidate_bp.route("/applications", methods=["GET"])
+@role_required(["candidate"])
+def get_applications():
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if not candidate:
+            return jsonify([])
+
+        applications = Application.query.filter_by(candidate_id=candidate.id).all()
+        result = []
+        for app in applications:
+            assessment = AssessmentResult.query.filter_by(application_id=app.id).first()
+            result.append({
+                "job_title": app.requisition.title,
+                "status": app.status,
+                "cv_score": candidate.profile.get("cv_score", 0),
+                "assessment_score": assessment.total_score if assessment else None,
+                "overall_score": app.overall_score
+            })
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"Get applications error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+# ----------------- GET ASSESSMENT FOR APPLICATION -----------------
+# ----------------- GET ASSESSMENT FOR APPLICATION -----------------
+@candidate_bp.route("/applications/<int:application_id>/assessment", methods=["GET"])
+@role_required(["candidate"])
+def get_assessment(application_id):
+    try:
+        user_id = get_jwt_identity()
+        application = Application.query.get_or_404(application_id)
+
+        # Ensure the application belongs to the logged-in candidate
+        candidate = Candidate.query.filter_by(user_id=user_id).first_or_404()
+        if application.candidate_id != candidate.id:
+            current_app.logger.warning(f"Unauthorized access attempt: user_id={user_id}, application_id={application_id}")
+            return jsonify({"error": "Unauthorized"}), 403
+
+        job = application.requisition
+        result = AssessmentResult.query.filter_by(application_id=application.id).first()
+
+        return jsonify({
+            "job_title": job.title,
+            "assessment_pack": job.assessment_pack,
+            "submitted_result": result.to_dict() if result else None
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Get assessment error: {e} | user_id={user_id} | application_id={application_id}",
+            exc_info=True
+        )
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ----------------- SUBMIT ASSESSMENT -----------------
+@candidate_bp.route("/applications/<int:application_id>/assessment", methods=["POST"])
+@role_required(["candidate"])
+def submit_assessment(application_id):
+    try:
+        user_id = get_jwt_identity()
+        application = Application.query.get_or_404(application_id)
+
+        candidate = Candidate.query.filter_by(user_id=user_id).first_or_404()
+        if application.candidate_id != candidate.id:
+            current_app.logger.warning(
+                f"Unauthorized submission attempt: user_id={user_id}, application_id={application_id}"
+            )
+            return jsonify({"error": "Unauthorized"}), 403
+
+        data = request.get_json()
+        answers = data.get("answers", {})  # keys = index as string, values = "A"-"D"
+
+        current_app.logger.info(
+            f"Submitting assessment: user_id={user_id}, application_id={application_id}, answers={answers}"
+        )
+
+        # Check if assessment already submitted
+        existing_result = AssessmentResult.query.filter_by(application_id=application.id).first()
+        if existing_result:
+            current_app.logger.warning(
+                f"Assessment already submitted: user_id={user_id}, application_id={application_id}"
+            )
+            return jsonify({"error": "Assessment already submitted"}), 400
+
+        # Scoring Logic
+        job = application.requisition
+        assessment_pack = job.assessment_pack or {}
+        questions = assessment_pack.get("questions", [])
+
+        scores = {}
+        total_score = 0
+
+        for index, q in enumerate(questions):
+            qid = str(index)  # use index as key
+            correct_index = q.get("correct_answer", 0)  # numeric index
+            correct_letter = ["A", "B", "C", "D"][correct_index]  # map to letter
+            candidate_answer = answers.get(qid)
+            scores[qid] = q.get("weight", 1) if candidate_answer == correct_letter else 0
+            total_score += scores[qid]
+
+        max_score = sum(q.get("weight", 1) for q in questions)
+        total_score = (total_score / max_score * 100) if max_score > 0 else 0
+
+        # Save AssessmentResult
+        result = AssessmentResult(
+            application_id=application.id,
+            candidate_id=candidate.id,
+            answers=answers,
+            scores=scores,
+            total_score=total_score,
+            recommendation="pass" if total_score >= 60 else "fail"
+        )
+        db.session.add(result)
+
+        # Update application
+        application.status = "assessment_submitted"
+        application.overall_score = total_score
+        db.session.commit()
+
+        current_app.logger.info(
+            f"Assessment submitted successfully: user_id={user_id}, application_id={application_id}, total_score={total_score}"
+        )
+
+        return jsonify({
+            "message": "Assessment submitted",
+            "total_score": total_score,
+            "recommendation": result.recommendation
+        }), 201
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Submit assessment error: {e} | user_id={user_id} | application_id={application_id} | payload={request.get_json()}",
+            exc_info=True
+        )
+        return jsonify({"error": "Internal server error"}), 500
+    
+@candidate_bp.route("/applications", methods=["GET"])
+@role_required(["candidate"])
+def list_candidate_applications():
+    try:
+        candidate = Candidate.query.filter_by(user_id=g.current_user.id).first()
+        if not candidate:
+            return jsonify([])
+
+        applications = Application.query.filter_by(candidate_id=candidate.id).all()
+        data = []
+
+        for app in applications:
+            job = app.requisition
+            data.append({
+                "application_id": app.id,
+                "job_title": job.title if job else None,
+                "job_description": job.description if job else None,
+                "assessment_score": app.assessment_score,
+                "cv_score": candidate.cv_score,
+                "status": app.status,
+                "assessed_date": app.assessed_date.isoformat() if app.assessed_date else None
+            })
+
+        return jsonify(data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error fetching applications: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
