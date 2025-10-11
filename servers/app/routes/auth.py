@@ -1,29 +1,217 @@
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, redirect, url_for, make_response
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
-    get_jwt_identity
+    unset_jwt_cookies,
+    get_jwt_identity,
+    set_access_cookies,
+    set_refresh_cookies
 )
-from app.extensions import db
-from app.models import User, VerificationCode
+from app.extensions import db, oauth
+from app.models import User, OAuthConnection, VerificationCode, Candidate
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
-from app.utils.decorators import role_required
 from datetime import datetime, timedelta
-import random
-import string
+import secrets
+from app.utils.decorators import role_required
+
 
 # ------------------- ROLE DASHBOARD MAP -------------------
 ROLE_DASHBOARD_MAP = {
-    "admin": "/dashboard/admin",
-    "hiring_manager": "/dashboard/hiring-manager",
+    "admin": "/api/dashboard/admin",
+    "hiring_manager": "/api/dashboard/hiring-manager",
     "candidate": "/dashboard/candidate"
+}
+
+# OAuth providers config
+OAUTH_PROVIDERS = {
+    "google": {
+        "userinfo": {
+            "url": "https://www.googleapis.com/oauth2/v3/userinfo",
+            "email": lambda data: data["email"],
+            "first_name": lambda data: data.get("given_name", ""),
+            "last_name": lambda data: data.get("family_name", "")
+        }
+    },
+    "github": {
+        "userinfo": {
+            "url": "https://api.github.com/user",
+            "email": lambda data: data.get("email", ""),
+            "first_name": lambda data: data.get("name", "").split(" ")[0] if data.get("name") else "",
+            "last_name": lambda data: data.get("name", "").split(" ")[1] if data.get("name") and " " in data.get("name") else ""
+        }
+    }
 }
 
 
 def init_auth_routes(app):
 
+    # ------------------- Initialize OAuth -------------------
+    if not hasattr(app, "oauth_initialized"):
+        oauth.init_app(app)
+
+        # Google OAuth
+        oauth.register(
+            name="google",
+            client_id=app.config["GOOGLE_CLIENT_ID"],
+            client_secret=app.config["GOOGLE_CLIENT_SECRET"],
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+            userinfo_endpoint=OAUTH_PROVIDERS["google"]["userinfo"]["url"],
+            redirect_uri="http://127.0.0.1:5000/api/auth/google/callback"
+        )
+
+        # GitHub OAuth
+        oauth.register(
+            name="github",
+            client_id=app.config["GITHUB_CLIENT_ID"],
+            client_secret=app.config["GITHUB_CLIENT_SECRET"],
+            authorize_url="https://github.com/login/oauth/authorize",
+            access_token_url="https://github.com/login/oauth/access_token",
+            client_kwargs={"scope": "user:email"}
+        )
+
+        app.oauth_initialized = True
+
+    # ------------------- LOGOUT -------------------
+    @app.route("/api/auth/logout", methods=["POST"])
+    @jwt_required()
+    def logout():
+        try:
+            response = jsonify({"message": "Successfully logged out"})
+            unset_jwt_cookies(response)
+            return response, 200
+        except Exception as e:
+            current_app.logger.error(f"Logout error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+
+    # ------------------- GOOGLE LOGIN -------------------
+    @app.route("/api/auth/google")
+    def google_login():
+        try:
+            redirect_uri = url_for("google_callback", _external=True)
+            # For Flutter Web, navigate in same tab
+            return oauth.google.authorize_redirect(redirect_uri)
+        except Exception as e:
+            current_app.logger.error(f"Google login initiation error: {str(e)}", exc_info=True)
+            return jsonify({"error": "OAuth configuration error"}), 500
+
+    @app.route("/api/auth/google/callback")
+    def google_callback():
+        try:
+            oauth.google.authorize_access_token()
+            user_info = oauth.google.get(OAUTH_PROVIDERS["google"]["userinfo"]["url"]).json()
+            return handle_oauth_callback("google", user_info)
+        except Exception as e:
+            current_app.logger.error(f"Google OAuth callback error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Authentication failed"}), 400
+
+    # ------------------- GITHUB LOGIN -------------------
+    @app.route("/api/auth/github")
+    def github_login():
+        try:
+            redirect_uri = url_for("github_callback", _external=True)
+            return oauth.github.authorize_redirect(redirect_uri)
+        except Exception as e:
+            current_app.logger.error(f"GitHub login initiation error: {str(e)}", exc_info=True)
+            return jsonify({"error": "OAuth configuration error"}), 500
+
+    @app.route("/api/auth/github/callback")
+    def github_callback():
+        try:
+            oauth.github.authorize_access_token()
+            user_info = oauth.github.get(OAUTH_PROVIDERS["github"]["userinfo"]["url"]).json()
+            if not user_info.get("email"):
+                emails = oauth.github.get("https://api.github.com/user/emails").json()
+                primary_email = next((e for e in emails if e.get("primary")), None)
+                if primary_email:
+                    user_info["email"] = primary_email["email"]
+            return handle_oauth_callback("github", user_info)
+        except Exception as e:
+            current_app.logger.error(f"GitHub OAuth callback error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Authentication failed"}), 400
+
+    # ------------------- OAUTH CALLBACK HANDLER -------------------
+    def handle_oauth_callback(provider: str, user_info: dict):
+        try:
+            email = user_info.get("email")
+            if not email:
+                return jsonify({"error": "Email not provided by OAuth provider"}), 400
+            email = email.strip().lower()
+
+            provider_config = OAUTH_PROVIDERS[provider]
+            first_name = provider_config["userinfo"]["first_name"](user_info)
+            last_name = provider_config["userinfo"]["last_name"](user_info)
+
+            # --- User lookup or create ---
+            user = User.query.filter(db.func.lower(User.email) == email).first()
+            if not user:
+                random_password = secrets.token_urlsafe(16)
+                user = AuthService.create_user(
+                    email=email,
+                    password=random_password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role="candidate"
+                )
+                user.is_verified = True
+                db.session.add(user)
+
+            # --- OAuth connection (link provider) ---
+            oauth_conn = OAuthConnection.query.filter_by(user_id=user.id, provider=provider).first()
+            if not oauth_conn:
+                oauth_conn = OAuthConnection(
+                    user_id=user.id,
+                    provider=provider,
+                    provider_user_id=str(user_info.get("id")),
+                    access_token=secrets.token_urlsafe(32)
+                )
+                db.session.add(oauth_conn)
+
+            db.session.commit()
+
+            # --- JWT Tokens ---
+            additional_claims = {"role": user.role}
+            access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+            refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
+
+            # --- Dashboard redirect logic ---
+            dashboard_url = (
+                "/enrollment" if user.role == "candidate" and not getattr(user, "enrollment_completed", False)
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
+
+            # --- Detect if the request came from Flutter WebAuth ---
+            referrer = request.referrer or ""
+            redirect_uri = request.args.get("redirect_uri", "")
+            is_flutter = "myapp" in referrer or "myapp" in redirect_uri
+
+            if is_flutter:
+                # ✅ Flutter (mobile/web) deep link redirect
+                redirect_link = (
+                    f"myapp://callback"
+                    f"?access_token={access_token}"
+                    f"&refresh_token={refresh_token}"
+                    f"&role={user.role}"
+                    f"&dashboard={dashboard_url}"
+                )
+                return redirect(redirect_link)
+
+            # ✅ Default web redirect (React / Next.js frontend)
+            frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+            redirect_with_tokens = (
+                f"{frontend_url}{dashboard_url}"
+                f"?access_token={access_token}"
+                f"&refresh_token={refresh_token}"
+                f"&role={user.role}"
+            )
+            return redirect(redirect_with_tokens)
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"OAuth callback handler error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
     # ------------------- REGISTER -------------------
     @app.route('/api/auth/register', methods=['POST'])
     def register():
@@ -49,23 +237,16 @@ def init_auth_routes(app):
             # Create user
             user = AuthService.create_user(email, password, first_name, last_name, role)
 
-            # Generate verification code
-            code = ''.join(random.choices(string.digits, k=6))
+            # Verification code
+            code = f"{secrets.randbelow(1000000):06d}"
             expires_at = datetime.utcnow() + timedelta(minutes=30)
-
-            verification_code = VerificationCode(
-                email=email,
-                code=code,
-                expires_at=expires_at
-            )
+            VerificationCode.query.filter_by(email=email, is_used=False).delete()
+            verification_code = VerificationCode(email=email, code=code, expires_at=expires_at)
             db.session.add(verification_code)
             db.session.commit()
-
-            # Send email
             EmailService.send_verification_email(email, code)
 
             current_app.logger.info(f'User registered: {user.email}, ID: {user.id}, Role: {user.role}')
-
             return jsonify({
                 'message': 'User registered successfully. Please check your email for verification code.',
                 'user_id': user.id
@@ -83,23 +264,16 @@ def init_auth_routes(app):
             data = request.get_json()
             email = data.get('email')
             code = data.get('code')
-
             if not all([email, code]):
                 return jsonify({'error': 'Email and code are required'}), 400
-
             email = email.strip().lower()
 
-            verification_code = VerificationCode.query.filter_by(
-                email=email,
-                code=code,
-                is_used=False
-            ).order_by(VerificationCode.created_at.desc()).first()
-
+            verification_code = VerificationCode.query.filter_by(email=email, code=code, is_used=False)\
+                .order_by(VerificationCode.created_at.desc()).first()
             if not verification_code or not verification_code.is_valid():
                 return jsonify({'error': 'Invalid or expired verification code'}), 400
 
             verification_code.is_used = True
-
             user = User.query.filter(db.func.lower(User.email) == email).first()
             if not user:
                 return jsonify({'error': 'User not found'}), 404
@@ -107,10 +281,12 @@ def init_auth_routes(app):
             user.is_verified = True
             db.session.commit()
 
-            access_token = create_access_token(identity=str(user.id))
-            refresh_token = create_refresh_token(identity=str(user.id))
-
-            dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            # JWT tokens
+            additional_claims = {"role": user.role}
+            access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+            refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
+            dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
             return jsonify({
                 'message': 'Email verified successfully',
@@ -132,23 +308,21 @@ def init_auth_routes(app):
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
-
             if not all([email, password]):
                 return jsonify({'error': 'Email and password are required'}), 400
 
             email = email.strip().lower()
             user = User.query.filter(db.func.lower(User.email) == email).first()
-
             if not user or not AuthService.verify_password(password, user.password):
                 return jsonify({'error': 'Invalid credentials'}), 401
-
             if not user.is_verified:
                 return jsonify({'error': 'Please verify your email first'}), 403
 
-            access_token = create_access_token(identity=str(user.id))
-            refresh_token = create_refresh_token(identity=str(user.id))
-
-            dashboard_url = ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            additional_claims = {"role": user.role}
+            access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+            refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
+            dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
             return jsonify({
                 'access_token': access_token,
@@ -168,16 +342,18 @@ def init_auth_routes(app):
         try:
             current_user_id = int(get_jwt_identity())
             user = User.query.get(current_user_id)
-
             if not user:
                 return jsonify({'error': 'User not found'}), 404
 
-            new_access_token = create_access_token(identity=str(current_user_id))
+            additional_claims = {"role": user.role}
+            new_access_token = create_access_token(identity=str(current_user_id), additional_claims=additional_claims)
+            dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
             return jsonify({
                 'access_token': new_access_token,
                 'role': user.role,
-                'dashboard': ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+                'dashboard': dashboard_url
             }), 200
 
         except Exception as e:
@@ -190,13 +366,11 @@ def init_auth_routes(app):
         try:
             data = request.get_json()
             email = data.get('email')
-
             if not email:
                 return jsonify({'error': 'Email is required'}), 400
 
             email = email.strip().lower()
             user = User.query.filter(db.func.lower(User.email) == email).first()
-
             if user:
                 reset_token = AuthService.generate_password_reset_token(user.id)
                 EmailService.send_password_reset_email(email, reset_token)
@@ -214,7 +388,6 @@ def init_auth_routes(app):
             data = request.get_json()
             token = data.get('token')
             new_password = data.get('new_password')
-
             if not all([token, new_password]):
                 return jsonify({'error': 'Token and new password are required'}), 400
 
@@ -228,7 +401,6 @@ def init_auth_routes(app):
 
             user.password = AuthService.hash_password(new_password)
             db.session.commit()
-
             return jsonify({'message': 'Password reset successfully'}), 200
 
         except Exception as e:
@@ -241,20 +413,17 @@ def init_auth_routes(app):
     @jwt_required()
     def get_current_user():
         try:
-            current_user_id = get_jwt_identity()
-            try:
-                current_user_id = int(current_user_id)
-            except (ValueError, TypeError):
-                return jsonify({"error": "Invalid token identity"}), 422
-
+            current_user_id = int(get_jwt_identity())
             user = User.query.get(current_user_id)
             if not user:
                 return jsonify({"error": "User not found"}), 404
 
+            dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
+                else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
             return jsonify({
                 "user": user.to_dict(),
                 "role": user.role,
-                "dashboard": ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+                "dashboard": dashboard_url
             }), 200
 
         except Exception as e:
@@ -276,3 +445,147 @@ def init_auth_routes(app):
     @role_required("candidate")
     def candidate_dashboard():
         return jsonify({"message": "Welcome to the Candidate Dashboard"}), 200
+    
+    # ------------------- CANDIDATE ENROLLMENT -------------------
+    @app.route("/api/candidate/enrollment", methods=["POST"])
+    @jwt_required()
+    @role_required("candidate")
+    def candidate_enrollment():
+        try:
+            user_id = int(get_jwt_identity())
+            user = User.query.get(user_id)
+
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+
+            if user.enrollment_completed:
+                return jsonify({"error": "Enrollment already completed"}), 400
+
+            data = request.get_json()
+
+            profile = Candidate(
+                user_id=user.id,
+                full_name=data.get("full_name"),
+                phone=data.get("phone"),
+                education=data.get("education"),
+                skills=data.get("skills"),
+                work_experience=data.get("work_experience"),
+            )
+
+            db.session.add(profile)
+            user.enrollment_completed = True
+            db.session.commit()
+
+            return jsonify({
+                "message": "Enrollment completed successfully",
+                "dashboard": ROLE_DASHBOARD_MAP["candidate"]
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Enrollment error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+
+    # ------------------- ADMIN ENROLLMENT -------------------
+    @app.route("/api/auth/admin-enroll", methods=["POST"])
+    @jwt_required()
+    @role_required("admin")
+    def admin_enroll_user():
+        try:
+            data = request.get_json()
+            email = data.get("email")
+            first_name = data.get("first_name")
+            last_name = data.get("last_name")
+            role = data.get("role")  # admin or hiring_manager
+            
+            # Validate fields
+            if not all([email, first_name, last_name, role]):
+                return jsonify({"error": "All fields are required"}), 400
+            if role not in ["admin", "hiring_manager"]:
+                return jsonify({"error": "Invalid role"}), 400
+            
+            email = email.strip().lower()
+            if User.query.filter(db.func.lower(User.email) == email).first():
+                return jsonify({"error": "User already exists"}), 409
+            
+            # Create temporary password
+            temp_password = secrets.token_urlsafe(12)
+            user = AuthService.create_user(
+                email=email,
+                password=temp_password,
+                first_name=first_name,
+                last_name=last_name,
+                role=role
+            )
+            
+            # ✅ Auto-verify email for admin-created users
+            user.is_verified = True  # must match the login check
+            user.first_login = True  # force password change on first login
+            db.session.commit()
+
+            # Send temporary password email
+            try:
+                EmailService.send_temporary_password(
+                    email=email,
+                    password=temp_password,
+                    first_name=first_name
+                )
+            except Exception as e:
+                current_app.logger.error(f"Error sending enrollment email: {str(e)}", exc_info=True)
+                
+            return jsonify({
+                "message": "User enrolled successfully. Temporary password sent via email.",
+                "user_id": user.id
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Admin enroll error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
+            
+            
+    # ------------------- CHANGE PASSWORD (FIRST LOGIN) -------------------
+    @app.route("/api/auth/change-password", methods=["POST"])
+    @jwt_required()
+    def change_password():
+        try:
+            data = request.get_json(force=True, silent=True)  # <-- force JSON parsing
+            if not data:
+                return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+            user_id = int(get_jwt_identity())
+
+            temp_password = data.get("temporary_password")
+            new_password = data.get("new_password")
+            confirm_password = data.get("confirm_password")
+
+            if not all([temp_password, new_password, confirm_password]):
+                return jsonify({
+                    "error": "Temporary password, new password, and confirmation are required"
+             }), 400
+
+            if new_password != confirm_password:
+                return jsonify({"error": "New password and confirmation do not match"}), 400
+
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+
+            if not getattr(user, "first_login", False):
+                return jsonify({
+                    "error": "Password change not required. Already completed first login."
+                }), 400
+
+            if not AuthService.verify_password(temp_password, user.password):
+                return jsonify({"error": "Temporary password is incorrect"}), 401
+
+            user.password = AuthService.hash_password(new_password)
+            user.first_login = False
+            db.session.commit()
+
+            return jsonify({"message": "Password changed successfully", "role": user.role}), 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Change password error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500

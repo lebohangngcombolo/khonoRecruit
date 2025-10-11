@@ -16,7 +16,7 @@ class Config:
     MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/recruitment_cv')
     
     # Redis
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    #REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
     
     # JWT
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
@@ -29,6 +29,12 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     
+    # OAuth Configuration
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+    GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
+    GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
+    
     # Cloudinary
     CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
     CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY')
@@ -37,6 +43,9 @@ class Config:
     # CV Processing
     CV_UPLOAD_FOLDER = os.getenv('CV_UPLOAD_FOLDER', 'uploads/cvs')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    
+    # Frontend URL
+    FRONTEND_URL = os.getenv('FRONTEND_URL')
     
 class DevelopmentConfig(Config):
     DEBUG = True

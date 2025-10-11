@@ -1,28 +1,33 @@
 from flask import Flask
-from .extensions import db, jwt, mail, redis_client, cloudinary_client, mongo_client,migrate, cors, socketio
-from .routes import candidate_routes, job_routes, assessment_routes, admin_routes, auth
+from .extensions import db, jwt, mail, cloudinary_client, mongo_client, migrate, cors
 from .models import *
+from .routes import auth, admin_routes, candidate_routes, ai_routes 
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object("app.config.Config")
 
-    # Initialize extensions
+    # ---------------- Initialize Extensions ----------------
     db.init_app(app)
     jwt.init_app(app)
     mail.init_app(app)
-    redis_client.init_app(app)
     cloudinary_client.init_app(app)
     migrate.init_app(app, db)
-    cors.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", message_queue=app.config['REDIS_URL'])
+    cors.init_app(
+        app,
+        origins=["*"],  # Allow all origins for development
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+        supports_credentials=True
+    )
 
+    # ---------------- Register Blueprints ----------------
+    auth.init_auth_routes(app)  # existing auth routes
+    app.register_blueprint(admin_routes.admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(candidate_routes.candidate_bp, url_prefix="/api/candidate")
+    app.register_blueprint(ai_routes.ai_bp)
+    
 
-    # Register routes
-    candidate_routes.init_candidate_routes(app)
-    job_routes.init_job_routes(app)
-    assessment_routes.init_assessment_routes(app)
-    admin_routes.init_admin_routes(app)
-    auth.init_auth_routes(app)
 
     return app
+

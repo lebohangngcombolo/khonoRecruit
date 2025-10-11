@@ -1,9 +1,10 @@
 import bcrypt
-from app.extensions import db, redis_client
+from app.extensions import db
 from app.models import User
 from flask import current_app
 import jwt
 from datetime import datetime, timedelta
+from app.extensions import redis_client
 
 class AuthService:
 
