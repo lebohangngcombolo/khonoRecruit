@@ -1,0 +1,15 @@
+Flask
+Flask-SQLAlchemy
+Flask-JWT-Extended
+Flask-Mail
+Flask-Migrate
+Flask-CORS
+Flask-SocketIO
+psycopg2-binary
+pymongo
+redis
+python-dotenv
+PyJWT
+cloudinary
+celery
+gunicorn
