@@ -714,10 +714,43 @@
       ]
     },
     {
+      "name": "open_file_platform_interface",
+      "version": "1.0.3",
+      "dependencies": [
+        "flutter",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "open_file_linux",
+      "version": "0.0.5",
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "open_file_platform_interface"
+      ]
+    },
+    {
       "name": "open_file_windows",
       "version": "0.0.3",
       "dependencies": [
         "ffi",
+        "flutter",
+        "open_file_platform_interface"
+      ]
+    },
+    {
+      "name": "open_file_mac",
+      "version": "1.0.3",
+      "dependencies": [
+        "flutter",
+        "open_file_platform_interface"
+      ]
+    },
+    {
+      "name": "open_file_ios",
+      "version": "1.0.3",
+      "dependencies": [
         "flutter",
         "open_file_platform_interface"
       ]
@@ -733,44 +766,21 @@
       ]
     },
     {
-      "name": "open_file_platform_interface",
-      "version": "1.0.3",
-      "dependencies": [
-        "flutter",
-        "plugin_platform_interface"
-      ]
-    },
-    {
-      "name": "open_file_mac",
-      "version": "1.0.3",
-      "dependencies": [
-        "flutter",
-        "open_file_platform_interface"
-      ]
-    },
-    {
-      "name": "open_file_linux",
-      "version": "0.0.5",
-      "dependencies": [
-        "ffi",
-        "flutter",
-        "open_file_platform_interface"
-      ]
-    },
-    {
-      "name": "open_file_ios",
-      "version": "1.0.3",
-      "dependencies": [
-        "flutter",
-        "open_file_platform_interface"
-      ]
-    },
-    {
       "name": "open_file_android",
       "version": "1.0.6",
       "dependencies": [
         "flutter",
         "open_file_platform_interface"
+      ]
+    },
+    {
+      "name": "dio_web_adapter",
+      "version": "2.1.1",
+      "dependencies": [
+        "dio",
+        "http_parser",
+        "meta",
+        "web"
       ]
     },
     {
@@ -1042,16 +1052,6 @@
       "dependencies": [
         "meta",
         "path"
-      ]
-    },
-    {
-      "name": "dio_web_adapter",
-      "version": "2.1.1",
-      "dependencies": [
-        "dio",
-        "http_parser",
-        "meta",
-        "web"
       ]
     }
   ],
