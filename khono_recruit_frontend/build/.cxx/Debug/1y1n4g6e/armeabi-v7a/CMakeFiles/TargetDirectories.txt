@@ -1,2 +1,0 @@
-C:/Users/SiphemandlaN/Desktop/hackathon/khono_recruit_frontend/build/.cxx/Debug/1y1n4g6e/armeabi-v7a/CMakeFiles/edit_cache.dir
-C:/Users/SiphemandlaN/Desktop/hackathon/khono_recruit_frontend/build/.cxx/Debug/1y1n4g6e/armeabi-v7a/CMakeFiles/rebuild_cache.dir
