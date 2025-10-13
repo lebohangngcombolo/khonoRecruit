@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Update - Recruitment Pro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            color: #e53935;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-review {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .next-steps {
+            background: #e8f4f8;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        .button {
+            display: inline-block;
+            background: #e53935;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Recruitment Pro</div>
+            <h2>Application Status Update</h2>
+        </div>
+
+        <p>Dear {{candidate_name}},</p>
+        
+        <p>Thank you for your interest in the <strong>{{position_title}}</strong> position at {{company_name}}. We appreciate the time and effort you put into your application.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            {% if status == 'approved' %}
+            <div class="status-badge status-approved">🎉 Application Approved</div>
+            <p>Congratulations! Your application has been successful and you've been shortlisted for the next stage.</p>
+            {% elif status == 'rejected' %}
+            <div class="status-badge status-rejected">Application Not Selected</div>
+            <p>After careful consideration, we've decided to move forward with other candidates whose qualifications more closely match our current needs.</p>
+            {% else %}
+            <div class="status-badge status-review">Application Under Review</div>
+            <p>Your application is currently being reviewed by our hiring team. We'll be in touch soon with an update.</p>
+            {% endif %}
+        </div>
+
+        {% if status == 'approved' %}
+        <div class="next-steps">
+            <h3 style="margin-top: 0; color: #17a2b8;">Next Steps</h3>
+            <ol>
+                <li>Our team will contact you within 3 business days to schedule an interview</li>
+                <li>Prepare for the interview by reviewing the job description</li>
+                <li>Have your relevant documents and references ready</li>
+            </ol>
+        </div>
+        {% elif status == 'rejected' %}
+        <div class="next-steps">
+            <h3 style="margin-top: 0; color: #17a2b8;">Keep in Touch</h3>
+            <p>While this particular role wasn't the right fit, we encourage you to:</p>
+            <ul>
+                <li>Apply for future positions that match your skills</li>
+                <li>Follow our company page for updates</li>
+                <li>Keep your profile updated in our system</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if feedback %}
+        <h3>Feedback from our team:</h3>
+        <blockquote style="background: #f8f9fa; padding: 15px; border-left: 4px solid #e53935; margin: 20px 0;">
+            "{{feedback}}"
+        </blockquote>
+        {% endif %}
+
+        <p>We appreciate your interest in joining our team and wish you the best in your job search.</p>
+
+        <p>Best regards,<br>
+        The Hiring Team<br>
+        {{company_name}}</p>
+
+        <div class="footer">
+            <p>© 2024 Recruitment Pro. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

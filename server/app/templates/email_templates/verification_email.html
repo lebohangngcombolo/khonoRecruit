@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - Recruitment Pro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            color: #e53935;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .code-container {
+            background: linear-gradient(135deg, #e53935, #ff5252);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 30px 0;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .button {
+            display: inline-block;
+            background: #e53935;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Recruitment Pro</div>
+            <h2>Verify Your Email Address</h2>
+        </div>
+
+        <p>Hello there!</p>
+        
+        <p>Thank you for creating an account with Recruitment Pro. To complete your registration and start using our platform, please verify your email address by entering the following verification code:</p>
+
+        <div class="code-container">
+            {{verification_code}}
+        </div>
+
+        <p>This code will expire in <strong>30 minutes</strong> for security reasons.</p>
+
+        <p>If you didn't create an account with us, please ignore this email or contact our support team if you have any concerns.</p>
+
+        <div style="text-align: center;">
+            <a href="{{app_url}}/verify-email" class="button">Verify Email</a>
+        </div>
+
+        <p>Best regards,<br>The Recruitment Pro Team</p>
+
+        <div class="footer">
+            <p>© 2024 Recruitment Pro. All rights reserved.</p>
+            <p>If you're having trouble with the button above, copy and paste this URL into your web browser:<br>
+            {{app_url}}/verify-email?code={{verification_code}}</p>
+        </div>
+    </div>
+</body>
+</html>
