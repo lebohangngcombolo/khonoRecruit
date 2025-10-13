@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OAuth Callback</title>
+  <script>
+    // Immediately redirect back to your Flutter app with the query params
+    window.onload = function() {
+      // Get query string
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get('access_token');
+      const dashboard = params.get('dashboard');
+
+      if (accessToken && dashboard) {
+        // Replace with your Flutter web app URL if needed
+        const redirectUrl = `${window.location.origin}/?access_token=${accessToken}&dashboard=${dashboard}`;
+        window.location.href = redirectUrl;
+      } else {
+        document.body.innerHTML = "<h3>OAuth failed or missing parameters.</h3>";
+      }
+    };
+  </script>
+</head>
+<body>
+  <p>Processing OAuth login...</p>
+</body>
+</html>

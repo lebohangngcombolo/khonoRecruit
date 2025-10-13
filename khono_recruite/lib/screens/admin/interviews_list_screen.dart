@@ -1,0 +1,242 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../services/auth_service.dart';
+import '../../utils/api_endpoints.dart';
+
+class InterviewListScreen extends StatefulWidget {
+  const InterviewListScreen({super.key});
+
+  @override
+  State<InterviewListScreen> createState() => _InterviewListScreenState();
+}
+
+class _InterviewListScreenState extends State<InterviewListScreen> {
+  List<dynamic> interviews = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchInterviews();
+  }
+
+  Future<void> fetchInterviews() async {
+    setState(() => loading = true);
+    try {
+      final response = await AuthService.authorizedGet(
+        "${ApiEndpoints.adminBase}/interviews/all",
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        setState(() {
+          interviews = decoded['interviews'] ?? [];
+          loading = false;
+        });
+      } else {
+        setState(() => loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load interviews')),
+        );
+      }
+    } catch (e) {
+      setState(() => loading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> cancelInterview(int id) async {
+    final url = "${ApiEndpoints.adminBase}/interviews/cancel/$id";
+    try {
+      final response = await AuthService.authorizedDelete(url);
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Interview cancelled")));
+        fetchInterviews();
+      } else {
+        final err = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err['error'] ?? 'Failed to cancel')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> rescheduleInterview(int id, DateTime newTime) async {
+    final url = "${ApiEndpoints.adminBase}/interviews/reschedule/$id";
+    try {
+      final response = await AuthService.authorizedPut(url, {
+        "new_time": newTime.toIso8601String(),
+      });
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Interview rescheduled")));
+        fetchInterviews();
+      } else {
+        final err = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err['error'] ?? 'Failed to reschedule')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  void showRescheduleDialog(int id) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (time != null) {
+        final newDateTime = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          time.hour,
+          time.minute,
+        );
+        rescheduleInterview(id, newDateTime);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final redColor = const Color.fromRGBO(151, 18, 8, 1);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Scheduled Interviews"),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : interviews.isEmpty
+              ? const Center(child: Text("No interviews found"))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: interviews.map((i) {
+                      final scheduled = i['scheduled_time'] != null
+                          ? DateFormat('yyyy-MM-dd HH:mm')
+                              .format(DateTime.parse(i['scheduled_time']))
+                          : 'N/A';
+
+                      return Container(
+                        width: width < 600 ? double.infinity : 420,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(2, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundImage: i['candidate_picture'] != null
+                                  ? NetworkImage(i['candidate_picture'])
+                                  : null,
+                              child: i['candidate_picture'] == null
+                                  ? const Icon(Icons.person, size: 40)
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    i['job_title'] ?? 'No Job Title',
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                      "Candidate: ${i['candidate_name'] ?? 'Unknown'}"),
+                                  Text("Type: ${i['interview_type'] ?? 'N/A'}"),
+                                  Text("Time: $scheduled"),
+                                  Text("Status: ${i['status'] ?? 'N/A'}"),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () =>
+                                            cancelInterview(i['id']),
+                                        icon: const Icon(Icons.cancel_outlined,
+                                            color: Colors.white),
+                                        label: const Text(
+                                          "Cancel",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: redColor,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      ElevatedButton.icon(
+                                        onPressed: () =>
+                                            showRescheduleDialog(i['id']),
+                                        icon: const Icon(Icons.schedule,
+                                            color: Colors.white),
+                                        label: const Text(
+                                          "Reschedule",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: redColor,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+    );
+  }
+}
