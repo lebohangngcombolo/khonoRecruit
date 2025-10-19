@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
 import 'screens/auth/login_screen.dart';
@@ -10,6 +9,7 @@ import 'screens/admin/admin_dashboard.dart';
 import 'screens/hiring_manager/hiring_manager_dashboard.dart';
 import 'screens/landing_page/landing_page.dart';
 import 'screens/auth/reset_password.dart';
+import 'screens/admin/profile_page.dart';
 
 import 'providers/theme_provider.dart';
 import 'utils/theme_utils.dart';
@@ -66,11 +66,21 @@ class KhonoRecruiteApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/admin-dashboard',
-          builder: (context, state) => AdminDAshboard(),
+          builder: (context, state) {
+            final token = state.uri.queryParameters['token'] ?? '';
+            return AdminDAshboard(token: token); // pass the token here
+          },
         ),
         GoRoute(
           path: '/hiring-manager-dashboard',
           builder: (context, state) => HMMainDashboard(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) {
+            final token = state.uri.queryParameters['token'] ?? '';
+            return ProfilePage(token: token);
+          },
         ),
       ],
     );

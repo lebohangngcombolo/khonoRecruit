@@ -6,6 +6,7 @@ from datetime import datetime
 from app.utils.decorators import role_required
 from app.services.email_service import EmailService
 from app.services.audit_service import AuditService
+from app.services.audit2 import AuditService
 from flask_cors import cross_origin
 
 admin_bp = Blueprint("admin_bp", __name__)
@@ -448,11 +449,11 @@ def manage_interviews():
 # =====================================================
 # ♻️ RESCHEDULE INTERVIEW
 # =====================================================
-@admin_bp.route("/jobs/interviews/<int:interview_id>", methods=["PATCH"])
-@admin_bp.route("/interviews/<int:interview_id>", methods=["PATCH"])
+@admin_bp.route("/interviews/reschedule/<int:interview_id>", methods=["PATCH", "PUT"])
 @role_required(["admin", "hiring_manager"])
 def reschedule_interview(interview_id):
     try:
+        # Fetch interview
         interview = Interview.query.get_or_404(interview_id)
         data = request.get_json()
         new_time_str = data.get("scheduled_time")
@@ -460,6 +461,7 @@ def reschedule_interview(interview_id):
         if not new_time_str:
             return jsonify({"error": "New scheduled_time required"}), 400
 
+        # Parse ISO datetime
         try:
             new_time = datetime.fromisoformat(new_time_str)
         except ValueError:
@@ -469,24 +471,42 @@ def reschedule_interview(interview_id):
         interview.scheduled_time = new_time
         db.session.commit()
 
-        # Notification
+        # Create candidate notification
         notif = Notification(
             user_id=interview.candidate_id,
-            message=f"Your interview has been rescheduled from {old_time.strftime('%Y-%m-%d %H:%M:%S')} to {new_time.strftime('%Y-%m-%d %H:%M:%S')}."
+            message=f"Your interview has been rescheduled from "
+                    f"{old_time.strftime('%Y-%m-%d %H:%M:%S')} to "
+                    f"{new_time.strftime('%Y-%m-%d %H:%M:%S')}."
         )
         db.session.add(notif)
         db.session.commit()
 
-        # Send updated email invitation
-        candidate = User.query.get(interview.candidate_id)
-        if candidate and candidate.email:
-            EmailService.send_interview_invitation(
-                email=candidate.email,
-                candidate_name=candidate.full_name,
-                interview_date=new_time.strftime("%A, %d %B %Y at %H:%M"),
+        # Send reschedule email
+        candidate_user = interview.candidate.user  # ⚡ correct relationship
+        if candidate_user and candidate_user.email:
+            # Construct candidate name safely
+            candidate_name = candidate_user.profile.get("full_name")
+            if not candidate_name:
+                candidate_name = f"{candidate_user.profile.get('first_name', '')} {candidate_user.profile.get('last_name', '')}".strip()
+
+            EmailService.send_interview_reschedule_email(
+                email=candidate_user.email,
+                candidate_name=candidate_name or "Candidate",
+                old_time=old_time.strftime("%A, %d %B %Y at %H:%M"),
+                new_time=new_time.strftime("%A, %d %B %Y at %H:%M"),
                 interview_type=interview.interview_type or "Online",
                 meeting_link=interview.meeting_link
             )
+
+        # Audit log
+        from flask_jwt_extended import get_jwt_identity
+        current_admin_id = get_jwt_identity()
+        AuditService.record_action(
+            admin_id=current_admin_id,
+            action="Rescheduled Interview",
+            target_user_id=interview.candidate_id,
+            details=f"Interview {interview_id} rescheduled from {old_time} to {new_time}"
+        )
 
         return jsonify({
             "message": "Interview rescheduled successfully.",
@@ -501,40 +521,68 @@ def reschedule_interview(interview_id):
 # =====================================================
 # ❌ CANCEL INTERVIEW
 # =====================================================
-@admin_bp.route("/jobs/interviews/<int:interview_id>", methods=["DELETE"])
-@admin_bp.route("/interviews/<int:interview_id>", methods=["DELETE"])
+@admin_bp.route("/interviews/cancel/<int:interview_id>", methods=["DELETE", "OPTIONS"])
 @role_required(["admin", "hiring_manager"])
 def cancel_interview(interview_id):
-    try:
-        interview = Interview.query.get_or_404(interview_id)
-        candidate = User.query.get(interview.candidate_id)
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        return jsonify({"status": "OK"}), 200
 
+    try:
+        # Fetch the interview
+        interview = Interview.query.get(interview_id)
+        if not interview:
+            return jsonify({"success": False, "error": f"Interview with ID {interview_id} not found"}), 404
+
+        # Fetch candidate
+        candidate = Candidate.query.get(interview.candidate_id)
+        if not candidate:
+            return jsonify({"success": False, "error": "Candidate profile not found"}), 404
+
+        # Fetch the linked user (for email)
+        user = User.query.get(candidate.user_id)
+
+        # Delete the interview
         db.session.delete(interview)
         db.session.commit()
 
-        # Notification
+        # Add notification
         notif = Notification(
-            user_id=candidate.id,
+            user_id=candidate.user_id,
             message=f"Your interview scheduled for {interview.scheduled_time.strftime('%Y-%m-%d %H:%M:%S')} has been cancelled."
         )
         db.session.add(notif)
         db.session.commit()
 
-        # Send cancellation email using same HTML template
-        if candidate and candidate.email:
-            EmailService.send_interview_invitation(
-                email=candidate.email,
+        # Send cancellation email
+        if user and user.email:
+            EmailService.send_interview_cancellation(
+                email=user.email,
                 candidate_name=candidate.full_name,
                 interview_date=interview.scheduled_time.strftime("%A, %d %B %Y at %H:%M"),
-                interview_type=f"Cancelled {interview.interview_type}",
-                meeting_link=None
+                interview_type=interview.interview_type,
+                reason="The interview has been cancelled by the admin."
             )
 
-        return jsonify({"message": "Interview cancelled successfully."}), 200
+
+        # Log the action
+        AuditService.log(
+            user_id=candidate.user_id,
+            action="Interview Cancelled",
+            details=f"Interview ID {interview.id} cancelled by admin/hiring manager"
+        )
+
+        # Return success response for frontend
+        return jsonify({
+            "success": True,
+            "message": "Interview cancelled successfully.",
+            "interview_id": interview_id
+        }), 200
 
     except Exception as e:
         current_app.logger.error(f"Cancel interview error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+        db.session.rollback()
+        return jsonify({"success": False, "error": "Internal server error"}), 500
     
 @admin_bp.route("/applications", methods=["GET"])
 @role_required(["admin", "hiring_manager"])
@@ -845,3 +893,41 @@ def get_all_candidates():
     except Exception as e:
         current_app.logger.error(f"Error fetching candidates: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+    
+@admin_bp.route('/api/auth/enroll_mfa/<int:user_id>', methods=['POST'])
+@jwt_required()
+def enroll_mfa(user_id):
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+
+    # ------------------- Admin check -------------------
+    if current_user.role.lower() != "admin":
+        return jsonify({"error": "Only admins can enroll MFA"}), 403
+
+    # ------------------- Target user -------------------
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # ------------------- Generate MFA secret -------------------
+    if not user.mfa_secret:
+        user.mfa_secret = pyotp.random_base32()
+
+    user.mfa_enabled = True
+    db.session.commit()
+
+    # ------------------- Audit log -------------------
+    AuditService.log(
+        user_id=current_user.id,
+        action=f"enrolled_mfa_for_user_{user.id}"
+    )
+
+    # ------------------- Generate QR code URI -------------------
+    totp = pyotp.TOTP(user.mfa_secret)
+    otp_uri = totp.provisioning_uri(name=user.email, issuer_name="YourAppName")
+
+    return jsonify({
+        'message': 'MFA enrollment successful',
+        'otp_uri': otp_uri,
+        'secret': user.mfa_secret
+    }), 200

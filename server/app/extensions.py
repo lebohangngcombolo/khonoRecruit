@@ -9,6 +9,7 @@ from pymongo import MongoClient
 from authlib.integrations.flask_client import OAuth  # <-- updated
 import redis
 import firebase_admin
+from flask_socketio import SocketIO
 from firebase_admin import credentials, auth
 from flask_bcrypt import Bcrypt
 
@@ -19,6 +20,7 @@ mail = Mail()
 migrate = Migrate()
 oauth = OAuth()  # <-- Authlib OAuth
 cors = CORS()
+
 bcrypt = Bcrypt()
 
 # ------------------- Cloudinary Client -------------------

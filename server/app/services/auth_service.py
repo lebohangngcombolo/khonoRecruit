@@ -5,6 +5,9 @@ from flask import current_app
 import jwt
 from datetime import datetime, timedelta
 from app.extensions import redis_client
+import pyotp
+from flask_jwt_extended import create_access_token, create_refresh_token
+
 
 class AuthService:
 
@@ -77,4 +80,53 @@ class AuthService:
             redis_client.delete(f"password_reset:{token}")
             return None
         except jwt.InvalidTokenError:
+            return None
+
+    @staticmethod
+    def verify_otp(user, otp: str) -> bool:
+        """
+        Verifies the OTP entered by the user using their stored MFA secret.
+        Returns True if valid, False otherwise.
+        """
+        if not user:
+            logging.warning("OTP verification failed: user is None")
+            return False
+
+        if not user.mfa_secret:
+            logging.warning(f"OTP verification failed: user {user.email} has no MFA secret")
+            return False
+
+        try:
+            totp = pyotp.TOTP(user.mfa_secret)
+            # Valid for ±1 time step (30s each)
+            if totp.verify(otp, valid_window=1):
+                logging.info(f"OTP verified successfully for user {user.email}")
+                return True
+            else:
+                logging.warning(f"Invalid OTP for user {user.email}")
+                return False
+        except Exception as e:
+            logging.error(f"OTP verification error for user {user.email if user else 'Unknown'}: {e}")
+            return False
+        
+    @staticmethod
+    def generate_tokens(user):
+        """
+        Generates access and refresh tokens for a given user.
+        Returns a dictionary with 'access_token' and 'refresh_token'.
+        """
+        try:
+            access_token = create_access_token(
+                identity=user.id,
+                additional_claims={"role": user.role},
+                expires_delta=timedelta(hours=1)
+            )
+            refresh_token = create_refresh_token(
+                identity=user.id,
+                additional_claims={"role": user.role},
+                expires_delta=timedelta(days=7)
+            )
+            return {"access_token": access_token, "refresh_token": refresh_token}
+        except Exception as e:
+            print(f"Token generation error: {e}")
             return None

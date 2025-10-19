@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_web_auth/flutter_web_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../hiring_manager/hiring_manager_dashboard.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../services/auth_service.dart';
 import '../../widgets/custom_textfield.dart';
@@ -142,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (role == "admin") {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => AdminDAshboard()),
+        MaterialPageRoute(builder: (_) => AdminDAshboard(token: token)),
       );
     } else if (role == "hiring_manager") {
       Navigator.pushReplacement(

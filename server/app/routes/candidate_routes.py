@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.extensions import db, cloudinary_client
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.extensions import bcrypt
@@ -10,7 +10,7 @@ from app.models import (
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
-from app.services.cv_parser_service import analyse_resume_openrouter, upload_cv_to_cloudinary
+from app.services.cv_parser_service import HybridResumeAnalyzer
 from app.utils.decorators import role_required
 from app.utils.helper import get_current_candidate
 from app.services.audit2 import AuditService
@@ -121,11 +121,12 @@ def upload_resume(application_id):
 
         file = request.files["resume"]
 
-        resume_url = upload_cv_to_cloudinary(file)
+        # --- Upload to Cloudinary ---
+        resume_url = HybridResumeAnalyzer.upload_cv(file)
         if not resume_url:
             return jsonify({"error": "Failed to upload resume"}), 500
 
-        # Extract PDF text if needed
+        # --- Extract PDF text if needed ---
         resume_text = request.form.get("resume_text", "")
         if not resume_text and file.filename.lower().endswith(".pdf"):
             file.stream.seek(0)
@@ -134,15 +135,18 @@ def upload_resume(application_id):
             for page in pdf_doc:
                 resume_text += page.get_text()
 
-        parser_result = analyse_resume_openrouter(resume_text, job_id=job.id)
+        # --- Hybrid Resume Analysis ---
+        analyzer = HybridResumeAnalyzer()
+        parser_result = analyzer.analyse(resume_text, job.id)
 
+        # --- Save results ---
         application.resume_url = resume_url
         application.cv_score = parser_result.get("match_score", 0)
         application.cv_parser_result = parser_result
         application.recommendation = parser_result.get("recommendation", "")
         db.session.commit()
 
-        # Notify admins
+        # --- Notify admins ---
         admins = User.query.filter_by(role="admin").all()
         for admin in admins:
             notif = Notification(
@@ -279,7 +283,7 @@ def submit_assessment(application_id):
         return jsonify({"error": "Internal server error"}), 500
 
 @candidate_bp.route("/profile", methods=["GET"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def get_profile():
     try:
         candidate = get_current_candidate()
@@ -301,12 +305,22 @@ def get_profile():
 
 # ----------------- UPDATE PROFILE -----------------
 @candidate_bp.route("/profile", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_profile():
     try:
         candidate = get_current_candidate()
+
+        # Auto-create candidate if missing but user exists
         if not candidate:
-            return jsonify({"success": False, "message": "Candidate not found"}), 404
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"success": False, "message": "User not found"}), 404
+
+            candidate = Candidate(user_id=user.id)
+            db.session.add(candidate)
+            db.session.commit()
+            current_app.logger.info(f"Created missing candidate for user id {user.id}")
 
         user = candidate.user
         data = request.get_json() or {}
@@ -316,7 +330,6 @@ def update_profile():
             if key == "dob":
                 if value:
                     try:
-                        # Expecting 'YYYY-MM-DD' format
                         value = datetime.strptime(value, "%Y-%m-%d").date()
                     except ValueError:
                         return jsonify({"success": False, "message": "Invalid date format"}), 400
@@ -357,7 +370,7 @@ def update_profile():
 
 # ----------------- UPLOAD DOCUMENT -----------------
 @candidate_bp.route("/upload_document", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def upload_document():
     try:
         candidate = get_current_candidate()
@@ -395,10 +408,23 @@ def upload_document():
 
 # ----------------- UPLOAD PROFILE PICTURE -----------------
 @candidate_bp.route("/upload_profile_picture", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def upload_profile_picture():
     try:
+        # ---- Get or create Candidate ----
         candidate = get_current_candidate()
+        if not candidate:
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"success": False, "message": "User not found"}), 404
+
+            candidate = Candidate(user_id=user.id)
+            db.session.add(candidate)
+            db.session.commit()
+            current_app.logger.info(f"Created missing candidate for user id {user.id}")
+
+        # ---- Validate file ----
         if "image" not in request.files:
             return jsonify({"success": False, "message": "No image uploaded"}), 400
 
@@ -412,7 +438,7 @@ def upload_profile_picture():
         if ext not in allowed_images:
             return jsonify({"success": False, "message": "Invalid image type"}), 400
 
-        # Upload to Cloudinary with forced JPG format
+        # ---- Upload to Cloudinary ----
         result = cloudinary.uploader.upload(
             file,
             folder="profile_pics/",
@@ -424,7 +450,7 @@ def upload_profile_picture():
         if not url:
             return jsonify({"success": False, "message": "Failed to upload image"}), 500
 
-        # Save to candidate profile
+        # ---- Save to candidate profile ----
         candidate.profile_picture = url
         db.session.commit()
 
@@ -438,9 +464,10 @@ def upload_profile_picture():
         current_app.logger.error(f"Upload profile picture error: {e}", exc_info=True)
         db.session.rollback()
         return jsonify({"success": False, "message": "Internal server error"}), 500
+
 # ----------------- UPDATE GENERAL SETTINGS -----------------
 @candidate_bp.route("/settings", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_settings():
     try:
         user_id = get_jwt_identity()
@@ -466,7 +493,7 @@ def update_settings():
 
 # ----------------- CHANGE PASSWORD -----------------
 @candidate_bp.route("/settings/change_password", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def change_password():
     try:
         # Get current user
@@ -523,7 +550,7 @@ def change_password():
         }), 500
 # ----------------- UPDATE NOTIFICATION PREFERENCES -----------------
 @candidate_bp.route("/settings/notifications", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_notification_preferences():
     try:
         user_id = get_jwt_identity()
@@ -548,7 +575,7 @@ def update_notification_preferences():
 
 # ----------------- DEACTIVATE ACCOUNT -----------------
 @candidate_bp.route("/settings/deactivate", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def deactivate_account():
     try:
         user_id = get_jwt_identity()
@@ -566,7 +593,7 @@ def deactivate_account():
         return jsonify({"success": False, "message": "Internal server error"}), 500
     
 @candidate_bp.route("/settings", methods=["GET"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def get_settings():
     user_id = get_jwt_identity()
     user = User.query.get_or_404(user_id)
@@ -574,3 +601,28 @@ def get_settings():
         "success": True,
         "data": user.settings or {}
     }), 200
+    
+@candidate_bp.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_candidate_notifications():
+    """
+    Get all notifications for the current candidate
+    Returns: List of notification objects (matching your Flutter service expectation)
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Get all notifications for the user, ordered by most recent first
+        notifications = Notification.query.filter_by(
+            user_id=current_user_id
+        ).order_by(Notification.created_at.desc()).all()
+        
+        # Convert to list of dictionaries using your existing to_dict method
+        notifications_data = [notification.to_dict() for notification in notifications]
+        
+        # Return the list directly (matching your Flutter service expectation)
+        return jsonify(notifications_data), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Get notifications error: {str(e)}")
+        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500

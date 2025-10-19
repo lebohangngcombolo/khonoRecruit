@@ -1,4 +1,3 @@
-import 'dart:io' as io;
 import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';

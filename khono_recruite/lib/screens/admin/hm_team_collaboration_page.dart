@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/app_colors.dart';
 
 class HMTeamCollaborationPage extends StatefulWidget {
@@ -45,13 +46,15 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       _sharedNotes.addAll([
         SharedNote(
           title: 'Frontend Developer Requirements',
-          content: 'Looking for React/TypeScript experience...',
+          content:
+              'Looking for React/TypeScript experience with 3+ years in modern frontend development...',
           author: 'John Smith',
           lastModified: DateTime.now().subtract(const Duration(hours: 2)),
         ),
         SharedNote(
           title: 'Interview Process Updates',
-          content: 'Updated interview questions for technical roles...',
+          content:
+              'Updated interview questions for technical roles including system design and behavioral questions...',
           author: 'Sarah Johnson',
           lastModified: DateTime.now().subtract(const Duration(days: 1)),
         ),
@@ -62,12 +65,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,12 +81,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   child: Column(
                     children: [
                       _buildTeamMembersPanel(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       _buildSharedNotesPanel(),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 // Right Panel
                 Expanded(
                   flex: 2,
@@ -98,157 +101,295 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Team Collaboration',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.group_work,
+                    color: AppColors.primaryRed, size: 28),
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isConnected ? Colors.green : AppColors.primaryRed,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    _isConnected ? Icons.wifi : Icons.wifi_off,
-                    size: 12,
-                    color: AppColors.primaryWhite,
-                  ),
-                  const SizedBox(width: 4),
                   Text(
-                    _isConnected ? 'Connected' : 'Disconnected',
-                    style: const TextStyle(
-                      color: AppColors.primaryWhite,
-                      fontSize: 10,
+                    'Team Collaboration',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Real-time communication with your hiring team',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppColors.textGrey,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            ElevatedButton.icon(
-              onPressed: _createSharedNote,
-              icon: const Icon(Icons.note_add),
-              label: const Text('New Note'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: _scheduleMeeting,
-              icon: const Icon(Icons.video_call),
-              label: const Text('Schedule Meeting'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryRed,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTeamMembersPanel() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Team Members',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark),
+            ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: ListView.builder(
-              itemCount: _teamMembers.length,
-              itemBuilder: (context, index) {
-                final member = _teamMembers[index];
-                return _buildTeamMemberCard(member);
-              },
-            ),
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _isConnected ? Colors.green : AppColors.primaryRed,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (_isConnected ? Colors.green : AppColors.primaryRed)
+                              .withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isConnected ? Icons.wifi : Icons.wifi_off,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isConnected ? 'Connected' : 'Disconnected',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              _buildActionButton(
+                icon: Icons.note_add,
+                label: 'New Note',
+                color: Colors.blue,
+                onPressed: _createSharedNote,
+              ),
+              const SizedBox(width: 12),
+              _buildActionButton(
+                icon: Icons.video_call,
+                label: 'Schedule Meeting',
+                color: AppColors.primaryRed,
+                onPressed: _scheduleMeeting,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildActionButton(
+      {required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label:
+            Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamMembersPanel() {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.people_alt,
+                    color: AppColors.primaryRed, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Team Members',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_teamMembers.where((m) => m.isOnline).length} Online',
+                    style: GoogleFonts.inter(
+                      color: AppColors.primaryRed,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _teamMembers.length,
+                itemBuilder: (context, index) {
+                  final member = _teamMembers[index];
+                  return _buildTeamMemberCard(member);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTeamMemberCard(TeamMember member) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryRed.withOpacity(0.1)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor:
-                member.isOnline ? Colors.green : AppColors.textGrey,
-            child: Text(
-              member.name.substring(0, 2).toUpperCase(),
-              style: const TextStyle(
-                  color: AppColors.primaryWhite,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold),
-            ),
+          Stack(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    member.name.substring(0, 2).toUpperCase(),
+                    style: GoogleFonts.inter(
+                      color: AppColors.primaryRed,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: member.isOnline ? Colors.green : Colors.grey,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark)),
-                Text(member.role,
-                    style: const TextStyle(
-                        color: AppColors.textGrey, fontSize: 12)),
+                Text(
+                  member.name,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  member.role,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textGrey,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: member.isOnline ? Colors.green : AppColors.textGrey,
-              shape: BoxShape.circle,
-            ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.chat, color: AppColors.primaryRed, size: 20),
           ),
         ],
       ),
@@ -256,80 +397,68 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   }
 
   Widget _buildSharedNotesPanel() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'Shared Notes',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: _createSharedNote,
-                icon: const Icon(Icons.add, color: AppColors.primaryRed),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: ListView.builder(
-              itemCount: _sharedNotes.length,
-              itemBuilder: (context, index) {
-                final note = _sharedNotes[index];
-                return _buildSharedNoteCard(note);
-              },
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSharedNoteCard(SharedNote note) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryRed.withOpacity(0.1)),
-      ),
-      child: InkWell(
-        onTap: () => _viewSharedNote(note),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(note.title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppColors.textDark)),
-            const SizedBox(height: 4),
-            Text(note.content,
-                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 8),
             Row(
               children: [
-                Text('By ${note.author}',
-                    style: const TextStyle(
-                        color: AppColors.textGrey, fontSize: 10)),
+                const Icon(Icons.note_alt,
+                    color: AppColors.primaryRed, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Shared Notes',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
                 const Spacer(),
-                Text(_formatTimeAgo(note.lastModified),
-                    style: const TextStyle(
-                        color: AppColors.textGrey, fontSize: 10)),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryRed.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: _createSharedNote,
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.primaryRed,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ),
               ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _sharedNotes.length,
+                itemBuilder: (context, index) {
+                  final note = _sharedNotes[index];
+                  return _buildSharedNoteCard(note);
+                },
+              ),
             ),
           ],
         ),
@@ -337,41 +466,170 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
+  Widget _buildSharedNoteCard(SharedNote note) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _viewSharedNote(note),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        note.title,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryRed.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _formatTimeAgo(note.lastModified),
+                        style: GoogleFonts.inter(
+                          color: AppColors.primaryRed,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  note.content,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textGrey,
+                    fontSize: 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryRed.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          note.author.substring(0, 1).toUpperCase(),
+                          style: GoogleFonts.inter(
+                            color: AppColors.primaryRed,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'By ${note.author}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textGrey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildChatPanel() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
           // Chat Header
           Row(
             children: [
-              const Text(
+              const Icon(Icons.chat_bubble_outline,
+                  color: AppColors.primaryRed, size: 20),
+              const SizedBox(width: 8),
+              Text(
                 'Team Chat',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark),
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
               ),
               const Spacer(),
-              DropdownButton<String>(
-                value: _selectedEntity,
-                items: const [
-                  DropdownMenuItem(value: 'general', child: Text('General')),
-                  DropdownMenuItem(
-                      value: 'candidate:123',
-                      child: Text('Candidate Discussion')),
-                  DropdownMenuItem(
-                      value: 'requisition:456', child: Text('Job Requisition')),
-                ],
-                onChanged: (value) => setState(() => _selectedEntity = value!),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String>(
+                  value: _selectedEntity,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'general', child: Text('General Chat')),
+                    DropdownMenuItem(
+                        value: 'candidate:123',
+                        child: Text('Candidate Discussion')),
+                    DropdownMenuItem(
+                        value: 'requisition:456',
+                        child: Text('Job Requisition')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedEntity = value!),
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.arrow_drop_down, size: 16),
+                  style: GoogleFonts.inter(fontSize: 12),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           // Messages
           Expanded(
             child: _messages.isEmpty
@@ -379,13 +637,28 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 48,
-                            color: AppColors.textGrey.withOpacity(0.5)),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No messages yet',
+                          style: GoogleFonts.inter(
+                            color: Colors.grey.shade500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('No messages yet',
-                            style: TextStyle(
-                                color: AppColors.textGrey, fontSize: 16)),
+                        Text(
+                          'Start a conversation with your team',
+                          style: GoogleFonts.inter(
+                            color: Colors.grey.shade400,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   )
@@ -396,7 +669,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                         _buildMessageCard(_messages[index]),
                   ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildMessageInput(),
         ],
       ),
@@ -407,66 +680,104 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     final isCurrentUser = message.author == _currentUser;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment:
             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isCurrentUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryRed.withOpacity(0.1),
-              child: Text(message.author.substring(0, 2).toUpperCase(),
-                  style: const TextStyle(
-                      color: AppColors.primaryRed,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
+            Container(
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: isCurrentUser
-                    ? AppColors.primaryRed.withOpacity(0.1)
-                    : AppColors.lightGrey.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isCurrentUser
-                      ? AppColors.primaryRed.withOpacity(0.3)
-                      : AppColors.primaryRed.withOpacity(0.1),
+                color: AppColors.primaryRed.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  message.author.substring(0, 2).toUpperCase(),
+                  style: GoogleFonts.inter(
+                    color: AppColors.primaryRed,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isCurrentUser)
-                    Text(message.author,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                            fontSize: 12)),
-                  Text(message.content,
-                      style: const TextStyle(color: AppColors.textDark)),
-                  const SizedBox(height: 4),
-                  Text(_formatTimeAgo(message.timestamp),
-                      style: const TextStyle(
-                          color: AppColors.textGrey, fontSize: 10)),
-                ],
-              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: isCurrentUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (!isCurrentUser)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      message.author,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isCurrentUser
+                        ? AppColors.primaryRed
+                        : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    message.content,
+                    style: GoogleFonts.inter(
+                      color: isCurrentUser ? Colors.white : AppColors.textDark,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatTimeAgo(message.timestamp),
+                  style: GoogleFonts.inter(
+                    color: Colors.grey.shade500,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ),
           ),
           if (isCurrentUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryRed,
-              child: Text(message.author.substring(0, 2).toUpperCase(),
-                  style: const TextStyle(
-                      color: AppColors.primaryWhite,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold)),
+            const SizedBox(width: 12),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryRed,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  message.author.substring(0, 2).toUpperCase(),
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ],
         ],
@@ -475,35 +786,52 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   }
 
   Widget _buildMessageInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _messageController,
-            decoration: InputDecoration(
-              hintText: 'Type a message...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide:
-                    BorderSide(color: AppColors.primaryRed.withOpacity(0.3)),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
+                hintStyle: GoogleFonts.inter(color: Colors.grey.shade500),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 0),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: AppColors.primaryRed),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              maxLines: null,
+              style: GoogleFonts.inter(fontSize: 14),
+              onSubmitted: (value) => _sendMessage(),
             ),
-            maxLines: null,
-            onSubmitted: (value) => _sendMessage(),
           ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: _sendMessage,
-          icon: const Icon(Icons.send, color: AppColors.primaryRed),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryRed.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _sendMessage,
+              icon: const Icon(Icons.send, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -532,38 +860,71 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Shared Note'),
+        title: Text('Create Shared Note',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                decoration: const InputDecoration(
-                    labelText: 'Title', border: OutlineInputBorder())),
+              decoration: InputDecoration(
+                labelText: 'Title',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                labelStyle: GoogleFonts.inter(),
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
-              decoration: const InputDecoration(
-                  labelText: 'Content', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Content',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                labelStyle: GoogleFonts.inter(),
+              ),
               maxLines: 4,
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Shared note created successfully'),
-                    backgroundColor: Colors.green),
-              );
-            },
-            style: ElevatedButton.styleFrom(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: AppColors.textGrey)),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryRed.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Shared note created successfully',
+                        style: GoogleFonts.inter()),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryRed,
-                foregroundColor: AppColors.primaryWhite),
-            child: const Text('Create'),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Create',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
           ),
         ],
       ),
@@ -574,12 +935,17 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(note.title),
-        content: SingleChildScrollView(child: Text(note.content)),
+        title: Text(note.title,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: SingleChildScrollView(
+          child: Text(note.content, style: GoogleFonts.inter(fontSize: 14)),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'))
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close',
+                style: GoogleFonts.inter(color: AppColors.primaryRed)),
+          ),
         ],
       ),
     );
@@ -587,9 +953,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
 
   void _scheduleMeeting() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Meeting scheduling feature coming soon'),
-          backgroundColor: AppColors.primaryRed),
+      SnackBar(
+        content: Text('Meeting scheduling feature coming soon',
+            style: GoogleFonts.inter()),
+        backgroundColor: AppColors.primaryRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 

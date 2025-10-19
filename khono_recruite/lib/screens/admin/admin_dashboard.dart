@@ -1,25 +1,31 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import '../auth/login_screen.dart';
+
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import 'candidate_management_screen.dart';
 import 'cv_reviews_screen.dart';
-import 'interviews_screen.dart';
-import 'package:go_router/go_router.dart';
 import 'hm_team_collaboration_page.dart';
 import 'candidate_list_screen.dart';
 import 'interviews_list_screen.dart';
 import 'notifications_screen.dart';
 import 'job_management.dart';
 import 'user_management_screen.dart';
-import 'package:http/http.dart' as http;
 
 class AdminDAshboard extends StatefulWidget {
-  const AdminDAshboard({super.key});
+  final String token;
+  const AdminDAshboard({super.key, required this.token});
 
   @override
   _AdminDAshboardState createState() => _AdminDAshboardState();
@@ -79,12 +85,20 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     "delete"
   ];
 
+  // ---------- Profile image state ----------
+  XFile? _profileImage;
+  Uint8List? _profileImageBytes;
+  String _profileImageUrl = "";
+  final ImagePicker _picker = ImagePicker();
+  final String apiBase = "http://127.0.0.1:5000/api/candidate";
+
   @override
   void initState() {
     super.initState();
     fetchStats();
     fetchPowerBIStatus();
     fetchAudits(page: 1);
+    fetchProfileImage();
 
     _statusTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       fetchPowerBIStatus();
@@ -107,6 +121,87 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     super.dispose();
   }
 
+  // ---------- Profile Image Methods ----------
+  Future<void> fetchProfileImage() async {
+    try {
+      final profileRes = await http.get(
+        Uri.parse("$apiBase/profile"),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json'
+        },
+      );
+
+      if (profileRes.statusCode == 200) {
+        final data = json.decode(profileRes.body)['data'];
+        final candidate = data['candidate'] ?? {};
+        setState(() {
+          _profileImageUrl = candidate['profile_picture'] ?? "";
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile image: $e");
+    }
+  }
+
+  Future<void> _pickProfileImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      if (kIsWeb) _profileImageBytes = await pickedFile.readAsBytes();
+      setState(() => _profileImage = pickedFile);
+      await uploadProfileImage();
+    }
+  }
+
+  Future<void> uploadProfileImage() async {
+    if (_profileImage == null) return;
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$apiBase/upload_profile_picture"),
+      );
+      request.headers['Authorization'] = 'Bearer ${widget.token}';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          kIsWeb
+              ? _profileImageBytes!
+              : File(_profileImage!.path).readAsBytesSync(),
+          filename: _profileImage!.name,
+        ),
+      );
+
+      var response = await request.send();
+      final respStr = await response.stream.bytesToString();
+      final respJson = json.decode(respStr);
+
+      if (response.statusCode == 200 && respJson['success'] == true) {
+        setState(() {
+          _profileImageUrl = respJson['data']['profile_picture'];
+          _profileImage = null;
+          _profileImageBytes = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Profile picture updated")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Upload failed: ${response.statusCode}")));
+      }
+    } catch (e) {
+      debugPrint("Profile image upload error: $e");
+    }
+  }
+
+  ImageProvider<Object> _getProfileImageProvider() {
+    if (_profileImage != null) {
+      if (kIsWeb) return MemoryImage(_profileImageBytes!);
+      return FileImage(File(_profileImage!.path));
+    }
+    if (_profileImageUrl.isNotEmpty) return NetworkImage(_profileImageUrl);
+    return const AssetImage("assets/images/profile_placeholder.png");
+  }
+
+  // ---------- Dashboard Stats & PowerBI ----------
   Future<void> fetchStats() async {
     setState(() => loadingStats = true);
     try {
@@ -210,6 +305,53 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     }
   }
 
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to logout?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close confirmation dialog first
+                _performLogout(context);
+              },
+              child: const Text("Logout", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _performLogout(BuildContext context) async {
+    // Close confirmation dialog immediately
+    Navigator.of(context).pop();
+
+    // Perform logout without UI feedback (it's fast enough)
+    await AuthService.logout();
+
+    // Navigate after a brief delay to ensure previous navigation is complete
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (Route<dynamic> route) => false,
+        );
+      }
+    });
+  }
+
+// Add this variable to your widget state
+  bool _isLoggingOut = false;
+
+  // ---------- UI Build ----------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -311,11 +453,21 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                             if (!sidebarCollapsed)
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    backgroundColor: Colors.redAccent,
-                                    radius: 16,
-                                    child: const Icon(Icons.person,
-                                        color: Colors.white, size: 16),
+                                  GestureDetector(
+                                    onTap: () {
+                                      context.push(
+                                          '/profile?token=${widget.token}');
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundImage:
+                                          _getProfileImageProvider(),
+                                      child: _getProfileImageProvider() == null
+                                          ? const Icon(Icons.person,
+                                              color: Colors.redAccent)
+                                          : null,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -332,17 +484,27 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                               )
                             else
                               Center(
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.redAccent,
-                                  radius: 16,
-                                  child: const Icon(Icons.person,
-                                      color: Colors.white, size: 16),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    context
+                                        .push('/profile?token=${widget.token}');
+                                  },
+                                  child: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundImage: _getProfileImageProvider(),
+                                    child: _getProfileImageProvider() == null
+                                        ? const Icon(Icons.person,
+                                            color: Colors.redAccent)
+                                        : null,
+                                  ),
                                 ),
                               ),
                             const SizedBox(height: 12),
                             if (!sidebarCollapsed)
                               ElevatedButton.icon(
-                                onPressed: () async {},
+                                onPressed: () =>
+                                    _showLogoutConfirmation(context),
                                 icon: const Icon(Icons.logout, size: 16),
                                 label: const Text("Logout"),
                                 style: ElevatedButton.styleFrom(
@@ -354,7 +516,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                               )
                             else
                               IconButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _showLogoutConfirmation(context),
                                 icon: const Icon(Icons.logout,
                                     color: Colors.grey),
                               ),
@@ -457,11 +620,20 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                 icon: const Icon(Icons.notifications_none),
                               ),
                               const SizedBox(width: 12),
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.grey.shade200,
-                                child: const Icon(Icons.person,
-                                    color: Colors.redAccent),
+                              GestureDetector(
+                                onTap: () {
+                                  context
+                                      .push('/profile?token=${widget.token}');
+                                },
+                                child: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: _getProfileImageProvider(),
+                                  child: _getProfileImageProvider() == null
+                                      ? const Icon(Icons.person,
+                                          color: Colors.redAccent)
+                                      : null,
+                                ),
                               ),
                             ],
                           ),
@@ -501,13 +673,16 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     return InkWell(
       onTap: () => setState(() => currentScreen = screenKey),
       child: Container(
-        color:
-            selected ? Colors.redAccent.withOpacity(0.06) : Colors.transparent,
+        color: selected
+            ? const Color.fromRGBO(151, 18, 8, 1).withOpacity(0.06)
+            : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
             Icon(icon,
-                color: selected ? Colors.redAccent : Colors.grey.shade800),
+                color: selected
+                    ? const Color.fromRGBO(151, 18, 8, 1)
+                    : Colors.grey.shade800),
             const SizedBox(width: 12),
             if (!sidebarCollapsed)
               Expanded(
@@ -547,11 +722,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         return const CVReviewsScreen();
       case "notifications":
         return const NotificationsScreen();
-      case "all_candidates": // <-- New case
+      case "all_candidates":
         return const CandidateListScreen();
       case "team_collaboration":
         return const HMTeamCollaborationPage();
-
       case "audits":
         return auditsScreen();
       case "roles":
@@ -563,100 +737,287 @@ class _AdminDAshboardState extends State<AdminDAshboard>
 
   /// ------------------- AUDITS SCREEN -------------------
   Widget auditsScreen() {
+    // Sample data for stacked lines - different audit types
+    final List<StackedLineData> stackedAuditData = [
+      StackedLineData('Jan', 12, 8, 5, 3, 2),
+      StackedLineData('Feb', 15, 10, 7, 4, 3),
+      StackedLineData('Mar', 18, 12, 9, 6, 4),
+      StackedLineData('Apr', 14, 9, 6, 5, 3),
+      StackedLineData('May', 20, 15, 11, 7, 5),
+      StackedLineData('Jun', 22, 16, 12, 8, 6),
+    ];
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.analytics_outlined,
+                      color: Colors.redAccent, size: 28),
+                  SizedBox(width: 8),
+                  Text(
+                    "Audit Analytics Dashboard",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.history, color: Colors.redAccent, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      "${audits.length} Records",
+                      style: TextStyle(
+                          color: Colors.redAccent, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Search and filters
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: auditSearchController,
                   decoration: InputDecoration(
-                    hintText: "Search audits...",
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: () {
-                        auditSearchQuery = auditSearchController.text;
-                        fetchAudits(page: 1);
-                      },
-                    ),
+                    hintText: "Search audit logs...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.6),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
                     ),
+                  ),
+                  onSubmitted: (val) {
+                    auditSearchQuery = val;
+                    fetchAudits(page: 1);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: auditActionFilter,
+                    hint: const Text("Action Type"),
+                    items: [null, ...auditActions]
+                        .map((e) => DropdownMenuItem<String>(
+                              value: e,
+                              child: Text(e ?? "All"),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() => auditActionFilter = val);
+                      fetchAudits(page: 1);
+                    },
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              DropdownButton<String>(
-                value: auditActionFilter,
-                hint: const Text("Filter Action"),
-                items: [null, ...auditActions]
-                    .map((e) => DropdownMenuItem<String>(
-                          value: e,
-                          child: Text(e ?? "All"),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  setState(() {
-                    auditActionFilter = val;
-                  });
-                  fetchAudits(page: 1);
-                },
-              ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+
+          // Stacked Line Chart for Audits
           Container(
-            height: 250,
-            padding: const EdgeInsets.all(16),
+            height: 300,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
+            padding: const EdgeInsets.all(16),
             child: loadingAudits
                 ? const Center(
                     child: CircularProgressIndicator(color: Colors.redAccent))
                 : SfCartesianChart(
-                    primaryXAxis: CategoryAxis(),
-                    primaryYAxis: NumericAxis(),
-                    title: ChartTitle(text: 'Audit Trends'),
-                    series: <CartesianSeries<_ChartData, String>>[
-                      SplineSeries<_ChartData, String>(
-                        dataSource: auditTrendData,
-                        xValueMapper: (d, _) => d.label,
-                        yValueMapper: (d, _) => d.value,
+                    title: ChartTitle(
+                        text: "Audit Activity Trend - Stacked Lines",
+                        textStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87)),
+                    plotAreaBorderWidth: 0,
+                    primaryXAxis: CategoryAxis(
+                      axisLine: const AxisLine(width: 1, color: Colors.grey),
+                      majorGridLines: const MajorGridLines(width: 0),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                    ),
+                    primaryYAxis: NumericAxis(
+                      axisLine: const AxisLine(width: 1, color: Colors.grey),
+                      majorGridLines: MajorGridLines(
+                        color: Colors.grey.shade300,
+                        width: 1,
+                      ),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                    ),
+                    tooltipBehavior: TooltipBehavior(
+                      enable: true,
+                      color: Colors.redAccent,
+                      borderColor: Colors.redAccent,
+                      textStyle: const TextStyle(color: Colors.white),
+                    ),
+                    legend: Legend(
+                      isVisible: true,
+                      position: LegendPosition.bottom,
+                      overflowMode: LegendItemOverflowMode.wrap,
+                    ),
+                    series: <CartesianSeries<StackedLineData, String>>[
+                      StackedLineSeries<StackedLineData, String>(
+                        dataSource: stackedAuditData,
+                        xValueMapper: (data, _) => data.month,
+                        yValueMapper: (data, _) => data.login,
+                        name: 'Login',
+                        color: Colors.redAccent,
+                        width: 3,
+                        markerSettings: const MarkerSettings(isVisible: true),
+                      ),
+                      StackedLineSeries<StackedLineData, String>(
+                        dataSource: stackedAuditData,
+                        xValueMapper: (data, _) => data.month,
+                        yValueMapper: (data, _) => data.logout,
+                        name: 'Logout',
+                        color: Colors.orangeAccent,
+                        width: 3,
+                        markerSettings: const MarkerSettings(isVisible: true),
+                      ),
+                      StackedLineSeries<StackedLineData, String>(
+                        dataSource: stackedAuditData,
+                        xValueMapper: (data, _) => data.month,
+                        yValueMapper: (data, _) => data.create,
+                        name: 'Create',
+                        color: Colors.green,
+                        width: 3,
+                        markerSettings: const MarkerSettings(isVisible: true),
+                      ),
+                      StackedLineSeries<StackedLineData, String>(
+                        dataSource: stackedAuditData,
+                        xValueMapper: (data, _) => data.month,
+                        yValueMapper: (data, _) => data.update,
+                        name: 'Update',
+                        color: Colors.blueAccent,
+                        width: 3,
+                        markerSettings: const MarkerSettings(isVisible: true),
+                      ),
+                      StackedLineSeries<StackedLineData, String>(
+                        dataSource: stackedAuditData,
+                        xValueMapper: (data, _) => data.month,
+                        yValueMapper: (data, _) => data.delete,
+                        name: 'Delete',
                         color: Colors.purpleAccent,
-                        width: 2.5,
-                      )
+                        width: 3,
+                        markerSettings: const MarkerSettings(isVisible: true),
+                      ),
                     ],
                   ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+
+          // Audit Log List
           Container(
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
+            padding: const EdgeInsets.all(12),
             child: loadingAudits
                 ? const Center(
                     child: CircularProgressIndicator(color: Colors.redAccent))
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: audits.length,
                     separatorBuilder: (_, __) =>
-                        const Divider(height: 1, color: Colors.grey),
+                        Divider(color: Colors.grey.shade200, height: 1),
+                    itemCount: audits.length,
                     itemBuilder: (context, index) {
                       final audit = audits[index];
+                      final action = audit['action'] ?? 'Unknown';
+                      final timestamp = audit['timestamp'] ?? '';
+                      final user = audit['user'] ?? 'System';
+                      final icon = {
+                            "login": Icons.login,
+                            "logout": Icons.logout,
+                            "create": Icons.add_circle_outline,
+                            "update": Icons.edit_outlined,
+                            "delete": Icons.delete_outline
+                          }[action] ??
+                          Icons.info_outline;
+
+                      final color = {
+                            "login": Colors.green,
+                            "logout": Colors.orange,
+                            "create": Colors.blueAccent,
+                            "update": Colors.purpleAccent,
+                            "delete": Colors.redAccent
+                          }[action] ??
+                          Colors.grey;
+
                       return ListTile(
-                        leading:
-                            Icon(Icons.history, color: Colors.purpleAccent),
-                        title: Text(audit['action'] ?? ''),
-                        subtitle: Text(audit['timestamp'] ?? ''),
+                        leading: CircleAvatar(
+                          backgroundColor: color.withOpacity(0.15),
+                          child: Icon(icon, color: color),
+                        ),
+                        title: Text(
+                          "${action.toUpperCase()} • $user",
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          timestamp,
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            action,
+                            style: TextStyle(
+                                color: color, fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -705,15 +1066,36 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       },
     ];
 
-    final jobsData = List.generate(jobsCount > 0 ? jobsCount : 5, (i) => i + 1);
-    final candidatesData = List.generate(
-        candidatesCount > 0 ? candidatesCount : 5, (i) => (i + 1) * 2);
-    final interviewsData = List.generate(
-        interviewsCount > 0 ? interviewsCount : 5, (i) => (i + 1) * 3);
-    final cvReviewsData = List.generate(
-        cvReviewsCount > 0 ? cvReviewsCount : 5, (i) => (i + 1) * 2);
-    final auditsData =
-        List.generate(auditsCount > 0 ? auditsCount : 5, (i) => (i + 1));
+    // Sample data for charts
+    final departmentData = [
+      _DepartmentData('IT', 35, Colors.redAccent),
+      _DepartmentData('Finance', 28, Colors.redAccent.shade200),
+      _DepartmentData('Data Science', 22, Colors.redAccent.shade400),
+      _DepartmentData('Marketing', 18, Colors.redAccent.shade100),
+      _DepartmentData('HR', 15, Colors.red.shade300),
+    ];
+
+    final candidateHistogramData = [
+      _HistogramData('Software Engineer', 45),
+      _HistogramData('Data Analyst', 32),
+      _HistogramData('Financial Analyst', 28),
+      _HistogramData('Marketing Manager', 22),
+      _HistogramData('HR Specialist', 18),
+    ];
+
+    final interviewData = [
+      _InterviewData('Scheduled', 25),
+      _InterviewData('Rescheduled', 12),
+      _InterviewData('Cancelled', 8),
+    ];
+
+    final cvReviewData = [
+      _CvReviewData('Week 1', 15, 12),
+      _CvReviewData('Week 2', 22, 18),
+      _CvReviewData('Week 3', 18, 15),
+      _CvReviewData('Week 4', 25, 20),
+      _CvReviewData('Week 5', 30, 25),
+    ];
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -725,8 +1107,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             const Text("Welcome Back, Admin",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
+
+            // FIXED: KPI Cards with proper height constraint
             SizedBox(
-              height: 120,
+              height: 140, // Increased height to prevent overflow
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: stats.length,
@@ -739,9 +1123,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               ),
             ),
             const SizedBox(height: 24),
+
+            // FIXED: Grid layout with proper constraints
             LayoutBuilder(builder: (context, constraints) {
               int crossAxisCount = constraints.maxWidth > 900 ? 2 : 1;
-              double aspectRatio = constraints.maxWidth > 900 ? 2.7 : 2.2;
+              double aspectRatio = constraints.maxWidth > 900
+                  ? 1.8
+                  : 1.6; // Adjusted aspect ratio
               return GridView.count(
                 crossAxisCount: crossAxisCount,
                 shrinkWrap: true,
@@ -749,53 +1137,124 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 physics: const NeverScrollableScrollPhysics(),
+                padding:
+                    const EdgeInsets.only(bottom: 20), // Added bottom padding
                 children: [
-                  chartCard("Jobs", jobsData, Colors.redAccent),
-                  chartCard("Candidates", candidatesData, Colors.orangeAccent),
-                  chartCard("Interviews", interviewsData, Colors.green),
-                  chartCard("CV Reviews", cvReviewsData, Colors.blueAccent),
-                  chartCard("Audits", auditsData, Colors.purpleAccent,
-                      isLine: true),
-                  // ---------- Calendar after Audits ----------
-                  calendarCard(),
-                  // ---------- Recent Activities ----------
+                  // Jobs by Department - Radial Bar with Image
+                  departmentRadialChart(departmentData),
+                  // Candidates Histogram
+                  candidateHistogram(candidateHistogramData),
+                  // Interviews Column Chart
+                  interviewColumnChart(interviewData),
+                  // CV Reviews Mixed Chart
+                  cvReviewsMixedChart(cvReviewData),
+                  // FIXED: Calendar with proper height constraint
+                  modernCalendarCard(),
+                  // Recent Activities
                   activitiesCard(),
                 ],
               );
             }),
-            const SizedBox(height: 50),
           ],
         ),
       ),
     );
   }
 
-  Widget calendarCard() {
+  // NEW: Department Radial Bar Chart with Image Placeholder
+  Widget departmentRadialChart(List<_DepartmentData> data) {
     return Container(
       padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 300, maxHeight: 400),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Calendar", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Jobs by Department",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Distribution",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Expanded(
-            child: TableCalendar(
-              focusedDay: focusedDay,
-              firstDay: DateTime(2020),
-              lastDay: DateTime(2030),
-              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-              onDaySelected: (selected, focused) {
-                setState(() {
-                  selectedDay = selected;
-                  focusedDay = focused;
-                });
-              },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SfCircularChart(
+                  tooltipBehavior: TooltipBehavior(
+                    enable: true,
+                    color: Colors.redAccent,
+                  ),
+                  series: <CircularSeries>[
+                    RadialBarSeries<_DepartmentData, String>(
+                      dataSource: data,
+                      xValueMapper: (d, _) => d.department,
+                      yValueMapper: (d, _) => d.count,
+                      maximumValue: 50,
+                      trackOpacity: 0.3,
+                      trackColor: Colors.grey.shade200,
+                      trackBorderWidth: 0,
+                      cornerStyle: CornerStyle.bothCurve,
+                      gap: '8%',
+                      innerRadius: '60%',
+                      radius: '90%',
+                      pointColorMapper: (d, _) => d.color,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        textStyle: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                // Image placeholder in the center
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.redAccent, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.work_outline,
+                    color: Colors.redAccent,
+                    size: 30,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -803,35 +1262,569 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  Widget activitiesCard() {
+  // NEW: Candidate Histogram (replaces Pyramid)
+  Widget candidateHistogram(List<_HistogramData> data) {
     return Container(
       padding: const EdgeInsets.all(16),
-      height: 250,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Recent Activities",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Candidates by Job Role",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Histogram",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Expanded(
+            child: SfCartesianChart(
+              plotAreaBorderWidth: 0,
+              primaryXAxis: CategoryAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+                labelStyle: const TextStyle(fontSize: 10),
+              ),
+              primaryYAxis: NumericAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+                labelStyle: const TextStyle(fontSize: 10),
+              ),
+              tooltipBehavior: TooltipBehavior(
+                enable: true,
+                color: Colors.redAccent,
+              ),
+              series: <CartesianSeries<_HistogramData, String>>[
+                ColumnSeries<_HistogramData, String>(
+                  dataSource: data,
+                  xValueMapper: (d, _) => d.jobRole,
+                  yValueMapper: (d, _) => d.candidateCount,
+                  color: Colors.redAccent,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+                  dataLabelSettings: const DataLabelSettings(
+                    isVisible: true,
+                    textStyle:
+                        TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Interview Column Chart
+  Widget interviewColumnChart(List<_InterviewData> data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Interview Status",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Overview",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SfCartesianChart(
+              plotAreaBorderWidth: 0,
+              primaryXAxis: CategoryAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+              ),
+              primaryYAxis: NumericAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+              ),
+              tooltipBehavior: TooltipBehavior(
+                enable: true,
+                color: Colors.redAccent,
+              ),
+              series: <CartesianSeries<_InterviewData, String>>[
+                ColumnSeries<_InterviewData, String>(
+                  dataSource: data,
+                  xValueMapper: (d, _) => d.status,
+                  yValueMapper: (d, _) => d.count,
+                  color: Colors.redAccent,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+                  dataLabelSettings: const DataLabelSettings(
+                    isVisible: true,
+                    textStyle:
+                        TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: CV Reviews Mixed Chart (Line + Bar)
+  Widget cvReviewsMixedChart(List<_CvReviewData> data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "CV Reviews Trend",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Weekly",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SfCartesianChart(
+              plotAreaBorderWidth: 0,
+              primaryXAxis: CategoryAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+              ),
+              primaryYAxis: NumericAxis(
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: const MajorGridLines(width: 0),
+              ),
+              tooltipBehavior: TooltipBehavior(
+                enable: true,
+                color: Colors.redAccent,
+              ),
+              series: <CartesianSeries<_CvReviewData, String>>[
+                ColumnSeries<_CvReviewData, String>(
+                  dataSource: data,
+                  xValueMapper: (d, _) => d.week,
+                  yValueMapper: (d, _) => d.reviewsCompleted,
+                  name: 'Completed',
+                  color: Colors.redAccent,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+                ),
+                LineSeries<_CvReviewData, String>(
+                  dataSource: data,
+                  xValueMapper: (d, _) => d.week,
+                  yValueMapper: (d, _) => d.reviewsPending,
+                  name: 'Pending',
+                  color: Colors.orangeAccent,
+                  width: 3,
+                  markerSettings: const MarkerSettings(
+                    isVisible: true,
+                    color: Colors.orangeAccent,
+                    borderWidth: 2,
+                    borderColor: Colors.white,
+                  ),
+                ),
+              ],
+              legend: Legend(
+                isVisible: true,
+                position: LegendPosition.bottom,
+                overflowMode: LegendItemOverflowMode.wrap,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget modernCalendarCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blueGrey.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade50,
+            Colors.purple.shade50,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_month,
+                        color: Colors.blueAccent, size: 22),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Today's Date",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: StreamBuilder(
+                  stream: Stream.periodic(const Duration(seconds: 1)),
+                  builder: (context, snapshot) {
+                    return Text(
+                      DateFormat('hh:mm a').format(DateTime.now()),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blueAccent,
+                        fontSize: 12,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Today's Date Display Section
+          Container(
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Date number
+                  Text(
+                    DateTime.now().day.toString(),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.blueAccent,
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Month and Year
+                  Text(
+                    DateFormat('MMMM yyyy').format(DateTime.now()),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _calendarStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6), // Smaller padding
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.circle_rounded,
+            color: color,
+            size: 6, // Smaller icon
+          ),
+        ),
+        const SizedBox(height: 4), // Reduced spacing
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12, // Smaller font
+            fontWeight: FontWeight.w600, // Slightly less bold
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9, // Smaller font
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _calendarLegend(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min, // Prevent horizontal overflow
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w500), // Smaller font
+        ),
+      ],
+    );
+  }
+
+  List<Appointment> _getAppointments() {
+    final now = DateTime.now();
+    return [
+      Appointment(
+        startTime: now.add(const Duration(days: 1, hours: 10)),
+        endTime: now.add(const Duration(days: 1, hours: 11)),
+        subject: 'Technical Interview',
+        color: Colors.blueAccent,
+      ),
+      Appointment(
+        startTime: now.add(const Duration(days: 2, hours: 14)),
+        endTime: now.add(const Duration(days: 2, hours: 15)),
+        subject: 'HR Meeting',
+        color: Colors.green,
+      ),
+      Appointment(
+        startTime: now.add(const Duration(days: 3, hours: 9)),
+        endTime: now.add(const Duration(days: 3, hours: 10)),
+        subject: 'CV Review Deadline',
+        color: Colors.orange,
+      ),
+      Appointment(
+        startTime: now.add(const Duration(days: 5, hours: 11)),
+        endTime: now.add(const Duration(days: 5, hours: 12)),
+        subject: 'Candidate Screening',
+        color: Colors.purple,
+      ),
+    ];
+  }
+
+  Widget activitiesCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.timeline,
+                    color: Colors.redAccent, size: 20),
+              ),
+              const SizedBox(width: 8),
+              const Text("Recent Activities",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // FIXED: Activities list with constrained height
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 120, // Fixed maximum height
+            ),
             child: ListView.builder(
+              shrinkWrap: true,
               itemCount: recentActivities.length,
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.circle,
-                          size: 8, color: Colors.redAccent),
-                      const SizedBox(width: 8),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(recentActivities[index],
-                            style: const TextStyle(fontSize: 12)),
+                        child: Text(
+                          recentActivities[index],
+                          style: const TextStyle(fontSize: 13),
+                          overflow:
+                              TextOverflow.ellipsis, // Prevent text overflow
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm').format(DateTime.now()
+                            .subtract(Duration(minutes: index * 15))),
+                        style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -846,85 +1839,70 @@ class _AdminDAshboardState extends State<AdminDAshboard>
 
   Widget kpiCard(String title, int count, Color color, IconData icon) {
     return Container(
-      width: 220,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            CircleAvatar(
-                backgroundColor: color.withOpacity(0.12),
-                child: Icon(icon, color: color)),
-            const SizedBox(width: 12),
-            Text(title,
-                style: TextStyle(
-                    color: Colors.grey.shade800, fontWeight: FontWeight.bold)),
-          ]),
-          const Spacer(),
-          Text(count.toString(),
-              style:
-                  const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget chartCard(String title, List<int> values, Color color,
-      {bool isLine = false}) {
-    final chartData = values
-        .asMap()
-        .entries
-        .map((e) => _ChartData('Item ${e.key + 1}', e.value))
-        .toList();
-    final chartColor = color.withOpacity(0.85);
-
-    return Container(
+      width: 200, // Slightly reduced width
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween, // Better space distribution
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child:
+                    Icon(icon, color: color, size: 20), // Slightly smaller icon
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 3), // Smaller padding
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "+${((count / 10) * 100).round()}%",
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10, // Smaller font
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return isLine
-                    ? SfCartesianChart(
-                        plotAreaBorderWidth: 0,
-                        primaryXAxis: CategoryAxis(isVisible: false),
-                        primaryYAxis: NumericAxis(isVisible: false),
-                        series: <CartesianSeries<_ChartData, String>>[
-                          SplineSeries<_ChartData, String>(
-                            dataSource: chartData,
-                            xValueMapper: (d, _) => d.label,
-                            yValueMapper: (d, _) => d.value,
-                            color: chartColor,
-                            width: 2.5,
-                          )
-                        ],
-                      )
-                    : SfCircularChart(
-                        legend: Legend(isVisible: true),
-                        series: <CircularSeries>[
-                          DoughnutSeries<_ChartData, String>(
-                            dataSource: chartData,
-                            xValueMapper: (d, _) => d.label,
-                            yValueMapper: (d, _) => d.value,
-                            innerRadius: '70%',
-                            radius: '90%',
-                          ),
-                        ],
-                      );
-              },
+          Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 24, // Slightly smaller font
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13, // Slightly smaller font
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -933,8 +1911,52 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 }
 
+// Data classes for new charts
+class _DepartmentData {
+  final String department;
+  final int count;
+  final Color color;
+  _DepartmentData(this.department, this.count, this.color);
+}
+
+class _HistogramData {
+  final String jobRole;
+  final int candidateCount;
+  _HistogramData(this.jobRole, this.candidateCount);
+}
+
+class _InterviewData {
+  final String status;
+  final int count;
+  _InterviewData(this.status, this.count);
+}
+
+class _CvReviewData {
+  final String week;
+  final int reviewsCompleted;
+  final int reviewsPending;
+  _CvReviewData(this.week, this.reviewsCompleted, this.reviewsPending);
+}
+
+class StackedLineData {
+  final String month;
+  final int login;
+  final int logout;
+  final int create;
+  final int update;
+  final int delete;
+  StackedLineData(this.month, this.login, this.logout, this.create, this.update,
+      this.delete);
+}
+
 class _ChartData {
   final String label;
   final int value;
   _ChartData(this.label, this.value);
+}
+
+class _MeetingDataSource extends CalendarDataSource {
+  _MeetingDataSource(List<Appointment> source) {
+    appointments = source;
+  }
 }

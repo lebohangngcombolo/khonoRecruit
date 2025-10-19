@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'candidate_detail_screen.dart';

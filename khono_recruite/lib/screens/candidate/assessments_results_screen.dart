@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../../services/auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 
 class AssessmentResultsPage extends StatefulWidget {
   final int? applicationId;
@@ -56,69 +56,162 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
     }
   }
 
-  Widget scoreDonutChart(double score, Color color) {
-    return SizedBox(
-      height: 100,
-      width: 100,
-      child: SfCircularChart(
-        series: <CircularSeries>[
-          DoughnutSeries<_ChartData, String>(
-            dataSource: [
-              _ChartData('Score', score),
-              _ChartData('Remaining', 100 - score)
-            ],
-            xValueMapper: (_ChartData data, _) => data.label,
-            yValueMapper: (_ChartData data, _) => data.value,
-            pointColorMapper: (_ChartData data, _) =>
-                data.label == 'Score' ? color : Colors.grey[300],
-            dataLabelMapper: (_ChartData data, _) =>
-                data.label == 'Score' ? '${score.toInt()}%' : '',
-            dataLabelSettings: const DataLabelSettings(
-                isVisible: true,
-                textStyle: TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold)),
-            radius: '100%',
-            innerRadius: '60%',
-          )
+  Widget scoreDonutChart(double score, Color color, String title) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 120,
+            width: 120,
+            child: SfCircularChart(
+              annotations: <CircularChartAnnotation>[
+                CircularChartAnnotation(
+                  widget: Text(
+                    '${score.toInt()}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                )
+              ],
+              series: <CircularSeries>[
+                DoughnutSeries<_ChartData, String>(
+                  dataSource: [
+                    _ChartData('Score', score),
+                    _ChartData('Remaining', 100 - score)
+                  ],
+                  xValueMapper: (_ChartData data, _) => data.label,
+                  yValueMapper: (_ChartData data, _) => data.value,
+                  pointColorMapper: (_ChartData data, _) =>
+                      data.label == 'Score' ? color : Colors.grey.shade200,
+                  radius: '100%',
+                  innerRadius: '75%',
+                  dataLabelSettings: const DataLabelSettings(isVisible: false),
+                )
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget chipsList(List<String> items, {Color color = Colors.red}) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: items
-          .map((item) => Chip(
-                label: Text(item),
-                backgroundColor: color.withOpacity(0.2),
-                labelStyle:
-                    TextStyle(color: color, fontWeight: FontWeight.bold),
-              ))
-          .toList(),
-    );
-  }
-
-  Widget sidebar() {
+  Widget chipsList(List<String> items,
+      {Color color = Colors.red, String title = ""}) {
     return Container(
-      width: 200,
-      color: Colors.white,
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("Menu",
-              style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
-          SizedBox(height: 24),
-          Text("Dashboard", style: TextStyle(color: Colors.black87)),
-          SizedBox(height: 12),
-          Text("My Applications", style: TextStyle(color: Colors.black87)),
+        children: [
+          if (title.isNotEmpty) ...[
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: items
+                .map((item) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        item,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: color,
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status, String passFail) {
+    Color statusColor = Colors.blue;
+    if (status.toLowerCase() == 'approved') statusColor = Colors.green;
+    if (status.toLowerCase() == 'rejected') statusColor = Colors.red;
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            status,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: statusColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: passFail == "Pass"
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            passFail,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: passFail == "Pass" ? Colors.green : Colors.red,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -132,72 +225,132 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
     final suggestions =
         List<String>.from(app['cv_parser_result']?['suggestions'] ?? []);
 
-    return Card(
-      color: Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Colors.red, width: 1)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(app['job_title'] ?? "Unknown Job",
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red)),
-            const SizedBox(height: 8),
-            Text("Application Status: $status",
-                style: const TextStyle(color: Colors.black87)),
-            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  children: [
-                    const Text("Assessment",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black)),
-                    const SizedBox(height: 8),
-                    scoreDonutChart(assessmentScore, Colors.red),
-                    const SizedBox(height: 4),
-                    Text(passFail,
-                        style: TextStyle(
-                            color:
-                                passFail == "Pass" ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.bold))
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        app['job_title'] ?? "Unknown Job",
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        app['company'] ?? "Company",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Column(
-                  children: [
-                    const Text("Resume Score",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black)),
-                    const SizedBox(height: 8),
-                    scoreDonutChart(cvScore, Colors.blue),
-                  ],
-                ),
+                _buildStatusBadge(status, passFail),
               ],
             ),
-            const SizedBox(height: 16),
-            if (missingSkills.isNotEmpty) ...[
-              const Text("Missing Skills:",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.red)),
-              const SizedBox(height: 4),
-              chipsList(missingSkills, color: Colors.red),
-              const SizedBox(height: 12),
+            const SizedBox(height: 24),
+
+            // Scores Section
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Assessment Results",
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      scoreDonutChart(
+                          assessmentScore, Colors.red, "Assessment"),
+                      scoreDonutChart(cvScore, Colors.blue, "Resume Match"),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Missing Skills & Suggestions
+            if (missingSkills.isNotEmpty || suggestions.isNotEmpty) ...[
+              if (missingSkills.isNotEmpty) ...[
+                chipsList(
+                  missingSkills,
+                  color: Colors.red,
+                  title: "Skills to Improve",
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (suggestions.isNotEmpty) ...[
+                chipsList(
+                  suggestions,
+                  color: Colors.blue,
+                  title: "Recommendations",
+                ),
+                const SizedBox(height: 16),
+              ],
             ],
-            if (suggestions.isNotEmpty) ...[
-              const Text("Suggestions:",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black)),
-              const SizedBox(height: 4),
-              chipsList(suggestions, color: Colors.blue),
-            ],
+
+            // Application Date
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today,
+                      color: Colors.green.shade600, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Applied on: ${app['applied_on'] ?? 'Unknown date'}",
+                    style: GoogleFonts.inter(
+                      color: Colors.green.shade800,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -207,31 +360,175 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.red),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.redAccent),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Loading Assessment Results...",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
             )
           : applications.isEmpty
               ? Scaffold(
-                  backgroundColor: Colors.white,
+                  backgroundColor: Colors.grey.shade50,
                   appBar: AppBar(
-                      title: const Text("My Applications"),
-                      backgroundColor: Colors.red,
-                      elevation: 0),
-                  body: const Center(
-                      child: Text("No applications found",
-                          style: TextStyle(color: Colors.black87))),
+                    title: Text(
+                      "Assessment Results",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: Colors.white,
+                    elevation: 0,
+                    iconTheme: const IconThemeData(color: Colors.black87),
+                  ),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assessment_outlined,
+                          size: 80,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No Assessment Results Found",
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Your assessment results will appear here",
+                          style: GoogleFonts.inter(
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
-              : Row(
+              : Column(
                   children: [
-                    sidebar(),
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: SafeArea(
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back,
+                                  color: Colors.black87),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              "Assessment Results",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade900,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                "${applications.length} ${applications.length == 1 ? 'Application' : 'Applications'}",
+                                style: GoogleFonts.inter(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Content
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: applications.length,
-                        itemBuilder: (context, index) {
-                          return applicationCard(applications[index]);
-                        },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            // Summary Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              margin: const EdgeInsets.only(bottom: 24),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFDC2626),
+                                    Color(0xFFEF4444)
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Performance Overview",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Track your assessment scores and improvement areas",
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Applications List
+                            ...applications
+                                .map((app) => applicationCard(app))
+                                .toList(),
+                          ],
+                        ),
                       ),
                     ),
                   ],

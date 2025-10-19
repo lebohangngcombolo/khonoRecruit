@@ -19,6 +19,9 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)  # ✅ new: used for deactivation
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     first_login = db.Column(db.Boolean, default=True)
+    mfa_secret = db.Column(db.String(32), nullable=True)  # TOTP secret
+    mfa_enabled = db.Column(db.Boolean, default=False)    # Is MFA turned on
+    mfa_verified = db.Column(db.Boolean, default=False)   # Used during setup
 
     # 🔗 Relationships
     candidates = db.relationship('Candidate', back_populates='user', lazy=True)
@@ -281,6 +284,30 @@ class Interview(db.Model):
     application = db.relationship('Application', back_populates='interviews')
     hiring_manager = db.relationship('User', back_populates='managed_interviews')
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "candidate_id": self.candidate_id,
+            "hiring_manager_id": self.hiring_manager_id,
+            "application_id": self.application_id,
+            "scheduled_time": self.scheduled_time.isoformat() if self.scheduled_time else None,
+            "interview_type": self.interview_type,
+            "meeting_link": self.meeting_link,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "candidate": {
+                "id": self.candidate.id,
+                "full_name": self.candidate.full_name if hasattr(self.candidate, "full_name") else self.candidate.user.profile.get("full_name") if self.candidate.user else None,
+                "email": self.candidate.user.email if self.candidate.user else None
+            } if self.candidate else None,
+            "hiring_manager": {
+                "id": self.hiring_manager.id,
+                "full_name": f"{self.hiring_manager.profile.get('first_name', '')} {self.hiring_manager.profile.get('last_name', '')}".strip() if self.hiring_manager.profile else None,
+                "email": self.hiring_manager.email
+            } if self.hiring_manager else None,
+        }
+
+
 
 # ------------------- CV ANALYSIS -------------------
 class CVAnalysis(db.Model):
@@ -383,3 +410,4 @@ class AuditLog(db.Model):
             "extra_data": self.extra_data,  # <- updated here too
             "timestamp": self.timestamp.isoformat(),
         }
+

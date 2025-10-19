@@ -1,7 +1,7 @@
 from flask import Flask
 from .extensions import db, jwt, mail, cloudinary_client, mongo_client, migrate, cors, bcrypt
 from .models import *
-from .routes import auth, admin_routes, candidate_routes, ai_routes 
+from .routes import auth, admin_routes, candidate_routes, ai_routes
 
 def create_app():
     app = Flask(__name__)
@@ -23,6 +23,7 @@ def create_app():
     )
 
     # ---------------- Register Blueprints ----------------
+  
     auth.init_auth_routes(app)  # existing auth routes
     app.register_blueprint(admin_routes.admin_bp, url_prefix="/api/admin")
     app.register_blueprint(candidate_routes.candidate_bp, url_prefix="/api/candidate")

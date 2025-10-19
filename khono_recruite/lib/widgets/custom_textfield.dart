@@ -53,11 +53,13 @@ class CustomTextField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: textColor?.withOpacity(0.7) ?? Colors.white70,
+            color: textColor?.withOpacity(0.7) ??
+                const Color.fromARGB(179, 255, 3, 3),
           ),
           hintText: hintText.isNotEmpty ? hintText : null,
           hintStyle: TextStyle(
-            color: textColor?.withOpacity(0.5) ?? Colors.white54,
+            color: textColor?.withOpacity(0.5) ??
+                const Color.fromARGB(137, 98, 98, 98),
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

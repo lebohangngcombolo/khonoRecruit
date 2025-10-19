@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 
 class ScheduleInterviewPage extends StatefulWidget {
@@ -120,12 +121,19 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
     final primaryRed = const Color.fromRGBO(151, 18, 8, 1);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Schedule Interview"),
-        backgroundColor: primaryRed,
+        title: Text(
+          "Schedule Interview",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
+        foregroundColor: Colors.black87,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.grey.shade50, Colors.grey.shade100],
@@ -135,107 +143,449 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
         ),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryRed.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today,
+                        color: primaryRed,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Schedule Interview",
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Set up interview details for the candidate",
+                            style: GoogleFonts.inter(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Message Alert
               if (message.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
                     color: message.startsWith("Error")
                         ? Colors.red.shade50
                         : Colors.green.shade50,
                     borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    message,
-                    style: TextStyle(
+                    border: Border.all(
                       color: message.startsWith("Error")
-                          ? Colors.red
-                          : Colors.green.shade800,
-                      fontWeight: FontWeight.w500,
+                          ? Colors.red.shade200
+                          : Colors.green.shade200,
                     ),
                   ),
-                ),
-              DropdownButtonFormField<String>(
-                value: selectedApplication,
-                decoration: InputDecoration(
-                  labelText: "Select Job Application",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                items: applications.map((a) {
-                  final jobTitle = a["job_title"] ?? "Unknown Position";
-                  return DropdownMenuItem<String>(
-                    value: a["application_id"].toString(),
-                    child: Text(jobTitle),
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => selectedApplication = val),
-                validator: (val) =>
-                    val == null ? "Select a job application" : null,
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                tileColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.grey.shade300)),
-                title: Text(selectedDateTime != null
-                    ? "Scheduled for: ${selectedDateTime!.toLocal()}"
-                    : "Pick date and time"),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: pickDateTime,
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: interviewType,
-                decoration: InputDecoration(
-                  labelText: "Interview Type",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                items: ["Online", "In-Person", "Phone"]
-                    .map((type) =>
-                        DropdownMenuItem(value: type, child: Text(type)))
-                    .toList(),
-                onChanged: (val) => setState(() => interviewType = val!),
-              ),
-              const SizedBox(height: 20),
-              if (interviewType == "Online")
-                TextFormField(
-                  controller: meetingLinkController,
-                  decoration: InputDecoration(
-                    labelText: "Meeting Link (optional)",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                  child: Row(
+                    children: [
+                      Icon(
+                        message.startsWith("Error")
+                            ? Icons.error_outline
+                            : Icons.check_circle_outline,
+                        color: message.startsWith("Error")
+                            ? Colors.red
+                            : Colors.green.shade600,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: GoogleFonts.inter(
+                            color: message.startsWith("Error")
+                                ? Colors.red
+                                : Colors.green.shade800,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.schedule),
-                label: Text(
-                  isSubmitting ? "Scheduling..." : "Schedule Interview",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                onPressed: isSubmitting ? null : scheduleInterview,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryRed,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 5,
-                  shadowColor: primaryRed.withOpacity(0.5),
+
+              // Form Content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Job Application Dropdown
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.work_outline,
+                                  color: primaryRed,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Job Application",
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              value: selectedApplication,
+                              decoration: InputDecoration(
+                                labelText: "Select Job Application",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: primaryRed,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                              ),
+                              items: applications.map((a) {
+                                final jobTitle =
+                                    a["job_title"] ?? "Unknown Position";
+                                return DropdownMenuItem<String>(
+                                  value: a["application_id"].toString(),
+                                  child: Text(
+                                    jobTitle,
+                                    style: GoogleFonts.inter(),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) =>
+                                  setState(() => selectedApplication = val),
+                              validator: (val) => val == null
+                                  ? "Select a job application"
+                                  : null,
+                              style: GoogleFonts.inter(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Date & Time Picker
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  color: primaryRed,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Schedule Date & Time",
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: pickDateTime,
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today,
+                                        color: primaryRed,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          selectedDateTime != null
+                                              ? "Scheduled for: ${selectedDateTime!.toLocal()}"
+                                              : "Pick date and time",
+                                          style: GoogleFonts.inter(
+                                            color: selectedDateTime != null
+                                                ? Colors.black87
+                                                : Colors.grey.shade600,
+                                            fontWeight: selectedDateTime != null
+                                                ? FontWeight.w500
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Interview Type & Meeting Link
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.video_call_outlined,
+                                  color: primaryRed,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Interview Details",
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              value: interviewType,
+                              decoration: InputDecoration(
+                                labelText: "Interview Type",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: primaryRed,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                              ),
+                              items: ["Online", "In-Person", "Phone"]
+                                  .map((type) => DropdownMenuItem(
+                                        value: type,
+                                        child: Text(
+                                          type,
+                                          style: GoogleFonts.inter(),
+                                        ),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) =>
+                                  setState(() => interviewType = val!),
+                              style: GoogleFonts.inter(),
+                            ),
+                            const SizedBox(height: 16),
+                            if (interviewType == "Online")
+                              TextFormField(
+                                controller: meetingLinkController,
+                                decoration: InputDecoration(
+                                  labelText: "Meeting Link (optional)",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: primaryRed,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
+                                ),
+                                style: GoogleFonts.inter(),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Schedule Button
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryRed.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          icon: Icon(
+                            isSubmitting ? Icons.hourglass_top : Icons.schedule,
+                            size: 20,
+                          ),
+                          label: Text(
+                            isSubmitting
+                                ? "Scheduling Interview..."
+                                : "Schedule Interview",
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          onPressed: isSubmitting ? null : scheduleInterview,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryRed,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(60),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ],

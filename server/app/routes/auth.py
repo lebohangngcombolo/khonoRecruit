@@ -383,36 +383,70 @@ def init_auth_routes(app):
             return jsonify({"error": "Internal server error"}), 500
 
     # ------------------- ADMIN ENROLLMENT -------------------
-    @app.route("/api/admin/enroll-user", methods=["POST"])
+    import re, secrets, string
+
+    @app.route("/api/auth/admin-enroll", methods=["POST"])
     @role_required("admin")
     def admin_enroll_user():
         try:
-            data = request.get_json()
+            data = request.get_json() or {}
             email = data.get("email")
             role = data.get("role")
+            first_name = data.get("first_name", "")
+            last_name = data.get("last_name", "")
+            password = data.get("password")  # optional; will generate if missing
+
+            # ---- Validation ----
             if not all([email, role]):
-                return jsonify({"error": "Email and role required"}), 400
+                return jsonify({"error": "Email and role are required"}), 400
+
             if role not in ["admin", "hiring_manager"]:
                 return jsonify({"error": "Role must be admin or hiring_manager"}), 400
 
-            email = email.strip().lower()
-            user = User.query.filter(db.func.lower(User.email) == email).first()
-            if not user:
-                user = AuthService.create_user(email=email, password=None, first_name="", last_name="", role=role)
-                user.is_verified = True
-                db.session.add(user)
-                db.session.commit()
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                return jsonify({"error": "Invalid email format"}), 400
 
+            email = email.strip().lower()
+
+            # ---- Check if user already exists ----
+            user = User.query.filter(db.func.lower(User.email) == email).first()
+            if user:
+                return jsonify({"message": f"User with email {email} already exists", "user_id": user.id}), 200
+
+            # ---- Generate random password if missing ----
+            if not password:
+                password = ''.join(secrets.choice(string.ascii_letters + string.digits + "!@#$%^&*") for _ in range(12))
+
+            # ---- Create user ----
+            user = AuthService.create_user(
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                role=role
+            )
+            user.is_verified = True
+            db.session.add(user)
+            db.session.commit()
+
+            # ---- Send temporary password email ----
+            # ---- Send temporary password email ----
+            EmailService.send_temporary_password(email=user.email, password=password, first_name=first_name)
+
+
+            # ---- Audit log ----
             AuditService.log(user_id=int(get_jwt_identity()), action=f"enroll_{role}", target_user_id=user.id)
 
-            return jsonify({"message": f"{role} enrolled successfully", "user_id": user.id}), 201
+            # ---- Response ----
+            return jsonify({
+                "message": f"{role.capitalize()} enrolled successfully",
+                "user_id": user.id,
+            }), 201
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Admin enroll error: {str(e)}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
-
-            
             
     # ------------------- CHANGE PASSWORD (FIRST LOGIN) -------------------
     @app.route("/api/auth/change-password", methods=["POST"])
