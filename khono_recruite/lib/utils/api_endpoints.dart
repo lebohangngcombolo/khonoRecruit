@@ -25,6 +25,14 @@ class ApiEndpoints {
   static const githubOAuth = "$authBase/github";
   static const githubOAuthCallback = "$authBase/github/callback";
 
+  // ------------------- MFA -------------------
+// Initiate MFA setup (requires JWT)
+  static const mfaSetup = "$authBase/mfa/setup";
+// Confirm MFA setup (requires JWT)
+  static const mfaConfirm = "$authBase/mfa/confirm";
+// Verify MFA during login (email + token)
+  static const mfaVerify = "$authBase/mfa/verify";
+
   // ------------------- Candidate -------------------
   static const enrollment = "$candidateBase/enrollment";
   static const applyJob = "$candidateBase/apply"; // POST /apply/<job_id>

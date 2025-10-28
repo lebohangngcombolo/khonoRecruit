@@ -1,16 +1,246 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import User, Requisition, Candidate, Application, AssessmentResult, Interview, Notification, AuditLog
-from datetime import datetime
+from app.models import User, Requisition, Candidate, Application, AssessmentResult, Interview, Notification, AuditLog, Conversation
+from datetime import datetime, timedelta
 from app.utils.decorators import role_required
 from app.services.email_service import EmailService
 from app.services.audit_service import AuditService
 from app.services.audit2 import AuditService
 from flask_cors import cross_origin
+from sqlalchemy import func, and_
 
 admin_bp = Blueprint("admin_bp", __name__)
 
+# ----------------- ANALYTICS ROUTES -----------------
+@admin_bp.route('/analytics/dashboard', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_dashboard_stats():
+    """Get overall dashboard statistics"""
+    
+    # Total counts
+    total_users = User.query.count()
+    total_candidates = Candidate.query.count()
+    total_requisitions = Requisition.query.count()
+    total_applications = Application.query.count()
+    
+    # Application status breakdown
+    application_statuses = db.session.query(
+        Application.status,
+        func.count(Application.id)
+    ).group_by(Application.status).all()
+    
+    status_breakdown = {status: count for status, count in application_statuses}
+    
+    # Recent activity (last 7 days)
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    
+    new_users_week = User.query.filter(User.created_at >= week_ago).count()
+    new_applications_week = Application.query.filter(Application.created_at >= week_ago).count()
+    new_requisitions_week = Requisition.query.filter(Requisition.created_at >= week_ago).count()
+    
+    # Average scores
+    avg_cv_score = db.session.query(func.avg(Application.cv_score)).scalar() or 0
+    avg_assessment_score = db.session.query(func.avg(Application.assessment_score)).scalar() or 0
+    
+    return jsonify({
+        'total_users': total_users,
+        'total_candidates': total_candidates,
+        'total_requisitions': total_requisitions,
+        'total_applications': total_applications,
+        'application_status_breakdown': status_breakdown,
+        'recent_activity': {
+            'new_users': new_users_week,
+            'new_applications': new_applications_week,
+            'new_requisitions': new_requisitions_week
+        },
+        'average_scores': {
+            'cv_score': round(float(avg_cv_score), 2),
+            'assessment_score': round(float(avg_assessment_score), 2)
+        }
+    })
+
+@admin_bp.route('/analytics/users-growth', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_users_growth():
+    """Get user growth data over time"""
+    
+    days = int(request.args.get('days', 30))
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # User growth data
+    user_growth = db.session.query(
+        func.date(User.created_at).label('date'),
+        func.count(User.id).label('count')
+    ).filter(
+        User.created_at >= start_date
+    ).group_by(
+        func.date(User.created_at)
+    ).order_by('date').all()
+    
+    # Candidate growth data
+    candidate_growth = db.session.query(
+        func.date(User.created_at).label('date'),
+        func.count(User.id).label('count')
+    ).filter(
+        User.created_at >= start_date,
+        User.role == 'candidate'
+    ).group_by(
+        func.date(User.created_at)
+    ).order_by('date').all()
+    
+    return jsonify({
+        'user_growth': [{'date': str(date), 'count': count} for date, count in user_growth],
+        'candidate_growth': [{'date': str(date), 'count': count} for date, count in candidate_growth]
+    })
+
+@admin_bp.route('/analytics/applications-analysis', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_applications_analysis():
+    """Get detailed applications analysis"""
+    
+    # Applications by requisition
+    apps_by_requisition = db.session.query(
+        Requisition.title,
+        func.count(Application.id).label('application_count')
+    ).join(
+        Application, Requisition.id == Application.requisition_id
+    ).group_by(
+        Requisition.id, Requisition.title
+    ).order_by(
+        func.count(Application.id).desc()
+    ).limit(10).all()
+    
+    # Score distribution
+    score_ranges = [
+        ('0-20', 0, 20),
+        ('21-40', 21, 40),
+        ('41-60', 41, 60),
+        ('61-80', 61, 80),
+        ('81-100', 81, 100)
+    ]
+    
+    cv_score_distribution = []
+    for label, min_score, max_score in score_ranges:
+        count = Application.query.filter(
+            and_(
+                Application.cv_score >= min_score,
+                Application.cv_score <= max_score
+            )
+        ).count()
+        cv_score_distribution.append({'range': label, 'count': count})
+    
+    # Monthly applications
+    monthly_apps = db.session.query(
+        func.date_trunc('month', Application.created_at).label('month'),
+        func.count(Application.id).label('count')
+    ).group_by(
+        func.date_trunc('month', Application.created_at)
+    ).order_by('month').all()
+    
+    return jsonify({
+        'applications_by_requisition': [
+            {'requisition': title, 'count': count} 
+            for title, count in apps_by_requisition
+        ],
+        'cv_score_distribution': cv_score_distribution,
+        'monthly_applications': [
+            {'month': month.strftime('%Y-%m'), 'count': count} 
+            for month, count in monthly_apps
+        ]
+    })
+
+@admin_bp.route('/analytics/interviews-analysis', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_interviews_analysis():
+    """Get interviews analysis"""
+    
+    # Interview status breakdown
+    interview_statuses = db.session.query(
+        Interview.status,
+        func.count(Interview.id)
+    ).group_by(Interview.status).all()
+    
+    # Interviews by type
+    interviews_by_type = db.session.query(
+        Interview.interview_type,
+        func.count(Interview.id)
+    ).filter(Interview.interview_type.isnot(None)).group_by(Interview.interview_type).all()
+    
+    # Monthly scheduled interviews
+    monthly_interviews = db.session.query(
+        func.date_trunc('month', Interview.scheduled_time).label('month'),
+        func.count(Interview.id).label('count')
+    ).group_by(
+        func.date_trunc('month', Interview.scheduled_time)
+    ).order_by('month').all()
+    
+    return jsonify({
+        'interview_status_breakdown': [
+            {'status': status, 'count': count} 
+            for status, count in interview_statuses
+        ],
+        'interviews_by_type': [
+            {'type': interview_type, 'count': count} 
+            for interview_type, count in interviews_by_type
+        ],
+        'monthly_interviews': [
+            {'month': month.strftime('%Y-%m'), 'count': count} 
+            for month, count in monthly_interviews
+        ]
+    })
+
+@admin_bp.route('/analytics/assessments-analysis', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_assessments_analysis():
+    """Get assessments analysis"""
+    
+    # Assessment score distribution
+    assessment_score_ranges = [
+        ('0-20', 0, 20),
+        ('21-40', 21, 40),
+        ('41-60', 41, 60),
+        ('61-80', 61, 80),
+        ('81-100', 81, 100)
+    ]
+    
+    assessment_score_distribution = []
+    for label, min_score, max_score in assessment_score_ranges:
+        count = AssessmentResult.query.filter(
+            and_(
+                AssessmentResult.percentage_score >= min_score,
+                AssessmentResult.percentage_score <= max_score
+            )
+        ).count()
+        assessment_score_distribution.append({'range': label, 'count': count})
+    
+    # Recommendation breakdown
+    recommendation_breakdown = db.session.query(
+        AssessmentResult.recommendation,
+        func.count(AssessmentResult.id)
+    ).filter(AssessmentResult.recommendation.isnot(None)).group_by(
+        AssessmentResult.recommendation
+    ).all()
+    
+    # Average scores by requisition
+    avg_scores_by_req = db.session.query(
+        Requisition.title,
+        func.avg(AssessmentResult.percentage_score).label('avg_score')
+    ).join(Application, Application.requisition_id == Requisition.id).join(
+        AssessmentResult, AssessmentResult.application_id == Application.id
+    ).group_by(Requisition.id, Requisition.title).all()
+    
+    return jsonify({
+        'assessment_score_distribution': assessment_score_distribution,
+        'recommendation_breakdown': [
+            {'recommendation': rec, 'count': count} 
+            for rec, count in recommendation_breakdown
+        ],
+        'average_scores_by_requisition': [
+            {'requisition': title, 'avg_score': round(float(avg_score or 0), 2)} 
+            for title, avg_score in avg_scores_by_req
+        ]
+    })
 # ----------------- JOB CRUD -----------------
 @admin_bp.route("/jobs", methods=["POST"])
 @role_required(["admin", "hiring_manager"])

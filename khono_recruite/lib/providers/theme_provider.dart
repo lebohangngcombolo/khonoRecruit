@@ -28,6 +28,10 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeData get themeData => _isDarkMode ? darkTheme : lightTheme;
 
+  /// 🌆 Dynamic background image based on theme
+  String get backgroundImage =>
+      _isDarkMode ? 'assets/images/dark.png' : 'assets/images/wallpaper.jpeg';
+
   // Light Theme
   final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -48,7 +52,8 @@ class ThemeProvider extends ChangeNotifier {
         backgroundColor: Colors.red,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
       ),
     ),
   );
@@ -73,7 +78,8 @@ class ThemeProvider extends ChangeNotifier {
         backgroundColor: Colors.red.shade400,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
       ),
     ),
   );

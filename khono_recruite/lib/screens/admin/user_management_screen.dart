@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../providers/theme_provider.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);
@@ -54,19 +56,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   void _addRoleDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     String role = "";
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: (themeProvider.isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white)
+              .withOpacity(0.95),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             "Add New Role",
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
           content: TextField(
@@ -82,16 +89,32 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              fillColor: (themeProvider.isDarkMode
+                      ? const Color(0xFF2D2D2D)
+                      : Colors.white)
+                  .withOpacity(0.9),
+              filled: true,
+              hintStyle: TextStyle(
+                color: themeProvider.isDarkMode
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
+              ),
             ),
             onChanged: (val) => role = val,
-            style: GoogleFonts.inter(),
+            style: GoogleFonts.inter(
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 "Cancel",
-                style: GoogleFonts.inter(color: Colors.grey.shade600),
+                style: GoogleFonts.inter(
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
+                ),
               ),
             ),
             Container(
@@ -134,6 +157,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   void _addMemberDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     String name = "";
     String email = "";
     String role = roles.isNotEmpty ? roles[0] : "";
@@ -146,14 +171,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: (themeProvider.isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white)
+                  .withOpacity(0.95),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               title: Text(
                 "Add Team Member",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               content: SingleChildScrollView(
@@ -201,9 +230,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
+                        fillColor: (themeProvider.isDarkMode
+                                ? const Color(0xFF2D2D2D)
+                                : Colors.white)
+                            .withOpacity(0.9),
+                        filled: true,
+                        labelStyle: TextStyle(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
                       onChanged: (val) => name = val,
-                      style: GoogleFonts.inter(),
+                      style: GoogleFonts.inter(
+                        color: themeProvider.isDarkMode
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -220,9 +263,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
+                        fillColor: (themeProvider.isDarkMode
+                                ? const Color(0xFF2D2D2D)
+                                : Colors.white)
+                            .withOpacity(0.9),
+                        filled: true,
+                        labelStyle: TextStyle(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
                       onChanged: (val) => email = val,
-                      style: GoogleFonts.inter(),
+                      style: GoogleFonts.inter(
+                        color: themeProvider.isDarkMode
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
@@ -230,7 +287,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       items: roles
                           .map((r) => DropdownMenuItem(
                                 value: r,
-                                child: Text(r, style: GoogleFonts.inter()),
+                                child: Text(
+                                  r,
+                                  style: GoogleFonts.inter(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black87,
+                                  ),
+                                ),
                               ))
                           .toList(),
                       onChanged: (val) {
@@ -249,8 +313,26 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
+                        fillColor: (themeProvider.isDarkMode
+                                ? const Color(0xFF2D2D2D)
+                                : Colors.white)
+                            .withOpacity(0.9),
+                        filled: true,
+                        labelStyle: TextStyle(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
                       ),
-                      style: GoogleFonts.inter(),
+                      dropdownColor: (themeProvider.isDarkMode
+                              ? const Color(0xFF1E1E1E)
+                              : Colors.white)
+                          .withOpacity(0.95),
+                      style: GoogleFonts.inter(
+                        color: themeProvider.isDarkMode
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -260,7 +342,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     "Cancel",
-                    style: GoogleFonts.inter(color: Colors.grey.shade600),
+                    style: GoogleFonts.inter(
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
                   ),
                 ),
                 Container(
@@ -371,6 +457,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   void _editRoleDialog(int index) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     String role = users[index]["role"]!;
     bool isLoading = false;
     String? errorMessage;
@@ -381,14 +469,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: (themeProvider.isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white)
+                  .withOpacity(0.95),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               title: Text(
                 "Edit User Role",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               content: Column(
@@ -425,7 +517,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     users[index]["name"] ?? "",
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -434,7 +528,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     items: roles
                         .map((r) => DropdownMenuItem(
                               value: r,
-                              child: Text(r, style: GoogleFonts.inter()),
+                              child: Text(
+                                r,
+                                style: GoogleFonts.inter(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
                             ))
                         .toList(),
                     onChanged: (val) {
@@ -453,8 +554,26 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
+                      fillColor: (themeProvider.isDarkMode
+                              ? const Color(0xFF2D2D2D)
+                              : Colors.white)
+                          .withOpacity(0.9),
+                      filled: true,
+                      labelStyle: TextStyle(
+                        color: themeProvider.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
                     ),
-                    style: GoogleFonts.inter(),
+                    dropdownColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.white)
+                        .withOpacity(0.95),
+                    style: GoogleFonts.inter(
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
                   ),
                 ],
               ),
@@ -463,7 +582,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     "Cancel",
-                    style: GoogleFonts.inter(color: Colors.grey.shade600),
+                    style: GoogleFonts.inter(
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
                   ),
                 ),
                 Container(
@@ -563,6 +686,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   // ------------------ UI ------------------
   Widget buildUserCard(int index) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final user = users[index];
     final role = user["role"] ?? "";
 
@@ -585,7 +709,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -621,7 +747,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   Text(
                     user["name"] ?? "",
                     style: GoogleFonts.inter(
-                      color: Colors.black87,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.black87,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -630,7 +758,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   Text(
                     user["email"] ?? "",
                     style: GoogleFonts.inter(
-                      color: Colors.grey.shade600,
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                       fontSize: 12,
                     ),
                   ),
@@ -672,7 +802,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   onPressed: () => _editRoleDialog(index),
                   icon: Icon(Icons.edit, color: Colors.blue, size: 20),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.white)
+                        .withOpacity(0.9),
                     padding: const EdgeInsets.all(8),
                   ),
                 ),
@@ -697,7 +830,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   },
                   icon: Icon(Icons.delete, color: Colors.red, size: 20),
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.white)
+                        .withOpacity(0.9),
                     padding: const EdgeInsets.all(8),
                   ),
                 ),
@@ -711,177 +847,215 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text(
-          "User Management",
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: _addRoleDialog,
-              icon: const Icon(Icons.add_moderator, color: Colors.blue),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(8),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              "User Management",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+            backgroundColor: (themeProvider.isDarkMode
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white)
+                .withOpacity(0.9),
+            elevation: 0,
+            iconTheme: IconThemeData(
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
-            child: IconButton(
-              onPressed: _addMemberDialog,
-              icon: const Icon(Icons.person_add, color: Colors.blue),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(8),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Stats
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+            actions: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                    child: Icon(
-                      Icons.people_alt,
-                      color: Colors.redAccent,
-                      size: 28,
-                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _addRoleDialog,
+                  icon: const Icon(Icons.add_moderator, color: Colors.blue),
+                  style: IconButton.styleFrom(
+                    backgroundColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.white)
+                        .withOpacity(0.9),
+                    padding: const EdgeInsets.all(8),
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Team Members",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        "${users.length} active users",
-                        style: GoogleFonts.inter(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _addMemberDialog,
+                  icon: const Icon(Icons.person_add, color: Colors.blue),
+                  style: IconButton.styleFrom(
+                    backgroundColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.white)
+                        .withOpacity(0.9),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Stats
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: (themeProvider.isDarkMode
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.white)
+                        .withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "${roles.length} roles",
-                      style: GoogleFonts.inter(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.people_alt,
+                          color: Colors.redAccent,
+                          size: 28,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Users List
-            Expanded(
-              child: users.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 80,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
                           Text(
-                            "No Team Members",
-                            style: GoogleFonts.inter(
-                              color: Colors.grey.shade600,
+                            "Team Members",
+                            style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 8),
                           Text(
-                            "Add your first team member to get started",
+                            "${users.length} active users",
                             style: GoogleFonts.inter(
-                              color: Colors.grey.shade500,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: users.length,
-                      itemBuilder: (ctx, index) => buildUserCard(index),
-                    ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "${roles.length} roles",
+                          style: GoogleFonts.inter(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Users List
+                Expanded(
+                  child: users.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.people_outline,
+                                size: 80,
+                                color: themeProvider.isDarkMode
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "No Team Members",
+                                style: GoogleFonts.inter(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Add your first team member to get started",
+                                style: GoogleFonts.inter(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: users.length,
+                          itemBuilder: (ctx, index) => buildUserCard(index),
+                        ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

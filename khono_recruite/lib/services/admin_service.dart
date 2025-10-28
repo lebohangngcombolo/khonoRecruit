@@ -233,4 +233,55 @@ class AdminService {
     if (res.statusCode == 200) return json.decode(res.body);
     throw Exception('Failed to update assessment: ${res.body}');
   }
+
+  // ---------- ANALYTICS ----------
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.adminBase}/analytics/dashboard'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to load dashboard stats: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> getUsersGrowth({int days = 30}) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.adminBase}/analytics/users-growth?days=$days'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to load users growth data: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> getApplicationsAnalysis() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.adminBase}/analytics/applications-analysis'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to load applications analysis: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> getInterviewsAnalysis() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.adminBase}/analytics/interviews-analysis'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to load interviews analysis: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> getAssessmentsAnalysis() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.adminBase}/analytics/assessments-analysis'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to load assessments analysis: ${res.body}');
+  }
 }

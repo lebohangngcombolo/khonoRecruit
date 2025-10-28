@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../auth/login_screen.dart';
 
 import '../../services/admin_service.dart';
@@ -22,6 +23,8 @@ import 'interviews_list_screen.dart';
 import 'notifications_screen.dart';
 import 'job_management.dart';
 import 'user_management_screen.dart';
+import '../../providers/theme_provider.dart';
+import 'analytics_dashboard.dart';
 
 class AdminDAshboard extends StatefulWidget {
   final String token;
@@ -319,7 +322,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close confirmation dialog first
+                Navigator.of(context).pop();
                 _performLogout(context);
               },
               child: const Text("Logout", style: TextStyle(color: Colors.red)),
@@ -331,13 +334,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   void _performLogout(BuildContext context) async {
-    // Close confirmation dialog immediately
     Navigator.of(context).pop();
-
-    // Perform logout without UI feedback (it's fast enough)
     await AuthService.logout();
-
-    // Navigate after a brief delay to ensure previous navigation is complete
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -348,112 +346,157 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     });
   }
 
-// Add this variable to your widget state
   bool _isLoggingOut = false;
 
   // ---------- UI Build ----------
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
-      body: SafeArea(
-        child: Row(
-          children: [
-            // ---------- Collapsible Sidebar ----------
-            AnimatedBuilder(
-              animation: _sidebarAnimController,
-              builder: (context, child) {
-                final width = _sidebarWidthAnimation.value;
-                return Container(
-                  width: width,
-                  height: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade200, width: 1),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 8,
-                        offset: const Offset(2, 0),
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              // ---------- Collapsible Sidebar ----------
+              AnimatedBuilder(
+                animation: _sidebarAnimController,
+                builder: (context, child) {
+                  final width = _sidebarWidthAnimation.value;
+                  return Container(
+                    width: width,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.white,
+                      border: Border(
+                        right:
+                            BorderSide(color: Colors.grey.shade200, width: 1),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Sidebar header
-                      SizedBox(
-                        height: 72,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 8,
+                          offset: const Offset(2, 0),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Sidebar header
+                        SizedBox(
+                          height: 72,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: sidebarCollapsed
+                                        ? Image.asset(
+                                            'assets/images/icon.png',
+                                            height: 40,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : Image.asset(
+                                            'assets/images/logo2.png',
+                                            height: 40,
+                                            fit: BoxFit.contain,
+                                          ),
+                                  ),
+                                ),
+                                IconButton(
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                  icon: Icon(
+                                    sidebarCollapsed
+                                        ? Icons.arrow_forward_ios
+                                        : Icons.arrow_back_ios,
+                                    size: 16,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  onPressed: toggleSidebar,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: Colors.grey),
+                        Expanded(
+                          child: ListView(
+                            padding: EdgeInsets.zero,
                             children: [
-                              Flexible(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: sidebarCollapsed
-                                      ? Image.asset(
-                                          'assets/images/icon.png',
-                                          height: 40,
-                                          fit: BoxFit.contain,
-                                        )
-                                      : Image.asset(
-                                          'assets/images/logo2.png',
-                                          height: 40,
-                                          fit: BoxFit.contain,
-                                        ),
-                                ),
-                              ),
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: EdgeInsets.zero,
-                                icon: Icon(
-                                  sidebarCollapsed
-                                      ? Icons.arrow_forward_ios
-                                      : Icons.arrow_back_ios,
-                                  size: 16,
-                                  color: Colors.grey.shade600,
-                                ),
-                                onPressed: toggleSidebar,
-                              ),
+                              _sidebarEntry(
+                                  Icons.home_outlined, 'Home', 'dashboard'),
+                              _sidebarEntry(Icons.work_outline, 'Jobs', 'jobs'),
+                              _sidebarEntry(Icons.people_alt_outlined,
+                                  'Shortlisted', 'candidates'),
+                              _sidebarEntry(
+                                  Icons.event_note, 'Interviews', 'interviews'),
+                              _sidebarEntry(Icons.assignment_outlined,
+                                  'CV Reviews', 'cv_reviews'),
+                              _sidebarEntry(Icons.history, 'Audits', 'audits'),
+                              _sidebarEntry(
+                                  Icons.security, 'Role Access', 'roles'),
+                              _sidebarEntry(Icons.people_outline, 'Candidates',
+                                  'all_candidates'),
                             ],
                           ),
                         ),
-                      ),
-                      const Divider(height: 1, color: Colors.grey),
-                      Expanded(
-                        child: ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            _sidebarEntry(
-                                Icons.home_outlined, 'Home', 'dashboard'),
-                            _sidebarEntry(Icons.work_outline, 'Jobs', 'jobs'),
-                            _sidebarEntry(Icons.people_alt_outlined,
-                                'Shortlisted', 'candidates'),
-                            _sidebarEntry(
-                                Icons.event_note, 'Interviews', 'interviews'),
-                            _sidebarEntry(Icons.assignment_outlined,
-                                'CV Reviews', 'cv_reviews'),
-                            _sidebarEntry(Icons.history, 'Audits', 'audits'),
-                            _sidebarEntry(
-                                Icons.security, 'Role Access', 'roles'),
-                            _sidebarEntry(Icons.people_outline, 'Candidates',
-                                'all_candidates'),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1, color: Colors.grey),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12.0, horizontal: 8),
-                        child: Column(
-                          children: [
-                            if (!sidebarCollapsed)
-                              Row(
-                                children: [
-                                  GestureDetector(
+                        const Divider(height: 1, color: Colors.grey),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12.0, horizontal: 8),
+                          child: Column(
+                            children: [
+                              if (!sidebarCollapsed)
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        context.push(
+                                            '/profile?token=${widget.token}');
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Colors.grey.shade200,
+                                        backgroundImage:
+                                            _getProfileImageProvider(),
+                                        child:
+                                            _getProfileImageProvider() == null
+                                                ? const Icon(Icons.person,
+                                                    color: Colors.redAccent)
+                                                : null,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        "Admin User",
+                                        style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.grey.shade800,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Center(
+                                  child: GestureDetector(
                                     onTap: () {
                                       context.push(
                                           '/profile?token=${widget.token}');
@@ -469,22 +512,181 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                           : null,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      "Admin User",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade800,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                ),
+                              const SizedBox(height: 12),
+                              if (!sidebarCollapsed)
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _showLogoutConfirmation(context),
+                                  icon: const Icon(Icons.logout, size: 16),
+                                  label: const Text("Logout"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: themeProvider.isDarkMode
+                                        ? const Color(0xFF2D2D2D)
+                                        : Colors.white,
+                                    foregroundColor: Colors.redAccent,
+                                    side:
+                                        BorderSide(color: Colors.grey.shade300),
+                                    minimumSize: const Size.fromHeight(40),
                                   ),
+                                )
+                              else
+                                IconButton(
+                                  onPressed: () =>
+                                      _showLogoutConfirmation(context),
+                                  icon: const Icon(Icons.logout,
+                                      color: Colors.grey),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              // ---------- Main content ----------
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      height: 72,
+                      color: themeProvider.isDarkMode
+                          ? const Color(0xFF1E1E1E).withOpacity(0.8)
+                          : Colors.white.withOpacity(0.8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Welcome Back, Admin",
+                                      style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.grey.shade900)),
+                                  const SizedBox(height: 2),
+                                  Text("Overview of the recruitment platform",
+                                      style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
+                                          fontSize: 12)),
                                 ],
-                              )
-                            else
-                              Center(
-                                child: GestureDetector(
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                // ---------- Theme Toggle Switch ----------
+                                Row(
+                                  children: [
+                                    Icon(
+                                      themeProvider.isDarkMode
+                                          ? Icons.dark_mode
+                                          : Icons.light_mode,
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.amber
+                                          : Colors.grey.shade700,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Switch(
+                                      value: themeProvider.isDarkMode,
+                                      onChanged: (value) {
+                                        themeProvider.toggleTheme();
+                                      },
+                                      activeColor: Colors.redAccent,
+                                      inactiveTrackColor: Colors.grey.shade400,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 12),
+
+                                // ---------- Analytics Icon ----------
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              AnalyticsDashboard()),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.analytics_outlined,
+                                      color: Colors.purpleAccent),
+                                  tooltip: "Analytics Dashboard",
+                                ),
+                                const SizedBox(width: 8),
+
+                                // ---------- Power BI Status Icon ----------
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: powerBIConnected
+                                        ? Colors.green
+                                        : Colors.red,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: powerBIConnected
+                                            ? Colors.green.withOpacity(0.6)
+                                            : Colors.red.withOpacity(0.6),
+                                        blurRadius: 12,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: checkingPowerBI
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.bar_chart,
+                                            color: Colors.white, size: 20),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+
+                                // ---------- Team Collaboration Icon ----------
+                                IconButton(
+                                  onPressed: () => setState(() =>
+                                      currentScreen = "team_collaboration"),
+                                  icon: const Icon(Icons.group_work_outlined,
+                                      color: Colors.blueAccent),
+                                  tooltip: "Team Collaboration",
+                                ),
+                                const SizedBox(width: 8),
+
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      setState(() => currentScreen = "jobs"),
+                                  icon: const Icon(Icons.add_box_outlined,
+                                      color: Colors.redAccent),
+                                  label: Text("Create",
+                                      style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87)),
+                                ),
+                                const SizedBox(width: 12),
+                                IconButton(
+                                  onPressed: () => setState(
+                                      () => currentScreen = "notifications"),
+                                  icon: const Icon(Icons.notifications_none),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
                                   onTap: () {
                                     context
                                         .push('/profile?token=${widget.token}');
@@ -499,153 +701,18 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                         : null,
                                   ),
                                 ),
-                              ),
-                            const SizedBox(height: 12),
-                            if (!sidebarCollapsed)
-                              ElevatedButton.icon(
-                                onPressed: () =>
-                                    _showLogoutConfirmation(context),
-                                icon: const Icon(Icons.logout, size: 16),
-                                label: const Text("Logout"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.redAccent,
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                  minimumSize: const Size.fromHeight(40),
-                                ),
-                              )
-                            else
-                              IconButton(
-                                onPressed: () =>
-                                    _showLogoutConfirmation(context),
-                                icon: const Icon(Icons.logout,
-                                    color: Colors.grey),
-                              ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            // ---------- Main content ----------
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    height: 72,
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Welcome Back, Admin",
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade900)),
-                                const SizedBox(height: 2),
-                                Text("Overview of the recruitment platform",
-                                    style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              // ---------- Power BI Status Icon ----------
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: powerBIConnected
-                                      ? Colors.green
-                                      : Colors.red,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: powerBIConnected
-                                          ? Colors.green.withOpacity(0.6)
-                                          : Colors.red.withOpacity(0.6),
-                                      blurRadius: 12,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: checkingPowerBI
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(Icons.bar_chart,
-                                          color: Colors.white, size: 20),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              // ---------- Team Collaboration Icon ----------
-                              IconButton(
-                                onPressed: () => setState(
-                                    () => currentScreen = "team_collaboration"),
-                                icon: const Icon(Icons.group_work_outlined,
-                                    color: Colors.blueAccent),
-                                tooltip: "Team Collaboration",
-                              ),
-                              const SizedBox(width: 8),
-
-                              TextButton.icon(
-                                onPressed: () =>
-                                    setState(() => currentScreen = "jobs"),
-                                icon: const Icon(Icons.add_box_outlined,
-                                    color: Colors.redAccent),
-                                label: const Text("Create",
-                                    style: TextStyle(color: Colors.black87)),
-                              ),
-                              const SizedBox(width: 12),
-                              IconButton(
-                                onPressed: () => setState(
-                                    () => currentScreen = "notifications"),
-                                icon: const Icon(Icons.notifications_none),
-                              ),
-                              const SizedBox(width: 12),
-                              GestureDetector(
-                                onTap: () {
-                                  context
-                                      .push('/profile?token=${widget.token}');
-                                },
-                                child: CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.grey.shade200,
-                                  backgroundImage: _getProfileImageProvider(),
-                                  child: _getProfileImageProvider() == null
-                                      ? const Icon(Icons.person,
-                                          color: Colors.redAccent)
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                  Expanded(child: getCurrentScreen()),
-                ],
+                    Expanded(child: getCurrentScreen()),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -669,6 +736,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   Widget _sidebarEntry(IconData icon, String label, String screenKey) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final selected = currentScreen == screenKey;
     return InkWell(
       onTap: () => setState(() => currentScreen = screenKey),
@@ -682,14 +750,20 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             Icon(icon,
                 color: selected
                     ? const Color.fromRGBO(151, 18, 8, 1)
-                    : Colors.grey.shade800),
+                    : themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade800),
             const SizedBox(width: 12),
             if (!sidebarCollapsed)
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: selected ? Colors.redAccent : Colors.grey.shade800,
+                    color: selected
+                        ? Colors.redAccent
+                        : themeProvider.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade800,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -737,7 +811,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
 
   /// ------------------- AUDITS SCREEN -------------------
   Widget auditsScreen() {
-    // Sample data for stacked lines - different audit types
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     final List<StackedLineData> stackedAuditData = [
       StackedLineData('Jan', 12, 8, 5, 3, 2),
       StackedLineData('Feb', 15, 10, 7, 4, 3),
@@ -803,7 +878,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     hintText: "Search audit logs...",
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.6),
+                    fillColor: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.white)
+                        .withOpacity(0.9),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     border: OutlineInputBorder(
@@ -821,7 +899,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.6),
+                  color: (themeProvider.isDarkMode
+                          ? const Color(0xFF2D2D2D)
+                          : Colors.white)
+                      .withOpacity(0.9),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -849,7 +930,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Container(
             height: 300,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: (themeProvider.isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white)
+                  .withOpacity(0.9),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -866,15 +950,20 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 : SfCartesianChart(
                     title: ChartTitle(
                         text: "Audit Activity Trend - Stacked Lines",
-                        textStyle: const TextStyle(
+                        textStyle: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Colors.black87)),
+                            color: themeProvider.isDarkMode
+                                ? Colors.white
+                                : Colors.black87)),
                     plotAreaBorderWidth: 0,
                     primaryXAxis: CategoryAxis(
                       axisLine: const AxisLine(width: 1, color: Colors.grey),
                       majorGridLines: const MajorGridLines(width: 0),
-                      labelStyle: const TextStyle(color: Colors.black54),
+                      labelStyle: TextStyle(
+                          color: themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.black54),
                     ),
                     primaryYAxis: NumericAxis(
                       axisLine: const AxisLine(width: 1, color: Colors.grey),
@@ -882,7 +971,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         color: Colors.grey.shade300,
                         width: 1,
                       ),
-                      labelStyle: const TextStyle(color: Colors.black54),
+                      labelStyle: TextStyle(
+                          color: themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.black54),
                     ),
                     tooltipBehavior: TooltipBehavior(
                       enable: true,
@@ -949,7 +1041,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           // Audit Log List
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
+              color: (themeProvider.isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white)
+                  .withOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -1028,6 +1123,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   Widget dashboardOverview() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     if (loadingStats) {
       return const Center(
           child: CircularProgressIndicator(color: Colors.redAccent));
@@ -1066,7 +1163,6 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       },
     ];
 
-    // Sample data for charts
     final departmentData = [
       _DepartmentData('IT', 35, Colors.redAccent),
       _DepartmentData('Finance', 28, Colors.redAccent.shade200),
@@ -1104,32 +1200,54 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            const Text("Welcome Back, Admin",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            Text("Welcome Back, Admin",
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : Colors.black87)),
             const SizedBox(height: 12),
 
-            // FIXED: KPI Cards with proper height constraint
+            // KPI Cards
             SizedBox(
-              height: 140, // Increased height to prevent overflow
+              height: 140,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: stats.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 16),
                 itemBuilder: (_, index) {
                   final item = stats[index];
-                  return kpiCard(item["title"].toString(), item["count"] as int,
-                      item["color"] as Color, item["icon"] as IconData);
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: (themeProvider.isDarkMode
+                              ? const Color(0xFF1E1E1E)
+                              : Colors.white)
+                          .withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (item["color"] as Color).withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: kpiCard(
+                        item["title"].toString(),
+                        item["count"] as int,
+                        item["color"] as Color,
+                        item["icon"] as IconData),
+                  );
                 },
               ),
             ),
             const SizedBox(height: 24),
 
-            // FIXED: Grid layout with proper constraints
+            // Grid layout
             LayoutBuilder(builder: (context, constraints) {
               int crossAxisCount = constraints.maxWidth > 900 ? 2 : 1;
-              double aspectRatio = constraints.maxWidth > 900
-                  ? 1.8
-                  : 1.6; // Adjusted aspect ratio
+              double aspectRatio = constraints.maxWidth > 900 ? 1.8 : 1.6;
               return GridView.count(
                 crossAxisCount: crossAxisCount,
                 shrinkWrap: true,
@@ -1137,20 +1255,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 physics: const NeverScrollableScrollPhysics(),
-                padding:
-                    const EdgeInsets.only(bottom: 20), // Added bottom padding
+                padding: const EdgeInsets.only(bottom: 20),
                 children: [
-                  // Jobs by Department - Radial Bar with Image
                   departmentRadialChart(departmentData),
-                  // Candidates Histogram
                   candidateHistogram(candidateHistogramData),
-                  // Interviews Column Chart
                   interviewColumnChart(interviewData),
-                  // CV Reviews Mixed Chart
                   cvReviewsMixedChart(cvReviewData),
-                  // FIXED: Calendar with proper height constraint
                   modernCalendarCard(),
-                  // Recent Activities
                   activitiesCard(),
                 ],
               );
@@ -1161,12 +1272,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  // NEW: Department Radial Bar Chart with Image Placeholder
   Widget departmentRadialChart(List<_DepartmentData> data) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1182,12 +1296,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Jobs by Department",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               Container(
@@ -1239,7 +1354,6 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     ),
                   ],
                 ),
-                // Image placeholder in the center
                 Container(
                   width: 60,
                   height: 60,
@@ -1262,12 +1376,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  // NEW: Candidate Histogram (replaces Pyramid)
   Widget candidateHistogram(List<_HistogramData> data) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1283,12 +1400,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Candidates by Job Role",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               Container(
@@ -1350,12 +1468,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  // NEW: Interview Column Chart
   Widget interviewColumnChart(List<_InterviewData> data) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1371,12 +1492,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Interview Status",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               Container(
@@ -1436,12 +1558,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  // NEW: CV Reviews Mixed Chart (Line + Bar)
   Widget cvReviewsMixedChart(List<_CvReviewData> data) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1457,12 +1582,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "CV Reviews Trend",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.black87,
+                  color:
+                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               Container(
@@ -1538,10 +1664,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   Widget modernCalendarCard() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1550,19 +1680,27 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             offset: const Offset(0, 8),
           ),
         ],
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.shade50,
-            Colors.purple.shade50,
-          ],
-        ),
+        gradient: themeProvider.isDarkMode
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue.shade900.withOpacity(0.3),
+                  Colors.purple.shade900.withOpacity(0.3),
+                ],
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue.shade50,
+                  Colors.purple.shade50,
+                ],
+              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1578,7 +1716,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         color: Colors.blueAccent, size: 22),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "Today's Date",
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
@@ -1612,12 +1750,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             ],
           ),
           const SizedBox(height: 16),
-
-          // Today's Date Display Section
           Container(
             height: 140,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: (themeProvider.isDarkMode
+                      ? const Color(0xFF2D2D2D)
+                      : Colors.white)
+                  .withOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -1631,7 +1770,6 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Date number
                   Text(
                     DateTime.now().day.toString(),
                     style: const TextStyle(
@@ -1642,13 +1780,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Month and Year
                   Text(
                     DateFormat('MMMM yyyy').format(DateTime.now()),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade300
+                          : Colors.grey.shade700,
                     ),
                   ),
                 ],
@@ -1664,7 +1803,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(6), // Smaller padding
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             shape: BoxShape.circle,
@@ -1672,22 +1811,22 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           child: Icon(
             Icons.circle_rounded,
             color: color,
-            size: 6, // Smaller icon
+            size: 6,
           ),
         ),
-        const SizedBox(height: 4), // Reduced spacing
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
-            fontSize: 12, // Smaller font
-            fontWeight: FontWeight.w600, // Slightly less bold
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
             color: color,
           ),
         ),
         Text(
           label,
           style: TextStyle(
-            fontSize: 9, // Smaller font
+            fontSize: 9,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
           ),
@@ -1698,7 +1837,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
 
   Widget _calendarLegend(Color color, String text) {
     return Row(
-      mainAxisSize: MainAxisSize.min, // Prevent horizontal overflow
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 10,
@@ -1711,8 +1850,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         const SizedBox(width: 6),
         Text(
           text,
-          style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w500), // Smaller font
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -1749,10 +1887,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   Widget activitiesCard() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+                .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1777,15 +1919,19 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     color: Colors.redAccent, size: 20),
               ),
               const SizedBox(width: 8),
-              const Text("Recent Activities",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text("Recent Activities",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.black87)),
             ],
           ),
           const SizedBox(height: 12),
-          // FIXED: Activities list with constrained height
           ConstrainedBox(
             constraints: const BoxConstraints(
-              maxHeight: 120, // Fixed maximum height
+              maxHeight: 120,
             ),
             child: ListView.builder(
               shrinkWrap: true,
@@ -1795,7 +1941,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.grey.shade50)
+                        .withOpacity(0.9),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -1813,9 +1962,13 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                       Expanded(
                         child: Text(
                           recentActivities[index],
-                          style: const TextStyle(fontSize: 13),
-                          overflow:
-                              TextOverflow.ellipsis, // Prevent text overflow
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: themeProvider.isDarkMode
+                                ? Colors.white
+                                : Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
@@ -1838,24 +1991,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 
   Widget kpiCard(String title, int count, Color color, IconData icon) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
-      width: 200, // Slightly reduced width
+      width: 200,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween, // Better space distribution
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1866,12 +2009,10 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    Icon(icon, color: color, size: 20), // Slightly smaller icon
+                child: Icon(icon, color: color, size: 20),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 3), // Smaller padding
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -1880,7 +2021,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   "+${((count / 10) * 100).round()}%",
                   style: TextStyle(
                     color: color,
-                    fontSize: 10, // Smaller font
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1890,18 +2031,20 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           const SizedBox(height: 8),
           Text(
             count.toString(),
-            style: const TextStyle(
-              fontSize: 24, // Slightly smaller font
+            style: TextStyle(
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 13, // Slightly smaller font
+              color: themeProvider.isDarkMode
+                  ? Colors.grey.shade400
+                  : Colors.grey.shade600,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1911,7 +2054,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
   }
 }
 
-// Data classes for new charts
+// Data classes for charts
 class _DepartmentData {
   final String department;
   final int count;

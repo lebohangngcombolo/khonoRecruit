@@ -321,10 +321,13 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _modernCard(String title, Widget child, {Color? headerColor}) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -352,7 +355,9 @@ class _ProfilePageState extends State<ProfilePage>
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+                color: themeProvider.isDarkMode
+                    ? Colors.white
+                    : Colors.grey.shade800,
               ),
             ),
           ),
@@ -368,11 +373,12 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
 
     if (loading) {
       return Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: themeProvider.isDarkMode
+            ? const Color(0xFF121212)
+            : Colors.grey.shade50,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -385,7 +391,9 @@ class _ProfilePageState extends State<ProfilePage>
                 "Loading Profile...",
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: Colors.grey.shade600,
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
                 ),
               ),
             ],
@@ -397,14 +405,18 @@ class _ProfilePageState extends State<ProfilePage>
     return Theme(
       data: themeProvider.themeData,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: themeProvider.isDarkMode
+            ? const Color(0xFF121212)
+            : Colors.grey.shade50,
         body: Row(
           children: [
             // Enhanced Sidebar
             Container(
               width: 280,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: themeProvider.isDarkMode
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -457,7 +469,9 @@ class _ProfilePageState extends State<ProfilePage>
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade900,
+                            color: themeProvider.isDarkMode
+                                ? Colors.white
+                                : Colors.grey.shade900,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -467,7 +481,9 @@ class _ProfilePageState extends State<ProfilePage>
                               : "Administrator",
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: themeProvider.isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -497,6 +513,7 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _sidebarButton(String title, IconData icon) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final isSelected = selectedSidebar == title;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -518,7 +535,11 @@ class _ProfilePageState extends State<ProfilePage>
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.redAccent : Colors.grey.shade600,
+                  color: isSelected
+                      ? Colors.redAccent
+                      : (themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -527,7 +548,11 @@ class _ProfilePageState extends State<ProfilePage>
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.redAccent : Colors.grey.shade700,
+                    color: isSelected
+                        ? Colors.redAccent
+                        : (themeProvider.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade700),
                   ),
                 ),
                 const Spacer(),
@@ -567,6 +592,8 @@ class _ProfilePageState extends State<ProfilePage>
 
 // ----- Profile Summary -----
   Widget _buildProfileSummary() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     Future<void> _launchUrl(String url) async {
       final uri = Uri.tryParse(url) ?? Uri();
       if (await canLaunchUrl(uri)) {
@@ -591,7 +618,9 @@ class _ProfilePageState extends State<ProfilePage>
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: themeProvider.isDarkMode
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
@@ -609,7 +638,9 @@ class _ProfilePageState extends State<ProfilePage>
                 style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
+                  color: themeProvider.isDarkMode
+                      ? Colors.white
+                      : Colors.grey.shade900,
                 ),
               ),
               const Spacer(),
@@ -661,7 +692,9 @@ class _ProfilePageState extends State<ProfilePage>
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.grey.shade700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -669,7 +702,9 @@ class _ProfilePageState extends State<ProfilePage>
                     bioController.text,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ],
@@ -697,7 +732,9 @@ class _ProfilePageState extends State<ProfilePage>
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : Colors.grey.shade700,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -758,6 +795,8 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _infoRow(String label, String value) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     if (value.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -771,7 +810,9 @@ class _ProfilePageState extends State<ProfilePage>
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: themeProvider.isDarkMode
+                    ? Colors.white
+                    : Colors.grey.shade700,
               ),
             ),
           ),
@@ -781,7 +822,9 @@ class _ProfilePageState extends State<ProfilePage>
               value,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: themeProvider.isDarkMode
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
               ),
             ),
           ),
@@ -791,6 +834,8 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _linkRow(String label, String value, IconData icon) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -804,7 +849,9 @@ class _ProfilePageState extends State<ProfilePage>
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: themeProvider.isDarkMode
+                    ? Colors.white
+                    : Colors.grey.shade700,
               ),
             ),
           ),
@@ -832,6 +879,8 @@ class _ProfilePageState extends State<ProfilePage>
 
   // ----- Profile Form -----
   Widget _buildProfileForm() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -844,7 +893,9 @@ class _ProfilePageState extends State<ProfilePage>
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: themeProvider.isDarkMode
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
@@ -862,7 +913,9 @@ class _ProfilePageState extends State<ProfilePage>
                 style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
+                  color: themeProvider.isDarkMode
+                      ? Colors.white
+                      : Colors.grey.shade900,
                 ),
               ),
             ],
@@ -1025,6 +1078,8 @@ class _ProfilePageState extends State<ProfilePage>
 
   // ----- Settings Tab -----
   Widget _buildSettingsTab() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1035,7 +1090,9 @@ class _ProfilePageState extends State<ProfilePage>
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: themeProvider.isDarkMode
+                  ? Colors.white
+                  : Colors.grey.shade900,
             ),
           ),
           const SizedBox(height: 24),
@@ -1110,6 +1167,8 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _settingsSwitch(String title, String subtitle, IconData icon,
       bool value, Function(bool) onChanged) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -1132,14 +1191,18 @@ class _ProfilePageState extends State<ProfilePage>
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : Colors.grey.shade800,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
                   ),
                 ),
               ],
@@ -1156,6 +1219,8 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _build2FATab() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1166,7 +1231,9 @@ class _ProfilePageState extends State<ProfilePage>
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: themeProvider.isDarkMode
+                  ? Colors.white
+                  : Colors.grey.shade900,
             ),
           ),
           const SizedBox(height: 24),
@@ -1192,7 +1259,9 @@ class _ProfilePageState extends State<ProfilePage>
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
+                          color: themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.grey.shade800,
                         ),
                       ),
                     ),
@@ -1203,7 +1272,9 @@ class _ProfilePageState extends State<ProfilePage>
                   "Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to sign in.",
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1239,6 +1310,7 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildResetPasswordTab() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final TextEditingController currentPassword = TextEditingController();
     final TextEditingController newPassword = TextEditingController();
     final TextEditingController confirmPassword = TextEditingController();
@@ -1303,7 +1375,9 @@ class _ProfilePageState extends State<ProfilePage>
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: themeProvider.isDarkMode
+                  ? Colors.white
+                  : Colors.grey.shade900,
             ),
           ),
           const SizedBox(height: 24),

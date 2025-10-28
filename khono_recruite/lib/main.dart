@@ -25,6 +25,60 @@ void main() {
   );
 }
 
+// ✅ Move router outside build so it doesn’t rebuild every theme toggle
+final GoRouter _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const LandingPage(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return ResetPasswordPage(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/candidate-dashboard',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return CandidateDashboard(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/enrollment',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return EnrollmentScreen(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/admin-dashboard',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return AdminDAshboard(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/hiring-manager-dashboard',
+      builder: (context, state) => HMMainDashboard(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return ProfilePage(token: token);
+      },
+    ),
+  ],
+);
+
 class KhonoRecruiteApp extends StatelessWidget {
   const KhonoRecruiteApp({super.key});
 
@@ -32,66 +86,13 @@ class KhonoRecruiteApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    final GoRouter router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const LandingPage(),
-        ),
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: '/reset-password',
-          builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return ResetPasswordPage(token: token);
-          },
-        ),
-        GoRoute(
-          path: '/candidate-dashboard',
-          builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return CandidateDashboard(token: token);
-          },
-        ),
-        GoRoute(
-          path: '/enrollment',
-          builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return EnrollmentScreen(token: token);
-          },
-        ),
-        GoRoute(
-          path: '/admin-dashboard',
-          builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return AdminDAshboard(token: token); // pass the token here
-          },
-        ),
-        GoRoute(
-          path: '/hiring-manager-dashboard',
-          builder: (context, state) => HMMainDashboard(),
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) {
-            final token = state.uri.queryParameters['token'] ?? '';
-            return ProfilePage(token: token);
-          },
-        ),
-      ],
-    );
-
     return MaterialApp.router(
       title: "Khono_Recruite",
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeUtils.lightTheme,
       darkTheme: ThemeUtils.darkTheme,
-      routerConfig: router,
+      routerConfig: _router, // ✅ Uses the persistent router
     );
   }
 }

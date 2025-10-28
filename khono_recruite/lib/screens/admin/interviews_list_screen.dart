@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 import '../../utils/api_endpoints.dart';
+import '../../providers/theme_provider.dart';
 
 class InterviewListScreen extends StatefulWidget {
   const InterviewListScreen({super.key});
@@ -141,467 +143,543 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final width = MediaQuery.of(context).size.width;
     final redColor = const Color.fromRGBO(151, 18, 8, 1);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text(
-          "Interview Schedule",
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        iconTheme: const IconThemeData(color: Colors.black87),
-      ),
-      body: loading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.redAccent),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "Loading Interviews...",
-                    style: GoogleFonts.inter(
-                      color: Colors.grey.shade600,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              "Interview Schedule",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
               ),
-            )
-          : interviews.isEmpty
+            ),
+            centerTitle: true,
+            backgroundColor: (themeProvider.isDarkMode
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white)
+                .withOpacity(0.9),
+            elevation: 0,
+            foregroundColor:
+                themeProvider.isDarkMode ? Colors.white : Colors.black87,
+            iconTheme: IconThemeData(
+                color:
+                    themeProvider.isDarkMode ? Colors.white : Colors.black87),
+          ),
+          body: loading
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 80,
-                        color: Colors.grey.shade300,
+                      const CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.redAccent),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        "No Interviews Scheduled",
+                        "Loading Interviews...",
                         style: GoogleFonts.inter(
-                          color: Colors.grey.shade600,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Interviews will appear here once scheduled",
-                        style: GoogleFonts.inter(
-                          color: Colors.grey.shade500,
-                          fontSize: 14,
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                          fontSize: 16,
                         ),
                       ),
                     ],
                   ),
                 )
-              : Column(
-                  children: [
-                    // Header with stats
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      margin: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+              : interviews.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 80,
+                            color: themeProvider.isDarkMode
+                                ? Colors.grey.shade600
+                                : Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "No Interviews Scheduled",
+                            style: GoogleFonts.inter(
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Interviews will appear here once scheduled",
+                            style: GoogleFonts.inter(
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade500
+                                  : Colors.grey.shade500,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: redColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.calendar_today,
-                              color: redColor,
-                              size: 28,
-                            ),
+                    )
+                  : Column(
+                      children: [
+                        // Header with stats
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: (themeProvider.isDarkMode
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white)
+                                .withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                "Interview Schedule",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: redColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.calendar_today,
+                                  color: redColor,
+                                  size: 28,
                                 ),
                               ),
-                              Text(
-                                "${interviews.length} interviews scheduled",
-                                style: GoogleFonts.inter(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Interview Schedule",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${interviews.length} interviews scheduled",
+                                    style: GoogleFonts.inter(
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: redColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  "Active",
+                                  style: GoogleFonts.inter(
+                                    color: redColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: redColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              "Active",
-                              style: GoogleFonts.inter(
-                                color: redColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Interviews Grid
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Wrap(
-                          spacing: 20,
-                          runSpacing: 20,
-                          children: interviews.map((i) {
-                            final scheduled = i['scheduled_time'] != null
-                                ? DateFormat('MMM dd, yyyy • HH:mm')
-                                    .format(DateTime.parse(i['scheduled_time']))
-                                : 'Not Scheduled';
+                        ),
+                        // Interviews Grid
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Wrap(
+                              spacing: 20,
+                              runSpacing: 20,
+                              children: interviews.map((i) {
+                                final scheduled = i['scheduled_time'] != null
+                                    ? DateFormat('MMM dd, yyyy • HH:mm').format(
+                                        DateTime.parse(i['scheduled_time']))
+                                    : 'Not Scheduled';
 
-                            final status = i['status'] ?? 'Scheduled';
-                            final statusColor = getStatusColor(status);
+                                final status = i['status'] ?? 'Scheduled';
+                                final statusColor = getStatusColor(status);
 
-                            return Container(
-                              width: width < 600 ? double.infinity : 400,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.1),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Header with status
-                                  Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: statusColor.withOpacity(0.1),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(20),
-                                        topRight: Radius.circular(20),
+                                return Container(
+                                  width: width < 600 ? double.infinity : 400,
+                                  decoration: BoxDecoration(
+                                    color: (themeProvider.isDarkMode
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white)
+                                        .withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 6),
                                       ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: statusColor.withOpacity(0.2),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            status.toUpperCase(),
-                                            style: GoogleFonts.inter(
-                                              color: statusColor,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Icon(
-                                          Icons.calendar_today,
-                                          color: statusColor,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          scheduled,
-                                          style: GoogleFonts.inter(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
+                                    ],
+                                    border: Border.all(
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.withOpacity(0.1),
                                     ),
                                   ),
-                                  // Content
-                                  Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Candidate Avatar
-                                        Stack(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header with status
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: statusColor.withOpacity(0.1),
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(20),
+                                            topRight: Radius.circular(20),
+                                          ),
+                                        ),
+                                        child: Row(
                                           children: [
                                             Container(
-                                              width: 60,
-                                              height: 60,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6),
                                               decoration: BoxDecoration(
-                                                color:
-                                                    redColor.withOpacity(0.1),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color:
-                                                      redColor.withOpacity(0.2),
-                                                  width: 2,
+                                                color: statusColor
+                                                    .withOpacity(0.2),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                status.toUpperCase(),
+                                                style: GoogleFonts.inter(
+                                                  color: statusColor,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                              child:
-                                                  i['candidate_picture'] != null
-                                                      ? ClipOval(
-                                                          child: Image.network(
-                                                            i['candidate_picture'],
-                                                            width: 60,
-                                                            height: 60,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        )
-                                                      : Icon(
-                                                          Icons.person,
-                                                          size: 30,
-                                                          color: redColor
-                                                              .withOpacity(0.6),
-                                                        ),
                                             ),
-                                            Positioned(
-                                              bottom: 0,
-                                              right: 0,
-                                              child: Container(
-                                                width: 16,
-                                                height: 16,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green,
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
-                                                    color: Colors.white,
-                                                    width: 2,
-                                                  ),
-                                                ),
+                                            const Spacer(),
+                                            Icon(
+                                              Icons.calendar_today,
+                                              color: statusColor,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              scheduled,
+                                              style: GoogleFonts.inter(
+                                                color: themeProvider.isDarkMode
+                                                    ? Colors.grey.shade400
+                                                    : Colors.grey.shade600,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(width: 16),
-                                        // Candidate Details
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                i['job_title'] ??
-                                                    'No Job Title',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.black87,
+                                      ),
+                                      // Content
+                                      Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Candidate Avatar
+                                            Stack(
+                                              children: [
+                                                Container(
+                                                  width: 60,
+                                                  height: 60,
+                                                  decoration: BoxDecoration(
+                                                    color: redColor
+                                                        .withOpacity(0.1),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: redColor
+                                                          .withOpacity(0.2),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child:
+                                                      i['candidate_picture'] !=
+                                                              null
+                                                          ? ClipOval(
+                                                              child:
+                                                                  Image.network(
+                                                                i['candidate_picture'],
+                                                                width: 60,
+                                                                height: 60,
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                              ),
+                                                            )
+                                                          : Icon(
+                                                              Icons.person,
+                                                              size: 30,
+                                                              color: redColor
+                                                                  .withOpacity(
+                                                                      0.6),
+                                                            ),
                                                 ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              _buildDetailRow(
-                                                icon: Icons.person,
-                                                text: i['candidate_name'] ??
-                                                    'Unknown Candidate',
-                                              ),
-                                              const SizedBox(height: 4),
-                                              _buildDetailRow(
-                                                icon: Icons.video_call,
-                                                text:
-                                                    "Type: ${i['interview_type'] ?? 'N/A'}",
-                                              ),
-                                              const SizedBox(height: 16),
-                                              // Action Buttons
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: Colors.red
-                                                                .withOpacity(
-                                                                    0.3),
-                                                            blurRadius: 8,
-                                                            offset:
-                                                                const Offset(
-                                                                    0, 4),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      child:
-                                                          ElevatedButton.icon(
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .cancel_outlined,
-                                                            size: 16),
-                                                        label: Text(
-                                                          "Cancel",
-                                                          style:
-                                                              GoogleFonts.inter(
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                        onPressed: () =>
-                                                            cancelInterview(
-                                                                i['id']),
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              Colors.red,
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 12),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                          ),
-                                                        ),
+                                                Positioned(
+                                                  bottom: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    width: 16,
+                                                    height: 16,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.green,
+                                                      shape: BoxShape.circle,
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 2,
                                                       ),
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: redColor
-                                                                .withOpacity(
-                                                                    0.3),
-                                                            blurRadius: 8,
-                                                            offset:
-                                                                const Offset(
-                                                                    0, 4),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      child:
-                                                          ElevatedButton.icon(
-                                                        icon: const Icon(
-                                                            Icons.schedule,
-                                                            size: 16),
-                                                        label: Text(
-                                                          "Reschedule",
-                                                          style:
-                                                              GoogleFonts.inter(
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                        onPressed: () =>
-                                                            showRescheduleDialog(
-                                                                i['id']),
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              redColor,
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 12),
-                                                          shape:
-                                                              RoundedRectangleBorder(
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(width: 16),
+                                            // Candidate Details
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    i['job_title'] ??
+                                                        'No Job Title',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: themeProvider
+                                                              .isDarkMode
+                                                          ? Colors.white
+                                                          : Colors.black87,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildDetailRow(
+                                                    icon: Icons.person,
+                                                    text: i['candidate_name'] ??
+                                                        'Unknown Candidate',
+                                                    themeProvider:
+                                                        themeProvider,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  _buildDetailRow(
+                                                    icon: Icons.video_call,
+                                                    text:
+                                                        "Type: ${i['interview_type'] ?? 'N/A'}",
+                                                    themeProvider:
+                                                        themeProvider,
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  // Action Buttons
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
                                                                         12),
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Colors
+                                                                    .red
+                                                                    .withOpacity(
+                                                                        0.3),
+                                                                blurRadius: 8,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 4),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: ElevatedButton
+                                                              .icon(
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .cancel_outlined,
+                                                                size: 16),
+                                                            label: Text(
+                                                              "Cancel",
+                                                              style: GoogleFonts
+                                                                  .inter(
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                            ),
+                                                            onPressed: () =>
+                                                                cancelInterview(
+                                                                    i['id']),
+                                                            style:
+                                                                ElevatedButton
+                                                                    .styleFrom(
+                                                              backgroundColor:
+                                                                  Colors.red,
+                                                              foregroundColor:
+                                                                  Colors.white,
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      vertical:
+                                                                          12),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12),
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: redColor
+                                                                    .withOpacity(
+                                                                        0.3),
+                                                                blurRadius: 8,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 4),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: ElevatedButton
+                                                              .icon(
+                                                            icon: const Icon(
+                                                                Icons.schedule,
+                                                                size: 16),
+                                                            label: Text(
+                                                              "Reschedule",
+                                                              style: GoogleFonts
+                                                                  .inter(
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                            ),
+                                                            onPressed: () =>
+                                                                showRescheduleDialog(
+                                                                    i['id']),
+                                                            style:
+                                                                ElevatedButton
+                                                                    .styleFrom(
+                                                              backgroundColor:
+                                                                  redColor,
+                                                              foregroundColor:
+                                                                  Colors.white,
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      vertical:
+                                                                          12),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+        ),
+      ),
     );
   }
 
-  Widget _buildDetailRow({required IconData icon, required String text}) {
+  Widget _buildDetailRow(
+      {required IconData icon,
+      required String text,
+      required ThemeProvider themeProvider}) {
     return Row(
       children: [
         Icon(
           icon,
           size: 14,
-          color: Colors.grey.shade500,
+          color: themeProvider.isDarkMode
+              ? Colors.grey.shade400
+              : Colors.grey.shade500,
         ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: GoogleFonts.inter(
-              color: Colors.grey.shade600,
+              color: themeProvider.isDarkMode
+                  ? Colors.grey.shade400
+                  : Colors.grey.shade600,
               fontSize: 12,
             ),
             maxLines: 1,

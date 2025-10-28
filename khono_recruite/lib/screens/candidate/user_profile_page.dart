@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../utils/api_endpoints.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_textfield.dart';
 

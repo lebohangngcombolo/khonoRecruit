@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/app_colors.dart';
+import '../../../providers/theme_provider.dart'; // ADD THIS IMPORT
 
 class HMTeamCollaborationPage extends StatefulWidget {
   const HMTeamCollaborationPage({super.key});
@@ -64,12 +66,14 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
+          _buildHeader(themeProvider),
           const SizedBox(height: 20),
           Expanded(
             child: Row(
@@ -80,9 +84,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   flex: 1,
                   child: Column(
                     children: [
-                      _buildTeamMembersPanel(),
+                      _buildTeamMembersPanel(themeProvider),
                       const SizedBox(height: 20),
-                      _buildSharedNotesPanel(),
+                      _buildSharedNotesPanel(themeProvider),
                     ],
                   ),
                 ),
@@ -90,7 +94,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 // Right Panel
                 Expanded(
                   flex: 2,
-                  child: _buildChatPanel(),
+                  child: _buildChatPanel(themeProvider),
                 ),
               ],
             ),
@@ -100,11 +104,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeProvider themeProvider) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -137,7 +142,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                      color: themeProvider.isDarkMode
+                          ? Colors.white
+                          : AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -145,7 +152,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     'Real-time communication with your hiring team',
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: AppColors.textGrey,
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : AppColors.textGrey,
                     ),
                   ),
                 ],
@@ -244,12 +253,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildTeamMembersPanel() {
+  Widget _buildTeamMembersPanel(ThemeProvider themeProvider) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color:
+              themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -272,7 +282,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : AppColors.textDark,
                   ),
                 ),
                 const Spacer(),
@@ -300,7 +312,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 itemCount: _teamMembers.length,
                 itemBuilder: (context, index) {
                   final member = _teamMembers[index];
-                  return _buildTeamMemberCard(member);
+                  return _buildTeamMemberCard(member, themeProvider);
                 },
               ),
             ),
@@ -310,14 +322,18 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildTeamMemberCard(TeamMember member) {
+  Widget _buildTeamMemberCard(TeamMember member, ThemeProvider themeProvider) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeProvider.isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+            color: themeProvider.isDarkMode
+                ? Colors.grey.shade800
+                : Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -372,7 +388,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   member.name,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : AppColors.textDark,
                     fontSize: 14,
                   ),
                 ),
@@ -380,7 +398,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 Text(
                   member.role,
                   style: GoogleFonts.inter(
-                    color: AppColors.textGrey,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : AppColors.textGrey,
                     fontSize: 12,
                   ),
                 ),
@@ -396,12 +416,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildSharedNotesPanel() {
+  Widget _buildSharedNotesPanel(ThemeProvider themeProvider) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color:
+              themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -424,7 +445,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : AppColors.textDark,
                   ),
                 ),
                 const Spacer(),
@@ -456,7 +479,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 itemCount: _sharedNotes.length,
                 itemBuilder: (context, index) {
                   final note = _sharedNotes[index];
-                  return _buildSharedNoteCard(note);
+                  return _buildSharedNoteCard(note, themeProvider);
                 },
               ),
             ),
@@ -466,13 +489,17 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildSharedNoteCard(SharedNote note) {
+  Widget _buildSharedNoteCard(SharedNote note, ThemeProvider themeProvider) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeProvider.isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+            color: themeProvider.isDarkMode
+                ? Colors.grey.shade800
+                : Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -498,7 +525,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                         note.title,
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                          color: themeProvider.isDarkMode
+                              ? Colors.white
+                              : AppColors.textDark,
                           fontSize: 16,
                         ),
                       ),
@@ -525,7 +554,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 Text(
                   note.content,
                   style: GoogleFonts.inter(
-                    color: AppColors.textGrey,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : AppColors.textGrey,
                     fontSize: 13,
                   ),
                   maxLines: 2,
@@ -556,7 +587,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     Text(
                       'By ${note.author}',
                       style: GoogleFonts.inter(
-                        color: AppColors.textGrey,
+                        color: themeProvider.isDarkMode
+                            ? Colors.grey.shade400
+                            : AppColors.textGrey,
                         fontSize: 11,
                       ),
                     ),
@@ -570,11 +603,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildChatPanel() {
+  Widget _buildChatPanel(ThemeProvider themeProvider) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -597,7 +631,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+                  color: themeProvider.isDarkMode
+                      ? Colors.white
+                      : AppColors.textDark,
                 ),
               ),
               const Spacer(),
@@ -605,7 +641,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade800
+                      : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButton<String>(
@@ -624,7 +662,11 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                       setState(() => _selectedEntity = value!),
                   underline: const SizedBox(),
                   icon: const Icon(Icons.arrow_drop_down, size: 16),
-                  style: GoogleFonts.inter(fontSize: 12),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color:
+                        themeProvider.isDarkMode ? Colors.white : Colors.black,
+                  ),
                 ),
               ),
             ],
@@ -640,13 +682,17 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                         Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
-                          color: Colors.grey.shade300,
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade300,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No messages yet',
                           style: GoogleFonts.inter(
-                            color: Colors.grey.shade500,
+                            color: themeProvider.isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade500,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
@@ -655,7 +701,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                         Text(
                           'Start a conversation with your team',
                           style: GoogleFonts.inter(
-                            color: Colors.grey.shade400,
+                            color: themeProvider.isDarkMode
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade400,
                             fontSize: 12,
                           ),
                         ),
@@ -666,17 +714,18 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     reverse: true,
                     itemCount: _messages.length,
                     itemBuilder: (context, index) =>
-                        _buildMessageCard(_messages[index]),
+                        _buildMessageCard(_messages[index], themeProvider),
                   ),
           ),
           const SizedBox(height: 20),
-          _buildMessageInput(),
+          _buildMessageInput(themeProvider),
         ],
       ),
     );
   }
 
-  Widget _buildMessageCard(CollaborationMessage message) {
+  Widget _buildMessageCard(
+      CollaborationMessage message, ThemeProvider themeProvider) {
     final isCurrentUser = message.author == _currentUser;
 
     return Container(
@@ -720,7 +769,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                       message.author,
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textDark,
+                        color: themeProvider.isDarkMode
+                            ? Colors.white
+                            : AppColors.textDark,
                         fontSize: 12,
                       ),
                     ),
@@ -730,7 +781,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   decoration: BoxDecoration(
                     color: isCurrentUser
                         ? AppColors.primaryRed
-                        : Colors.grey.shade50,
+                        : (themeProvider.isDarkMode
+                            ? const Color(0xFF2D2D2D)
+                            : Colors.grey.shade50),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -743,7 +796,11 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   child: Text(
                     message.content,
                     style: GoogleFonts.inter(
-                      color: isCurrentUser ? Colors.white : AppColors.textDark,
+                      color: isCurrentUser
+                          ? Colors.white
+                          : (themeProvider.isDarkMode
+                              ? Colors.white
+                              : AppColors.textDark),
                       fontSize: 14,
                     ),
                   ),
@@ -752,7 +809,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 Text(
                   _formatTimeAgo(message.timestamp),
                   style: GoogleFonts.inter(
-                    color: Colors.grey.shade500,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500,
                     fontSize: 10,
                   ),
                 ),
@@ -785,13 +844,18 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(ThemeProvider themeProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: themeProvider.isDarkMode
+            ? const Color(0xFF2D2D2D)
+            : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+            color: themeProvider.isDarkMode
+                ? Colors.grey.shade800
+                : Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -801,11 +865,17 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 border: InputBorder.none,
-                hintStyle: GoogleFonts.inter(color: Colors.grey.shade500),
+                hintStyle: GoogleFonts.inter(
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 0),
               ),
               maxLines: null,
-              style: GoogleFonts.inter(fontSize: 14),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              ),
               onSubmitted: (value) => _sendMessage(),
             ),
           ),
@@ -857,11 +927,18 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   }
 
   void _createSharedNote() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor:
+            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         title: Text('Create Shared Note',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+            )),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -870,7 +947,14 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 labelText: 'Title',
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                labelStyle: GoogleFonts.inter(),
+                labelStyle: GoogleFonts.inter(
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.black,
+                ),
+              ),
+              style: GoogleFonts.inter(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
               ),
             ),
             const SizedBox(height: 16),
@@ -879,9 +963,16 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 labelText: 'Content',
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                labelStyle: GoogleFonts.inter(),
+                labelStyle: GoogleFonts.inter(
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.black,
+                ),
               ),
               maxLines: 4,
+              style: GoogleFonts.inter(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              ),
             ),
           ],
         ),
@@ -889,7 +980,10 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel',
-                style: GoogleFonts.inter(color: AppColors.textGrey)),
+                style: GoogleFonts.inter(
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : AppColors.textGrey)),
           ),
           Container(
             decoration: BoxDecoration(
@@ -932,13 +1026,24 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   }
 
   void _viewSharedNote(SharedNote note) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor:
+            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         title: Text(note.title,
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+            )),
         content: SingleChildScrollView(
-          child: Text(note.content, style: GoogleFonts.inter(fontSize: 14)),
+          child: Text(note.content,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              )),
         ),
         actions: [
           TextButton(
