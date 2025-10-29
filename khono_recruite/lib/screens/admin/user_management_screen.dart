@@ -127,7 +127,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: role.isNotEmpty ? role : null,
+                    initialValue: role.isNotEmpty ? role : null,
                     items: roles
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
@@ -241,7 +241,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     Text(errorMessage!,
                         style: const TextStyle(color: Colors.red)),
                   DropdownButtonFormField<String>(
-                    value: role,
+                    initialValue: role,
                     items: roles
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),

@@ -31,6 +31,17 @@
 
   <title>khono_recruite</title>
   <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script type="text/javascript">
+    function downloadFile(url, fileName) {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

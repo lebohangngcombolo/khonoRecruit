@@ -51,16 +51,21 @@ class LandingPage extends StatelessWidget {
                             height: 120,
                             fit: BoxFit.contain,
                           ),
-                          Row(
-                            children: [
-                              _navItem("Khonology"),
-                              _navItem("Interview Mock up"),
-                              _navItem("Resume Generator"),
-                              _navItem("IPQ"),
-                              _navItem("Join Us"),
-                              _navItem("About Us"),
-                              _navItem("Contact"),
-                            ],
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _navItem("Khonology"),
+                                  _navItem("Interview Mock up"),
+                                  _navItem("Resume Generator"),
+                                  _navItem("IPQ"),
+                                  _navItem("Join Us"),
+                                  _navItem("About Us"),
+                                  _navItem("Contact"),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),

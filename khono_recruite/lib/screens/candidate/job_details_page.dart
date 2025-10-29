@@ -91,205 +91,213 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         : ["Qualification 1", "Qualification 2", "Qualification 3"];
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // ---------- Top Banner ----------
-            Image.asset(
-              widget.job["banner"] ?? "assets/images/team1.jpg",
-              width: double.infinity,
-              height: 500,
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(height: 16),
+      backgroundColor: Colors.transparent, // Set to transparent to show the background image
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // ---------- Top Banner ----------
+              Image.asset(
+                widget.job["banner"] ?? "assets/images/team1.jpg",
+                width: double.infinity,
+                height: 500,
+                fit: BoxFit.cover,
+              ),
+              const SizedBox(height: 16),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Job Image
-                  Image.asset(
-                    widget.job["image"] ?? "assets/images/job_default.jpg",
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                  const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Job Image
+                    Image.asset(
+                      widget.job["image"] ?? "assets/images/job_default.jpg",
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Job Title & Company
-                  Text(widget.job["title"] ?? "",
-                      style: const TextStyle(
-                          fontSize: 28, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                      "${widget.job["company"] ?? ""} • ${widget.job["location"] ?? ""}",
-                      style:
-                          const TextStyle(fontSize: 16, color: Colors.black54)),
-                  const SizedBox(height: 16),
+                    // Job Title & Company
+                    Text(widget.job["title"] ?? "",
+                        style: const TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(
+                        "${widget.job["company"] ?? ""} • ${widget.job["location"] ?? ""}",
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.black54)),
+                    const SizedBox(height: 16),
 
-                  // ---------- Two Column Layout ----------
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left Column (Job Description, Responsibilities, etc.)
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCard("Job Description", [
-                              Text(widget.job["description"] ??
-                                  "No description available.")
-                            ]),
-                            _buildCard(
-                                "Responsibilities",
-                                responsibilitiesList
-                                    .map((r) => Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text("• ",
-                                                style: TextStyle(fontSize: 14)),
-                                            Expanded(
-                                                child: Text(r,
-                                                    style: const TextStyle(
-                                                        fontSize: 14))),
-                                          ],
-                                        ))
-                                    .toList()),
-                            _buildCard(
-                                "Qualifications",
-                                qualificationsList
-                                    .map((q) => Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text("✔ ",
-                                                style: TextStyle(fontSize: 14)),
-                                            Expanded(
-                                                child: Text(q,
-                                                    style: const TextStyle(
-                                                        fontSize: 14))),
-                                          ],
-                                        ))
-                                    .toList()),
-                            _buildCard(
-                              "Apply For This Job",
-                              [
-                                Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    children: [
-                                      buildTextField(
-                                          controller: fullNameController,
-                                          label: "Full Name"),
-                                      const SizedBox(height: 12),
-                                      buildTextField(
-                                          controller: phoneController,
-                                          label: "Phone Number"),
-                                      const SizedBox(height: 12),
-                                      buildTextField(
-                                          controller: portfolioController,
-                                          label: "Portfolio Link"),
-                                      const SizedBox(height: 12),
-                                      buildTextField(
-                                          controller: coverLetterController,
-                                          label: "Cover Letter",
-                                          maxLines: 5),
-                                      const SizedBox(height: 16),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed:
-                                              submitting ? null : applyJob,
-                                          style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  Colors.red.shade700,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 16)),
-                                          child: submitting
-                                              ? const CircularProgressIndicator(
-                                                  color: Colors.white)
-                                              : const Text(
-                                                  "Submit Application"),
-                                        ),
-                                      ),
-                                      if (applicationId != null)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 12.0),
+                    // ---------- Two Column Layout ----------
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column (Job Description, Responsibilities, etc.)
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildCard("Job Description", [
+                                Text(widget.job["description"] ??
+                                    "No description available.")
+                              ]),
+                              _buildCard(
+                                  "Responsibilities",
+                                  responsibilitiesList
+                                      .map((r) => Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const Text("• ",
+                                                  style: TextStyle(fontSize: 14)),
+                                              Expanded(
+                                                  child: Text(r,
+                                                      style: const TextStyle(
+                                                          fontSize: 14))),
+                                            ],
+                                          ))
+                                      .toList()),
+                              _buildCard(
+                                  "Qualifications",
+                                  qualificationsList
+                                      .map((q) => Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const Text("✔ ",
+                                                  style: TextStyle(fontSize: 14)),
+                                              Expanded(
+                                                  child: Text(q,
+                                                      style: const TextStyle(
+                                                          fontSize: 14))),
+                                            ],
+                                          ))
+                                      .toList()),
+                              _buildCard(
+                                "Apply For This Job",
+                                [
+                                  Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      children: [
+                                        buildTextField(
+                                            controller: fullNameController,
+                                            label: "Full Name"),
+                                        const SizedBox(height: 12),
+                                        buildTextField(
+                                            controller: phoneController,
+                                            label: "Phone Number"),
+                                        const SizedBox(height: 12),
+                                        buildTextField(
+                                            controller: portfolioController,
+                                            label: "Portfolio Link"),
+                                        const SizedBox(height: 12),
+                                        buildTextField(
+                                            controller: coverLetterController,
+                                            label: "Cover Letter",
+                                            maxLines: 5),
+                                        const SizedBox(height: 16),
+                                        SizedBox(
+                                          width: double.infinity,
                                           child: ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      AssessmentPage(
-                                                          applicationId:
-                                                              applicationId!),
-                                                ),
-                                              );
-                                            },
+                                            onPressed:
+                                                submitting ? null : applyJob,
                                             style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    Colors.red.shade900,
+                                                    Colors.red.shade700,
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         vertical: 16)),
-                                            child:
-                                                const Text("Take Assessment"),
+                                            child: submitting
+                                                ? const CircularProgressIndicator(
+                                                    color: Colors.white)
+                                                : const Text(
+                                                    "Submit Application"),
                                           ),
-                                        )
-                                    ],
-                                  ),
-                                )
-                              ],
-                            ),
-                          ],
+                                        ),
+                                        if (applicationId != null)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 12.0),
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        AssessmentPage(
+                                                            applicationId:
+                                                                applicationId!),
+                                                  ),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.red.shade900,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                          vertical: 16)),
+                                              child:
+                                                  const Text("Take Assessment"),
+                                            ),
+                                          )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(width: 24),
+                        const SizedBox(width: 24),
 
-                      // Right Column (Job Summary & Company Details)
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCard("Job Summary", [
-                              summaryRow("Published On",
-                                  widget.job["published_on"] ?? "01 Jan, 2045"),
-                              summaryRow("Vacancy",
-                                  widget.job["vacancy"]?.toString() ?? "1"),
-                              summaryRow("Job Nature",
-                                  widget.job["type"] ?? "Full Time"),
-                              summaryRow("Salary",
-                                  widget.job["salary"] ?? "\$123 - \$456"),
-                              summaryRow("Location",
-                                  widget.job["location"] ?? "New York"),
-                            ]),
-                            _buildCard("Company Details", [
-                              Text(widget.job["company_details"] ??
-                                  "No details available.")
-                            ]),
-                          ],
+                        // Right Column (Job Summary & Company Details)
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildCard("Job Summary", [
+                                summaryRow("Published On",
+                                    widget.job["published_on"] ?? "01 Jan, 2045"),
+                                summaryRow("Vacancy",
+                                    widget.job["vacancy"]?.toString() ?? "1"),
+                                summaryRow("Job Nature",
+                                    widget.job["type"] ?? "Full Time"),
+                                summaryRow("Salary",
+                                    widget.job["salary"] ?? "\$123 - \$456"),
+                                summaryRow("Location",
+                                    widget.job["location"] ?? "New York"),
+                              ]),
+                              _buildCard("Company Details", [
+                                Text(widget.job["company_details"] ??
+                                    "No details available.")
+                              ]),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-            // ---------- FOOTER ----------
-            _buildFooter(),
-          ],
+              // ---------- FOOTER ----------
+              _buildFooter(),
+            ],
+          ),
         ),
       ),
     );

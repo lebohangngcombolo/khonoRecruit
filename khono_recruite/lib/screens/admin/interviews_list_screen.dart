@@ -96,23 +96,21 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       initialDate: DateTime.now(),
     );
 
-    if (picked != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time != null && picked != null) { // Added null check for 'picked'
+      final newDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
       );
-      if (time != null) {
-        final newDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          time.hour,
-          time.minute,
-        );
-        rescheduleInterview(id, newDateTime);
-      }
+      rescheduleInterview(id, newDateTime);
     }
-  }
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +148,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                           border: Border.all(color: Colors.grey.shade300),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
                               blurRadius: 8,
                               offset: const Offset(2, 4),
                             ),
@@ -161,10 +159,15 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                           children: [
                             CircleAvatar(
                               radius: 40,
-                              backgroundImage: i['candidate_picture'] != null
-                                  ? NetworkImage(i['candidate_picture'])
-                                  : null,
-                              child: i['candidate_picture'] == null
+                              backgroundImage: (() {
+                                final dynamic v = i['candidate_picture'];
+                                if (v is String && v.isNotEmpty) {
+                                  return NetworkImage(v) as ImageProvider<Object>;
+                                }
+                                return null;
+                              })(),
+                              child: (i['candidate_picture'] is! String ||
+                                      (i['candidate_picture'] as String).isEmpty)
                                   ? const Icon(Icons.person, size: 40)
                                   : null,
                             ),

@@ -175,7 +175,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
+        color: AppColors.lightGrey.withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -209,9 +209,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
+        color: AppColors.lightGrey.withAlpha((255 * 0.3).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryRed.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primaryRed.withAlpha((255 * 0.1).round())), // Use withAlpha
       ),
       child: Row(
         children: [
@@ -259,7 +259,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
+        color: AppColors.lightGrey.withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -302,9 +302,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
+        color: AppColors.lightGrey.withAlpha((255 * 0.3).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryRed.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primaryRed.withAlpha((255 * 0.1).round())), // Use withAlpha
       ),
       child: InkWell(
         onTap: () => _viewSharedNote(note),
@@ -341,7 +341,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.1),
+        color: AppColors.lightGrey.withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -381,7 +381,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                       children: [
                         Icon(Icons.chat_bubble_outline,
                             size: 48,
-                            color: AppColors.textGrey.withOpacity(0.5)),
+                            color: AppColors.textGrey.withAlpha((255 * 0.5).round())), // Use withAlpha
                         const SizedBox(height: 8),
                         Text('No messages yet',
                             style: TextStyle(
@@ -415,7 +415,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           if (!isCurrentUser) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primaryRed.withOpacity(0.1),
+              backgroundColor: AppColors.primaryRed.withAlpha((255 * 0.1).round()), // Use withAlpha
               child: Text(message.author.substring(0, 2).toUpperCase(),
                   style: const TextStyle(
                       color: AppColors.primaryRed,
@@ -429,13 +429,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isCurrentUser
-                    ? AppColors.primaryRed.withOpacity(0.1)
-                    : AppColors.lightGrey.withOpacity(0.3),
+                    ? AppColors.primaryRed.withAlpha((255 * 0.1).round()) // Use withAlpha
+                    : AppColors.lightGrey.withAlpha((255 * 0.3).round()), // Use withAlpha
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isCurrentUser
-                      ? AppColors.primaryRed.withOpacity(0.3)
-                      : AppColors.primaryRed.withOpacity(0.1),
+                      ? AppColors.primaryRed.withAlpha((255 * 0.3).round()) // Use withAlpha
+                      : AppColors.primaryRed.withAlpha((255 * 0.1).round()), // Use withAlpha
                 ),
               ),
               child: Column(
@@ -485,7 +485,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide:
-                    BorderSide(color: AppColors.primaryRed.withOpacity(0.3)),
+                    BorderSide(color: AppColors.primaryRed.withAlpha((255 * 0.3).round())), // Use withAlpha
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),

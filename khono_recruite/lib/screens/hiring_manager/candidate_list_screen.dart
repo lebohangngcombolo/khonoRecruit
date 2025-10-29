@@ -50,7 +50,7 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final cardBgColor =
-        isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.4);
+        isDark ? Colors.white.withAlpha((255 * 0.08).round()) : Colors.white.withAlpha((255 * 0.4).round()); // Use withAlpha
 
     return Scaffold(
       appBar: AppBar(
@@ -80,10 +80,10 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                               color: cardBgColor,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.15)),
+                                  color: Colors.white.withAlpha((255 * 0.15).round())), // Use withAlpha
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
+                                  color: Colors.black.withAlpha((255 * 0.15).round()), // Use withAlpha
                                   blurRadius: 10,
                                   offset: const Offset(2, 4),
                                 ),
@@ -94,9 +94,13 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 40,
-                                  backgroundImage: c['profile_picture'] != null
-                                      ? NetworkImage(c['profile_picture'])
-                                      : null,
+                                  backgroundImage: (() {
+                                    final dynamic v = c['profile_picture'];
+                                    if (v is String && v.isNotEmpty) {
+                                      return NetworkImage(v) as ImageProvider<Object>;
+                                    }
+                                    return null;
+                                  })(),
                                   child: c['profile_picture'] == null
                                       ? const Icon(Icons.person, size: 40)
                                       : null,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../../services/auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -92,7 +92,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
       children: items
           .map((item) => Chip(
                 label: Text(item),
-                backgroundColor: color.withOpacity(0.2),
+                backgroundColor: color.withAlpha((255 * 0.2).round()), // Use withAlpha
                 labelStyle:
                     TextStyle(color: color, fontWeight: FontWeight.bold),
               ))
@@ -207,35 +207,47 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.red),
+      backgroundColor: Colors.transparent, // Ensure Scaffold is transparent to show background
+      appBar: applications.isEmpty && !loading
+          ? AppBar(
+              title: Text("My Applications", style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white)),
+              backgroundColor: Colors.red,
+              elevation: 0,
             )
-          : applications.isEmpty
-              ? Scaffold(
-                  backgroundColor: Colors.white,
-                  appBar: AppBar(
-                      title: const Text("My Applications"),
-                      backgroundColor: Colors.red,
-                      elevation: 0),
-                  body: const Center(
-                      child: Text("No applications found",
-                          style: TextStyle(color: Colors.black87))),
-                )
-              : Row(
-                  children: [
-                    sidebar(),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: applications.length,
-                        itemBuilder: (context, index) {
-                          return applicationCard(applications[index]);
-                        },
-                      ),
+          : null, // Only show AppBar if no applications and not loading
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: loading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.red),
+              )
+            : applications.isEmpty
+                ? const Center(
+                    child: Text(
+                      "No applications found",
+                      style: TextStyle(color: Colors.black87),
                     ),
-                  ],
-                ),
+                  )
+                : Row(
+                    children: [
+                      sidebar(),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: applications.length,
+                          itemBuilder: (context, index) {
+                            return applicationCard(applications[index]);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+      ),
     );
   }
 }

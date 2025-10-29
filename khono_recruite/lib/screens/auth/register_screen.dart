@@ -138,19 +138,19 @@ class _RegisterScreenState extends State<RegisterScreen>
                       borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.05),
-                          Colors.white.withOpacity(0.05),
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -193,14 +193,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 label: "First Name",
                                 controller: firstNameController,
                                 textColor: const Color.fromARGB(255, 173, 0, 0),
-                                backgroundColor: Colors.white.withOpacity(0.1),
+                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
                                 label: "Last Name",
                                 controller: lastNameController,
                                 textColor: const Color.fromARGB(255, 168, 0, 0),
-                                backgroundColor: Colors.white.withOpacity(0.1),
+                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
@@ -208,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 controller: emailController,
                                 inputType: TextInputType.emailAddress,
                                 textColor: const Color.fromARGB(255, 157, 0, 0),
-                                backgroundColor: Colors.white.withOpacity(0.1),
+                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
@@ -216,7 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 controller: passwordController,
                                 inputType: TextInputType.visiblePassword,
                                 textColor: const Color.fromARGB(255, 154, 0, 0),
-                                backgroundColor: Colors.white.withOpacity(0.1),
+                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                               ),
                               const SizedBox(height: 20),
                               SizedBox(

@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../utils/api_endpoints.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_textfield.dart';
 
@@ -70,6 +69,7 @@ class _ProfilePageState extends State<ProfilePage>
   bool jobAlertsEnabled = true;
   bool profileVisible = true;
   bool enrollmentCompleted = false;
+  bool twoFactorEnabled = false;
 
   List<dynamic> documents = [];
 
@@ -140,6 +140,7 @@ class _ProfilePageState extends State<ProfilePage>
         enrollmentCompleted = data['enrollment_completed'] ?? false;
         jobAlertsEnabled = data['job_alerts_enabled'] ?? true;
         profileVisible = data['profile_visible'] ?? true;
+        twoFactorEnabled = data['two_factor_enabled'] ?? false;
       }
     } catch (e) {
       debugPrint("Error fetching profile/settings: $e");
@@ -291,6 +292,7 @@ class _ProfilePageState extends State<ProfilePage>
         "job_alerts_enabled": jobAlertsEnabled,
         "profile_visible": profileVisible,
         "enrollment_completed": enrollmentCompleted,
+        "two_factor_enabled": twoFactorEnabled,
       };
 
       final res = await http.put(
@@ -344,38 +346,46 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
 
-    if (loading)
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Theme(
       data: themeProvider.themeData,
       child: Scaffold(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.grey[100],
-        body: Row(
-          children: [
-            // Sidebar
-            Container(
-              width: 200,
-              color: Colors.redAccent,
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  _sidebarButton("Profile"),
-                  _sidebarButton("Settings"),
-                  _sidebarButton("2FA"),
-                  _sidebarButton("Reset Password"),
-                ],
-              ),
+        backgroundColor: Colors.transparent, // Set to transparent to show the background image
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+              fit: BoxFit.cover,
             ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _buildSelectedTab(),
+          ),
+          child: Row(
+            children: [
+              // Sidebar
+              Container(
+                width: 200,
+                color: Colors.redAccent,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    _sidebarButton("Profile"),
+                    _sidebarButton("Settings"),
+                    _sidebarButton("2FA"),
+                    _sidebarButton("Reset Password"),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildSelectedTab(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -672,13 +682,17 @@ class _ProfilePageState extends State<ProfilePage>
             const Text(
                 "Enable 2FA to add an extra layer of security to your account."),
             const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text("Enable Two-Factor Authentication"),
+              value: twoFactorEnabled,
+              onChanged: (v) => setState(() => twoFactorEnabled = v),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Implement 2FA enable logic
-              },
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: const Text("Enable 2FA"),
+              onPressed: updateSettings,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent),
+              child: const Text("Save 2FA Settings"),
             ),
           ],
         ),

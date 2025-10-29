@@ -1,16 +1,13 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/candidate_service.dart';
-import '../../services/auth_service.dart';
 import 'job_details_page.dart';
 import 'assessments_results_screen.dart';
 import '../../screens/candidate/user_profile_page.dart';
+import 'dart:ui'; // Added for BackdropFilter
 
 class CandidateDashboard extends StatefulWidget {
   final String token;
@@ -188,392 +185,402 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
-        children: [
-          // ---------- Sidebar ----------
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxHeight == 0) return const SizedBox();
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: sidebarCollapsed ? 70 : 250,
-                constraints: const BoxConstraints(minWidth: 70, maxWidth: 250),
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                      right: BorderSide(color: Colors.grey.shade200, width: 1)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 8,
-                        offset: const Offset(2, 0))
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 72,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (!sidebarCollapsed)
-                              Flexible(
-                                child: Image.asset('assets/images/logo2.png',
-                                    height: 40, fit: BoxFit.contain),
-                              )
-                            else
-                              Image.asset('assets/images/icon.png',
-                                  height: 40, fit: BoxFit.contain),
-                            IconButton(
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                              icon: Icon(
-                                sidebarCollapsed
-                                    ? Icons.arrow_forward_ios
-                                    : Icons.arrow_back_ios,
-                                size: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                              onPressed: () => setState(
-                                  () => sidebarCollapsed = !sidebarCollapsed),
-                            ),
-                          ],
-                        ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Row(
+          children: [
+            // ---------- Sidebar ----------
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxHeight == 0) return const SizedBox();
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(0), // Adjust if you want rounded corners for the glass effect
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust blur intensity as needed
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: sidebarCollapsed ? 70 : 250,
+                      constraints: const BoxConstraints(minWidth: 70, maxWidth: 250),
+                      clipBehavior: Clip.hardEdge,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2A),
+                        border: Border(
+                            right: BorderSide(color: Colors.grey.shade200.withOpacity(0.1), width: 1)),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withAlpha((255 * 0.02).round()), // Corrected to use withAlpha
+                              blurRadius: 8,
+                              offset: const Offset(2, 0))
+                        ],
                       ),
-                    ),
-                    const Divider(height: 1, color: Colors.grey),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: sidebarItems.length,
-                        itemBuilder: (_, index) {
-                          final isSelected = selectedIndex == index;
-                          IconData icon;
-                          switch (index) {
-                            case 0:
-                              icon = Icons.dashboard;
-                              break;
-                            case 1:
-                              icon = Icons.work_outline;
-                              break;
-                            case 2:
-                              icon = Icons.assessment;
-                              break;
-                            case 3:
-                              icon = Icons.person;
-                              break;
-                            default:
-                              icon = Icons.notifications;
-                          }
-
-                          return SizedBox(
-                            height: 48,
-                            child: ListTile(
-                              leading: Icon(icon, color: Colors.grey.shade800),
-                              title: sidebarCollapsed
-                                  ? null
-                                  : Text(
-                                      sidebarItems[index],
-                                      style: TextStyle(
-                                          color: Colors.grey.shade800,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                              selected: isSelected,
-                              onTap: () {
-                                setState(() => selectedIndex = index);
-                                if (sidebarItems[index] ==
-                                    "Assessment Results") {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => AssessmentResultsPage(
-                                            token: widget.token)),
-                                  );
-                                } else if (sidebarItems[index] == "Profile") {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            ProfilePage(token: widget.token)),
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(height: 1, color: Colors.grey),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12.0, horizontal: 8),
                       child: Column(
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          ProfilePage(token: widget.token)));
-                            },
-                            child: sidebarCollapsed
-                                ? CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: Colors.grey.shade200,
-                                    backgroundImage: candidateProfile != null &&
-                                            candidateProfile![
-                                                    'profile_picture'] !=
-                                                null
-                                        ? NetworkImage(candidateProfile![
-                                            'profile_picture'])
-                                        : null,
-                                    child: candidateProfile == null ||
-                                            candidateProfile![
-                                                    'profile_picture'] ==
-                                                null
-                                        ? const Icon(Icons.person,
-                                            color: Colors.redAccent, size: 16)
-                                        : null,
-                                  )
-                                : Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: Colors.grey.shade200,
-                                        backgroundImage: candidateProfile !=
-                                                    null &&
-                                                candidateProfile![
-                                                        'profile_picture'] !=
-                                                    null
-                                            ? NetworkImage(candidateProfile![
-                                                'profile_picture'])
-                                            : null,
-                                        child: candidateProfile == null ||
-                                                candidateProfile![
-                                                        'profile_picture'] ==
-                                                    null
-                                            ? const Icon(Icons.person,
-                                                color: Colors.redAccent,
-                                                size: 16)
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          candidateProfile != null
-                                              ? candidateProfile![
-                                                      'full_name'] ??
-                                                  "Candidate User"
-                                              : "Candidate User",
-                                          style: TextStyle(
-                                              color: Colors.grey.shade800,
-                                              fontWeight: FontWeight.w600),
-                                          overflow: TextOverflow.ellipsis,
+                          SizedBox(
+                            height: 72,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  if (!sidebarCollapsed)
+                                    Flexible(
+                                      child: Image.asset('assets/images/logo2.png',
+                                          height: 40, fit: BoxFit.contain),
+                                    )
+                                  else
+                                    Image.asset('assets/images/icon.png',
+                                        height: 40, fit: BoxFit.contain),
+                                  IconButton(
+                                    constraints: const BoxConstraints(),
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(
+                                      sidebarCollapsed
+                                          ? Icons.arrow_forward_ios
+                                          : Icons.arrow_back_ios,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    onPressed: () => setState(
+                                        () => sidebarCollapsed = !sidebarCollapsed),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 1, color: Colors.grey),
+                          Expanded(
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: sidebarItems.length,
+                              itemBuilder: (_, index) {
+                                final isSelected = selectedIndex == index;
+                                String assetIconPath;
+                                switch (index) {
+                                  case 0:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Project Launch_Start/Project Launch_Start_Red Badge_White.png';
+                                    break;
+                                  case 1:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png';
+                                    break;
+                                  case 2:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Business Growth_Development/Growth_Development_Red Badge_White.png';
+                                    break;
+                                  case 3:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png';
+                                    break;
+                                  default:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Information_Detail/Information_Red Badge_White.png';
+                                }
+
+                                return SizedBox(
+                                  height: 48,
+                                  child: ListTile(
+                                    leading: Image.asset(
+                                      assetIconPath,
+                                      width: 26,
+                                      height: 26,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    title: sidebarCollapsed
+                                        ? null
+                                        : Text(
+                                            sidebarItems[index],
+                                            style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            softWrap: false,
+                                          ),
+                                    selected: isSelected,
+                                    hoverColor: const Color(0xFFC10D00).withOpacity(0.4),
+                                    focusColor: const Color(0xFFC10D00).withOpacity(0.4),
+                                    selectedTileColor: const Color(0xFFC10D00).withOpacity(0.4),
+                                    onTap: () {
+                                      setState(() => selectedIndex = index);
+                                      if (sidebarItems[index] ==
+                                          "Assessment Results") {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => AssessmentResultsPage(
+                                                  token: widget.token)),
+                                        );
+                                      } else if (sidebarItems[index] == "Profile") {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ProfilePage(token: widget.token)),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const Divider(height: 1, color: Colors.grey),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 8),
+                            child: Column(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                ProfilePage(token: widget.token)));
+                                  },
+                                  child: sidebarCollapsed
+                                      ? Builder(builder: (context) {
+                                          return Image.asset(
+                                            'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
+                                            width: 26,
+                                            height: 26,
+                                            fit: BoxFit.contain,
+                                          );
+                                        })
+                                      : Row(
+                                          children: [
+                                            Image.asset(
+                                              'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
+                                              width: 24,
+                                              height: 24,
+                                              fit: BoxFit.contain,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                candidateProfile != null
+                                                    ? candidateProfile![
+                                                            'full_name'] ??
+                                                        "Candidate User"
+                                                    : "Candidate User",
+                                                style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                                const SizedBox(height: 12),
+                                sidebarCollapsed
+                                    ? IconButton(
+                                        onPressed: () {},
+                                        icon: Image.asset(
+                                          'Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png',
+                                          width: 20,
+                                          height: 20,
+                                          fit: BoxFit.contain,
+                                        ))
+                                    : ElevatedButton.icon(
+                                        onPressed: () async {},
+                                        icon: Image.asset(
+                                          'Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png',
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        label: Text(
+                                          "Logout",
+                                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          foregroundColor: Colors.redAccent,
+                                          elevation: 0,
+                                          shadowColor: Colors.transparent,
+                                          surfaceTintColor: Colors.transparent,
+                                          minimumSize: const Size.fromHeight(40),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          sidebarCollapsed
-                              ? IconButton(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.logout,
-                                      color: Colors.grey))
-                              : ElevatedButton.icon(
-                                  onPressed: () async {},
-                                  icon: const Icon(Icons.logout, size: 16),
-                                  label: const Text("Logout"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.redAccent,
-                                    side:
-                                        BorderSide(color: Colors.grey.shade300),
-                                    minimumSize: const Size.fromHeight(40),
-                                  ),
-                                ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                );
+              },
+            ),
 
-          // ---------- Main Content ----------
-          Expanded(
-            child: Stack(
-              children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: ConstrainedBox(
-                        constraints:
-                            BoxConstraints(minHeight: constraints.maxHeight),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Navbar
-                            Container(
-                              height: 72,
-                              decoration:
-                                  const BoxDecoration(color: Colors.white),
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "Welcome Back, ${candidateProfile != null ? candidateProfile!['full_name'] ?? 'Candidate' : 'Candidate'}",
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.grey.shade900),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            "Overview of the recruitment platform",
-                                            style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        TextButton.icon(
-                                          onPressed: () =>
-                                              setState(() => selectedIndex = 1),
-                                          icon: const Icon(
-                                              Icons.add_box_outlined,
-                                              color: Colors.redAccent),
-                                          label: const Text("Create",
-                                              style: TextStyle(
-                                                  color: Colors.black87)),
+            // ---------- Main Content ----------
+            Expanded(
+              child: Stack(
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: ConstrainedBox(
+                          constraints:
+                              BoxConstraints(minHeight: constraints.maxHeight),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Navbar
+                              Container(
+                                height: 72,
+                                decoration:
+                                    BoxDecoration(color: Colors.black.withOpacity(0.25)),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Welcome Back, ${candidateProfile != null ? candidateProfile!['full_name'] ?? 'Candidate' : 'Candidate'}",
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              "Overview of the recruitment platform",
+                                              style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 12),
-                                        IconButton(
-                                          onPressed: () =>
-                                              setState(() => selectedIndex = 4),
-                                          icon: Stack(
-                                            children: [
-                                              const Icon(
-                                                  Icons.notifications_none),
-                                              if (notifications.isNotEmpty)
-                                                Positioned(
-                                                  right: 0,
-                                                  top: 0,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(2),
-                                                    decoration: BoxDecoration(
-                                                        color: Colors.redAccent,
-                                                        shape: BoxShape.circle),
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            minWidth: 12,
-                                                            minHeight: 12),
-                                                    child: Text(
-                                                      notifications.length
-                                                          .toString(),
-                                                      style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 8,
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                      textAlign:
-                                                          TextAlign.center,
+                                      ),
+                                      Row(
+                                        children: [
+                                          TextButton.icon(
+                                            onPressed: () =>
+                                                setState(() => selectedIndex = 1),
+                                            icon: const Icon(
+                                                Icons.add_box_outlined,
+                                                color: Colors.redAccent),
+                                            label: Text("Create",
+                                                style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600)),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          IconButton(
+                                            onPressed: () =>
+                                                setState(() => selectedIndex = 4),
+                                            icon: Stack(
+                                              children: [
+                                                Icon(
+                                                    Icons.notifications_none,
+                                                    color: Colors.white),
+                                                if (notifications.isNotEmpty)
+                                                  Positioned(
+                                                    right: 0,
+                                                    top: 0,
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(2),
+                                                      decoration: BoxDecoration(
+                                                          color: Colors.redAccent,
+                                                          shape: BoxShape.circle),
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                              minWidth: 12,
+                                                              minHeight: 12),
+                                                      child: Text(
+                                                        notifications.length
+                                                            .toString(),
+                                                        style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 8,
+                                                            fontWeight:
+                                                                FontWeight.bold),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        CircleAvatar(
-                                          radius: 18,
-                                          backgroundColor: Colors.grey.shade200,
-                                          backgroundImage: candidateProfile !=
-                                                      null &&
-                                                  candidateProfile![
-                                                          'profile_picture'] !=
-                                                      null
-                                              ? NetworkImage(candidateProfile![
-                                                  'profile_picture'])
-                                              : null,
-                                          child: candidateProfile == null ||
-                                                  candidateProfile![
-                                                          'profile_picture'] ==
-                                                      null
-                                              ? const Icon(Icons.person,
-                                                  color: Colors.redAccent)
-                                              : null,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                          const SizedBox(width: 12),
+                                          Builder(builder: (context) {
+                                            return Image.asset(
+                                              'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
+                                              width: 28,
+                                              height: 28,
+                                              fit: BoxFit.contain,
+                                            );
+                                          }),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
+                              const SizedBox(height: 20),
 
-                            // Page Content
-                            if (selectedIndex == 0)
-                              buildDashboardContent()
-                            else if (selectedIndex == 1)
-                              buildJobsApplied()
-                            else if (selectedIndex == 2)
-                              AssessmentResultsPage(token: widget.token)
-                            else if (selectedIndex == 3)
-                              ProfilePage(token: widget.token)
-                            else if (selectedIndex == 4)
-                              buildNotifications(),
+                              // Page Content
+                              if (selectedIndex == 0)
+                                buildDashboardContent()
+                              else if (selectedIndex == 1)
+                                buildJobsApplied()
+                              else if (selectedIndex == 2)
+                                AssessmentResultsPage(token: widget.token)
+                              else if (selectedIndex == 3)
+                                ProfilePage(token: widget.token)
+                              else if (selectedIndex == 4)
+                                buildNotifications(),
 
-                            const SizedBox(height: 40),
-                            _buildFooter(),
-                          ],
+                              const SizedBox(height: 40),
+                              _buildFooter(),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Floating Chat Button
-                Positioned(
-                  right: 20,
-                  bottom: 20,
-                  child: FloatingActionButton(
-                    backgroundColor: Colors.redAccent,
-                    child: const Icon(Icons.chat),
-                    onPressed: () => setState(() => chatbotOpen = !chatbotOpen),
+                      );
+                    },
                   ),
-                ),
 
-                // Chatbot Panel
-                if (chatbotOpen)
+                  // Floating Chat Button
                   Positioned(
-                    right: 20,
-                    bottom: 80,
-                    child: buildChatbotPanel(),
+                    right: 24,
+                    bottom: 24,
+                    child: GestureDetector(
+                      onTap: () => setState(() => chatbotOpen = !chatbotOpen),
+                      child: Image.asset(
+                        'Khono_Assets2/Khono_Icon/AI Chatbot_Red Badge_White.png',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
-              ],
+
+                  // Chatbot Panel
+                  if (chatbotOpen)
+                    Positioned(
+                      right: 24,
+                      bottom: 24,
+                      child: buildChatbotPanel(),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -589,18 +596,17 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Colors.redAccent, Colors.red],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Colors.black.withOpacity(0.10),
             boxShadow: [
               BoxShadow(
-                color: Colors.redAccent.withOpacity(0.3),
-                blurRadius: 12,
+                color: Colors.redAccent.withOpacity(0.1),
+                blurRadius: 3,
                 offset: const Offset(0, 6),
               )
             ],
+            border: Border.all(
+              color: Colors.redAccent.withAlpha((255 * 0.2).round()),
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -622,12 +628,12 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                       Text(
                         "Explore your opportunities and applications today",
                         style: GoogleFonts.poppins(
-                            fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                            fontSize: 14, color: Colors.white.withAlpha((255 * 0.9).round())), // Corrected to use withAlpha
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.work_outline, size: 80, color: Colors.white30),
+                const SizedBox.shrink(),
               ],
             ),
           ),
@@ -640,7 +646,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
           style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Colors.redAccent),
+              color: Colors.white),
         ),
         const SizedBox(height: 12),
         if (loadingJobs)
@@ -668,17 +674,17 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.redAccent.withOpacity(0.1),
+                        color: Colors.redAccent.withAlpha((255 * 0.1).round()), // Corrected to use withAlpha
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       )
                     ],
                     border:
-                        Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                        Border.all(color: Colors.redAccent.withAlpha((255 * 0.2).round())), // Corrected to use withAlpha
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -688,13 +694,13 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                       Text(
                         job['title'] ?? "Job Title",
                         style: GoogleFonts.poppins(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         job['company'] ?? "Company",
                         style: GoogleFonts.poppins(
-                            fontSize: 14, color: Colors.grey.shade700),
+                            fontSize: 14, color: Colors.white.withOpacity(0.8)),
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -706,7 +712,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                             child: Text(
                               job['location'] ?? "Location",
                               style: GoogleFonts.poppins(
-                                  fontSize: 12, color: Colors.grey.shade600),
+                                  fontSize: 12, color: Colors.white.withOpacity(0.8)),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -727,7 +733,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
           style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Colors.redAccent),
+              color: Colors.white),
         ),
         const SizedBox(height: 12),
         GridView.count(
@@ -738,18 +744,27 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
           mainAxisSpacing: 16,
           childAspectRatio: 1.5,
           children: [
-            buildStatCard("Applied", applications.length, Icons.send_to_mobile,
-                Colors.redAccent),
+            buildStatCard(
+                "Applied",
+                applications.length,
+                Icons.send_to_mobile,
+                Colors.redAccent,
+                assetPath:
+                    'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red.png'),
             buildStatCard(
                 "Interviews",
                 applications.where((a) => a['status'] == 'Interview').length,
                 Icons.mic,
-                Colors.redAccent.shade700),
+                Colors.redAccent.shade700,
+                assetPath:
+                    'Khono_Assets2/Khono_Icon/Calendar_Date Picker/Calendar_Date Picker_Red.png'),
             buildStatCard(
                 "Offers",
                 applications.where((a) => a['status'] == 'Offered').length,
                 Icons.check_circle,
-                Colors.redAccent.shade400),
+                Colors.redAccent.shade400,
+                assetPath:
+                    'Khono_Assets2/Khono_Icon/Approved_Tick/Approved_Red.png'),
           ],
         ),
       ],
@@ -757,26 +772,34 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
   }
 
 // ---------- Helper: Stat Card ----------
-  Widget buildStatCard(String title, int count, IconData icon, Color color) {
+  Widget buildStatCard(String title, int count, IconData icon, Color color, {String? assetPath}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.black.withOpacity(0.25),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha((255 * 0.1).round()), // Corrected to use withAlpha
               blurRadius: 6,
               offset: const Offset(0, 3))
         ],
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withAlpha((255 * 0.2).round())), // Corrected to use withAlpha
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
-            child: Icon(icon, color: color, size: 20),
+            backgroundColor: color.withAlpha((255 * 0.1).round()), // Corrected to use withAlpha
+            child: assetPath != null
+                ? Image.asset(
+                    assetPath,
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stack) => Icon(icon, color: color, size: 20),
+                  )
+                : Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Column(
@@ -786,12 +809,12 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
               Text(
                 "$count",
                 style: GoogleFonts.poppins(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                    fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               Text(
                 title,
                 style: GoogleFonts.poppins(
-                    fontSize: 12, color: Colors.grey.shade700),
+                    fontSize: 12, color: Colors.white.withOpacity(0.8)),
               ),
             ],
           ),
@@ -939,7 +962,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-      color: const Color(0xFF111111),
+      color: Colors.black,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

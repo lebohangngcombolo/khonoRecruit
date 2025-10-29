@@ -1,4 +1,3 @@
-import 'dart:io' as io;
 import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -129,7 +128,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
       }
 
       if (kIsWeb) {
-        final anchor = html.AnchorElement(href: cvUrl)
+        html.AnchorElement(href: cvUrl)
           ..setAttribute("download", "cv_$fullName.pdf")
           ..click();
 

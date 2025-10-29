@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../constants/app_colors.dart';
 import '../../widgets/widgets1/glass_card.dart';
 
@@ -12,7 +11,7 @@ class HMAnalyticsPage extends StatefulWidget {
 
 class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   String _selectedTimeRange = 'Last 6 Months';
-  bool _isLoading = false; // No real loading, just placeholder
+  // Removed: bool _isLoading = false; // No real loading, just placeholder
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +162,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
           Color color, IconData icon) =>
       GlassCard(
         blur: 8,
-        opacity: 0.1,
+        opacity: 0.1, // This is a parameter for GlassCard, keep as double.
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -225,7 +224,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildMockChart(String title, Color color) {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -258,7 +257,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildPredictiveAnalytics() {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -308,9 +307,9 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withAlpha((255 * 0.3).round())), // Use withAlpha
       ),
       child: Column(
         children: [
@@ -337,7 +336,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withAlpha((255 * 0.2).round()), // Use withAlpha
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -357,7 +356,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildDetailedReports() {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -404,9 +403,9 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withAlpha((255 * 0.3).round())), // Use withAlpha
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

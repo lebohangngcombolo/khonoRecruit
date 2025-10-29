@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_web_auth/flutter_web_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../hiring_manager/hiring_manager_dashboard.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../services/auth_service.dart';
 import '../../widgets/custom_textfield.dart';
@@ -218,19 +215,19 @@ class _LoginScreenState extends State<LoginScreen>
                       borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.05),
-                          Colors.white.withOpacity(0.05),
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -241,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen>
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                         child: Container(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -275,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 inputType: TextInputType.emailAddress,
                                 backgroundColor:
                                     const Color.fromARGB(0, 129, 128, 128)
-                                        .withOpacity(0.1),
+                                        .withAlpha((255 * 0.1).round()), // Use withAlpha
                                 textColor: const Color.fromARGB(255, 172, 0, 0),
                               ),
                               const SizedBox(height: 12),
@@ -285,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 obscureText: true,
                                 backgroundColor:
                                     const Color.fromARGB(0, 123, 123, 123)
-                                        .withOpacity(0.1),
+                                        .withAlpha((255 * 0.1).round()), // Use withAlpha
                                 textColor: const Color.fromARGB(255, 201, 0, 0),
                               ),
                               const SizedBox(height: 12),
@@ -313,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   onPressed: _login,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
-                                        Colors.white.withOpacity(0.8),
+                                        Colors.white.withAlpha((255 * 0.8).round()), // Use withAlpha
                                     foregroundColor: Colors.red,
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
@@ -334,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   Expanded(
                                       child: Divider(
                                           color:
-                                              Colors.white.withOpacity(0.4))),
+                                              Colors.white.withAlpha((255 * 0.4).round()))), // Use withAlpha
                                   const Padding(
                                     padding:
                                         EdgeInsets.symmetric(horizontal: 16),
@@ -346,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   Expanded(
                                       child: Divider(
                                           color:
-                                              Colors.white.withOpacity(0.4))),
+                                              Colors.white.withAlpha((255 * 0.4).round()))), // Use withAlpha
                                 ],
                               ),
                               const SizedBox(height: 20),

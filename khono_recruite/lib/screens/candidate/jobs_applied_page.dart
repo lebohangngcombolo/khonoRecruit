@@ -39,84 +39,121 @@ class _JobsAppliedPageState extends State<JobsAppliedPage> {
     }
 
     if (applications.isEmpty) {
-      return const Center(
-        child: Text(
-          "You haven't applied to any jobs yet",
-          style: TextStyle(color: Colors.white, fontSize: 16),
+      return Scaffold(
+        backgroundColor: Colors.transparent, // Set to transparent to show the background image
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: const Center(
+            child: Text(
+              "You haven't applied to any jobs yet",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
         ),
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Jobs You've Applied To",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+    return Scaffold(
+      backgroundColor: Colors.transparent, // Set to transparent to show the background image
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            fit: BoxFit.cover,
           ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 20,
-            runSpacing: 20,
-            children: applications.map((app) {
-              return SizedBox(
-                width: 340,
-                child: CustomCard(
-                  title: app['job_title'] ?? "No title",
-                  subtitle: app['job_description'] != null
-                      ? (app['job_description'].length > 50
-                          ? "${app['job_description'].substring(0, 50)}..."
-                          : app['job_description'])
-                      : "No description",
-                  color: Colors.white.withOpacity(0.05),
-                  shadow: true,
-                  onTap: () {
-                    // Optional: navigate to job details
-                  },
-                  extraWidget: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: app["status"] == "Accepted"
-                                ? Colors.green
-                                : app["status"] == "Rejected"
-                                    ? Colors.red
-                                    : Colors.orange,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            app["status"] ?? "Pending",
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12),
-                          ),
-                        ),
-                        Text(
-                          app["assessed_date"] != null
-                              ? app["assessed_date"].substring(0, 10)
-                              : "",
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Jobs You've Applied To",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              );
-            }).toList(),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 20,
+                runSpacing: 20,
+                children: applications.map((app) {
+                  return SizedBox(
+                    width: 340,
+                    child: CustomCard(
+                      title: app['job_title'] ?? "No title",
+                      subtitle: app['job_description'] != null
+                          ? (app['job_description'].length > 50
+                              ? "${app['job_description'].substring(0, 50)}..."
+                              : app['job_description'])
+                          : "No description",
+                      color: Colors.black.withOpacity(0.25),
+                      shadow: true,
+                      onTap: () {
+                        // Optional: navigate to job details
+                      },
+                      extraWidget: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: Image.asset(
+                                'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png',
+                                width: 24,
+                                height: 24,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: app["status"] == "Accepted"
+                                        ? Colors.green
+                                        : app["status"] == "Rejected"
+                                            ? Colors.red
+                                            : Colors.orange,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    app["status"] ?? "Pending",
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 12),
+                                  ),
+                                ),
+                                Text(
+                                  app["assessed_date"] != null
+                                      ? app["assessed_date"].substring(0, 10)
+                                      : "",
+                                  style: TextStyle(
+                                      color: Colors.white.withOpacity(0.6),
+                                      fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

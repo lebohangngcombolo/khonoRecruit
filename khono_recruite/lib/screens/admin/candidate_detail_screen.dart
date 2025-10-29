@@ -1,6 +1,5 @@
-import 'dart:io' as io;
-import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:js/js.dart' as js; // For web download
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -11,6 +10,8 @@ import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'interview_schedule_page.dart';
 import 'package:http/http.dart' as http;
+import 'dart:html' as html; // Import dart:html for window object
+import 'dart:js_util' as js_util; // Import dart:js_util for callMethod
 
 class CandidateDetailScreen extends StatefulWidget {
   final int candidateId;
@@ -99,6 +100,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
     }
   }
 
+  @pragma('vm:entry-point')
   Future<void> downloadCV(int candidateId, BuildContext context,
       String fullName, String jwtToken) async {
     try {
@@ -129,16 +131,14 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
       }
 
       if (kIsWeb) {
-        final anchor = html.AnchorElement(href: cvUrl)
-          ..setAttribute("download", "cv_$fullName.pdf")
-          ..click();
+        js_util.callMethod(html.window, 'downloadFile', [cvUrl, 'cv_$fullName.pdf']);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Download started")),
         );
       } else {
         final dir = await getApplicationDocumentsDirectory();
-        final savePath = "${dir.path}/cv_$fullName.pdf";
+        final savePath = "${dir.path}/cv_${fullName}.pdf";
 
         await Dio().download(cvUrl, savePath);
 

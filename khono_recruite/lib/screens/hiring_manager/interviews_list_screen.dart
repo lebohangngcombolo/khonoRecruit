@@ -101,23 +101,21 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       initialDate: DateTime.now(),
     );
 
-    if (picked != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time != null && picked != null) { // Added null check for 'picked'
+      final newDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
       );
-      if (time != null) {
-        final newDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          time.hour,
-          time.minute,
-        );
-        rescheduleInterview(id, newDateTime);
-      }
+      rescheduleInterview(id, newDateTime);
     }
-  }
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -130,11 +128,11 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
         : [const Color(0xFFBBDEFB), const Color(0xFFE3F2FD)];
 
     final cardBgColor =
-        isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.4);
+        isDark ? Colors.white.withAlpha((255 * 0.08).round()) : Colors.white.withAlpha((255 * 0.4).round()); // Use withAlpha
 
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary =
-        isDark ? Colors.white70 : Colors.black.withOpacity(0.7);
+        isDark ? Colors.white70 : Colors.black.withAlpha((255 * 0.7).round()); // Use withAlpha
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -197,12 +195,12 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                         color: cardBgColor,
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                          color: Colors.white.withOpacity(0.15),
+                                          color: Colors.white.withAlpha((255 * 0.15).round()), // Use withAlpha
                                         ),
                                         boxShadow: [
                                           BoxShadow(
                                             color:
-                                                Colors.black.withOpacity(0.15),
+                                                Colors.black.withAlpha((255 * 0.15).round()), // Use withAlpha
                                             blurRadius: 10,
                                             offset: const Offset(2, 4),
                                           )
@@ -250,7 +248,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors
                                                       .redAccent
-                                                      .withOpacity(0.9),
+                                                      .withAlpha((255 * 0.9).round()), // Use withAlpha
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -269,7 +267,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors
                                                       .blueAccent
-                                                      .withOpacity(0.9),
+                                                      .withAlpha((255 * 0.9).round()), // Use withAlpha
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(

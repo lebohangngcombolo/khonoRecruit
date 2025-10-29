@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart' as vm; // Import vector_math_64
 import '../../services/auth_service.dart';
 import '../../utils/api_endpoints.dart';
 
@@ -92,28 +93,28 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               transform: isHovered
-                                  ? (Matrix4.identity()..translate(0, -8, 0))
+                                  ? (Matrix4.identity()..translate(vm.Vector3(0, -8, 0))) // Use vm.Vector3
                                   : Matrix4.identity(),
                               width: cardWidth,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: isHovered
                                     ? Colors.white
-                                        .withOpacity(0.1) // subtle overlay
+                                        .withAlpha((255 * 0.1).round()) // Use withAlpha
                                     : Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
                                     color: isHovered
                                         ? const Color.fromRGBO(151, 18, 8, 1)
-                                            .withOpacity(0.1)
-                                        : Colors.black.withOpacity(0.1),
+                                            .withAlpha((255 * 0.1).round()) // Use withAlpha
+                                        : Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
                                     blurRadius: isHovered ? 12 : 8,
                                     offset: const Offset(2, 2),
                                   ),
                                 ],
                                 border: Border.all(
-                                  color: Colors.grey.withOpacity(0.2),
+                                  color: Colors.grey.withAlpha((255 * 0.2).round()), // Use withAlpha
                                 ),
                               ),
                               child: Row(
@@ -121,10 +122,13 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 40,
-                                    backgroundImage:
-                                        c['profile_picture'] != null
-                                            ? NetworkImage(c['profile_picture'])
-                                            : null,
+                                    backgroundImage: (() {
+                                      final dynamic v = c['profile_picture'];
+                                      if (v is String && v.isNotEmpty) {
+                                        return NetworkImage(v) as ImageProvider<Object>;
+                                      }
+                                      return null;
+                                    })(),
                                     child: c['profile_picture'] == null
                                         ? const Icon(Icons.person, size: 40)
                                         : null,

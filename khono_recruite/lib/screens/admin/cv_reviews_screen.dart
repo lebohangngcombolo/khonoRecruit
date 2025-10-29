@@ -190,8 +190,7 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                                         ),
                                                         backgroundColor:
                                                             topColor
-                                                                .withOpacity(
-                                                                    0.2),
+                                                                .withAlpha((255 * 0.2).round()), // Use withAlpha
                                                         visualDensity:
                                                             VisualDensity
                                                                 .compact,

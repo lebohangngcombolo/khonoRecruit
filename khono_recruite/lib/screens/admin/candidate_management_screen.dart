@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'candidate_detail_screen.dart';
@@ -143,7 +142,7 @@ class _CandidateManagementScreenState extends State<CandidateManagementScreen> {
                                         boxShadow: [
                                           BoxShadow(
                                             color:
-                                                Colors.black.withOpacity(0.03),
+                                                Colors.black.withAlpha((255 * 0.03).round()), // Use withAlpha
                                             blurRadius: 6,
                                             offset: const Offset(0, 3),
                                           )
