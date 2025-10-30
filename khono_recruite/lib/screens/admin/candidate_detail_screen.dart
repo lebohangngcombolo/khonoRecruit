@@ -305,7 +305,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
                 child: _buildHoverWrapper(
                   child: Card(
                     color: themeProvider.isDarkMode
-                        ? const Color(0xFF1E1E1E)
+                        ? const Color(0xFF14131E)
                         : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
@@ -375,7 +375,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             borderRadius: BorderRadius.circular(20),
@@ -473,7 +473,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
   Widget buildSidebar(ThemeProvider themeProvider) {
     return Drawer(
       backgroundColor:
-          (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+          (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
               .withOpacity(0.9),
       child: SafeArea(
         child: ListView(

@@ -114,7 +114,7 @@ class _JobManagementState extends State<JobManagement> {
                                   final job = jobs[index];
                                   return Card(
                                     color: (themeProvider.isDarkMode
-                                            ? const Color(0xFF1E1E1E)
+                                            ? const Color(0xFF14131E)
                                             : Colors.white)
                                         .withOpacity(0.9),
                                     elevation: 3,
@@ -335,7 +335,7 @@ class _JobFormDialogState extends State<JobFormDialog>
         height: 720,
         decoration: BoxDecoration(
           color: (themeProvider.isDarkMode
-                  ? const Color(0xFF1E1E1E)
+                  ? const Color(0xFF14131E)
                   : Colors.white)
               .withOpacity(0.95),
           borderRadius: BorderRadius.circular(24),
@@ -451,7 +451,7 @@ class _JobFormDialogState extends State<JobFormDialog>
                               final q = questions[index];
                               return Card(
                                 color: (themeProvider.isDarkMode
-                                        ? const Color(0xFF2D2D2D)
+                                        ? const Color(0xFF14131E)
                                         : Colors.white)
                                     .withOpacity(0.9),
                                 margin: const EdgeInsets.symmetric(vertical: 8),

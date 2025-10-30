@@ -109,7 +109,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color:
-            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -259,7 +259,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color:
-              themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -328,7 +328,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            themeProvider.isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: themeProvider.isDarkMode
@@ -422,7 +422,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color:
-              themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -494,7 +494,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color:
-            themeProvider.isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: themeProvider.isDarkMode
@@ -608,7 +608,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color:
-            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -933,7 +933,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor:
-            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         title: Text('Create Shared Note',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
@@ -1032,7 +1032,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor:
-            themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white,
         title: Text(note.title,
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,

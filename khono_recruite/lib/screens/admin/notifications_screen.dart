@@ -108,7 +108,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
             backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             elevation: 1,
@@ -176,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: (themeProvider.isDarkMode
-                                            ? const Color(0xFF1E1E1E)
+                                            ? const Color(0xFF14131E)
                                             : Colors.grey[100]!)
                                         .withOpacity(0.9),
                                     borderRadius: BorderRadius.circular(16),

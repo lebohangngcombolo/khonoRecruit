@@ -74,7 +74,7 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
             ),
             centerTitle: true,
             backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             elevation: 0,
@@ -150,7 +150,7 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                           margin: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: (themeProvider.isDarkMode
-                                    ? const Color(0xFF1E1E1E)
+                                    ? const Color(0xFF14131E)
                                     : Colors.white)
                                 .withOpacity(0.9),
                             borderRadius: BorderRadius.circular(16),
@@ -266,7 +266,7 @@ class _CandidateListScreenState extends State<CandidateListScreen> {
                                         width: cardWidth,
                                         decoration: BoxDecoration(
                                           color: (themeProvider.isDarkMode
-                                                  ? const Color(0xFF1E1E1E)
+                                                  ? const Color(0xFF14131E)
                                                   : Colors.white)
                                               .withOpacity(0.9),
                                           borderRadius:

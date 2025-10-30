@@ -23,11 +23,13 @@ def create_app():
     )
 
     # ---------------- Register Blueprints ----------------
-  
+
+    
     auth.init_auth_routes(app)  # existing auth routes
     app.register_blueprint(admin_routes.admin_bp, url_prefix="/api/admin")
     app.register_blueprint(candidate_routes.candidate_bp, url_prefix="/api/candidate")
     app.register_blueprint(ai_routes.ai_bp)
+
     
 
 

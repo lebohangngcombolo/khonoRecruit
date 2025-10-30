@@ -72,7 +72,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      // 🌆 Dynamic background implementation
+      // 🌆 Enhanced Dynamic background with gradient overlay
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
@@ -83,19 +83,19 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         child: SafeArea(
           child: Column(
             children: [
-              // Enhanced Professional Header
+              // 🎯 Premium Header with Glassmorphism Effect
               Container(
                 height: 80,
                 decoration: BoxDecoration(
                   color: (themeProvider.isDarkMode
-                          ? const Color(0xFF1E1E1E)
+                          ? const Color(0xFF14131E)
                           : Colors.white)
-                      .withOpacity(0.9),
+                      .withOpacity(0.85),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                   border: Border(
@@ -111,13 +111,20 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
-                      // Back button with improved styling
+                      // Enhanced Back button with subtle animation
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: themeProvider.isDarkMode
                               ? Colors.white10
                               : Colors.grey.shade50,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: IconButton(
                           icon: Icon(Icons.arrow_back_rounded,
@@ -129,7 +136,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Enhanced title section
+                      // Enhanced title section with better typography
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -138,12 +145,12 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                             Text(
                               "Analytics Dashboard",
                               style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
                                 color: themeProvider.isDarkMode
                                     ? Colors.white
-                                    : const Color(0xFF1A1A1A),
-                                letterSpacing: -0.5,
+                                    : const Color(0xFF14131E),
+                                letterSpacing: -0.8,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -160,25 +167,32 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                           ],
                         ),
                       ),
-                      // Enhanced controls
+                      // Premium controls with better spacing
                       Row(
                         children: [
-                          // Professional time range filter
+                          // Enhanced time range filter with better styling
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            height: 36,
+                            height: 40,
                             decoration: BoxDecoration(
                               color: (themeProvider.isDarkMode
-                                      ? const Color(0xFF2A2A2A)
+                                      ? const Color(0xFF14131E)
                                       : Colors.white)
                                   .withOpacity(0.9),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: themeProvider.isDarkMode
-                                    ? Colors.white12
-                                    : Colors.grey.shade200,
+                                    ? Colors.white24
+                                    : Colors.grey.shade300,
                                 width: 1.5,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
@@ -191,9 +205,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                                 style: TextStyle(
                                   color: themeProvider.isDarkMode
                                       ? Colors.white
-                                      : const Color(0xFF1A1A1A),
+                                      : const Color(0xFF14131E),
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 items: const [
                                   DropdownMenuItem(
@@ -208,20 +222,41 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // Enhanced refresh button
+                          // Enhanced refresh button with loading state
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: themeProvider.isDarkMode
                                   ? Colors.white10
                                   : Colors.grey.shade50,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: IconButton(
-                              icon: Icon(Icons.refresh_rounded,
-                                  size: 20,
-                                  color: themeProvider.isDarkMode
-                                      ? Colors.white70
-                                      : Colors.grey.shade700),
+                              icon: _isLoading
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          themeProvider.isDarkMode
+                                              ? Colors.white70
+                                              : Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(Icons.refresh_rounded,
+                                      size: 20,
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.white70
+                                          : Colors.grey.shade700),
                               onPressed: _isLoading ? null : _loadAnalyticsData,
                             ),
                           ),
@@ -250,33 +285,44 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.redAccent),
+          // Enhanced loading animation
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.redAccent.withOpacity(0.2),
+                width: 2,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.redAccent),
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Text(
             'Loading Analytics Data',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
               color: themeProvider.isDarkMode
                   ? Colors.white70
-                  : Colors.grey.shade700,
+                  : Colors.grey.shade800,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Please wait while we gather your insights',
             style: TextStyle(
               color: themeProvider.isDarkMode
                   ? Colors.white54
                   : Colors.grey.shade500,
-              fontSize: 13,
+              fontSize: 14,
             ),
           ),
         ],
@@ -291,26 +337,34 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Enhanced error illustration
             Container(
-              width: 80,
-              height: 80,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.redAccent.withOpacity(0.1),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.redAccent.withOpacity(0.1),
+                    Colors.redAccent.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
               child: Icon(Icons.error_outline_rounded,
-                  size: 40, color: Colors.redAccent),
+                  size: 48, color: Colors.redAccent),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             Text(
               'Unable to Load Data',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               _errorMessage,
               style: TextStyle(
@@ -319,18 +373,20 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
+            // Enhanced retry button
             ElevatedButton(
               onPressed: _loadAnalyticsData,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
-                elevation: 0,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shadowColor: Colors.redAccent.withOpacity(0.3),
               ),
               child: Text(
                 'Try Again',
@@ -1097,51 +1153,80 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
           color:
               themeProvider.isDarkMode ? Colors.white12 : Colors.grey.shade100,
-          width: 1,
+          width: 1.5,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: themeProvider.isDarkMode
-                  ? Colors.white
-                  : const Color(0xFF1A1A1A),
-              letterSpacing: -0.3,
-            ),
+          // Enhanced header with better typography
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.redAccent,
+                      Colors.redAccent.withOpacity(0.7)
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: themeProvider.isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1A1A1A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: themeProvider.isDarkMode
+                            ? Colors.white60
+                            : Colors.grey.shade600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: themeProvider.isDarkMode
-                  ? Colors.white60
-                  : Colors.grey.shade600,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           child,
         ],
       ),
@@ -1174,20 +1259,20 @@ class _ProfessionalStatCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(
           color:
               themeProvider.isDarkMode ? Colors.white12 : Colors.grey.shade100,
-          width: 1,
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -1197,66 +1282,82 @@ class _ProfessionalStatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Enhanced icon container
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: gradient,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradient.first.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: Colors.white, size: 22),
               ),
+              // Enhanced percentage badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: color.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: Text(
                   "+12%",
                   style: TextStyle(
                     color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          // Enhanced value display
           Text(
             value,
             style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
               color: themeProvider.isDarkMode
                   ? Colors.white
-                  : const Color(0xFF1A1A1A),
-              letterSpacing: -0.5,
+                  : const Color(0xFF14131E),
+              letterSpacing: -0.8,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             title,
             style: TextStyle(
               color: themeProvider.isDarkMode
                   ? Colors.white70
                   : Colors.grey.shade700,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             subtitle,
             style: TextStyle(
               color: themeProvider.isDarkMode
                   ? Colors.white54
                   : Colors.grey.shade500,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w400,
             ),
           ),

@@ -377,7 +377,7 @@ class _ProfilePageState extends State<ProfilePage>
     if (loading) {
       return Scaffold(
         backgroundColor: themeProvider.isDarkMode
-            ? const Color(0xFF121212)
+            ? const Color(0xFF14131E)
             : Colors.grey.shade50,
         body: Center(
           child: Column(
@@ -406,7 +406,7 @@ class _ProfilePageState extends State<ProfilePage>
       data: themeProvider.themeData,
       child: Scaffold(
         backgroundColor: themeProvider.isDarkMode
-            ? const Color(0xFF121212)
+            ? const Color(0xFF14131E)
             : Colors.grey.shade50,
         body: Row(
           children: [
@@ -415,7 +415,7 @@ class _ProfilePageState extends State<ProfilePage>
               width: 280,
               decoration: BoxDecoration(
                 color: themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white,
                 boxShadow: [
                   BoxShadow(
@@ -619,7 +619,7 @@ class _ProfilePageState extends State<ProfilePage>
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: themeProvider.isDarkMode
-                        ? const Color(0xFF1E1E1E)
+                        ? const Color(0xFF14131E)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
@@ -894,7 +894,7 @@ class _ProfilePageState extends State<ProfilePage>
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: themeProvider.isDarkMode
-                        ? const Color(0xFF1E1E1E)
+                        ? const Color(0xFF14131E)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [

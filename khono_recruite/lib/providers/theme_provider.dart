@@ -36,20 +36,23 @@ class ThemeProvider extends ChangeNotifier {
   final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    primaryColor: Colors.red,
-    colorScheme: ColorScheme.light(primary: Colors.red),
+    primaryColor: const Color(0xFF971208),
+    colorScheme: ColorScheme.light(
+      primary: const Color(0xFF971208),
+      secondary: const Color(0xFFCF2030),
+    ),
     scaffoldBackgroundColor: const Color(0xFFF8F8F8),
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.red,
+      backgroundColor: Color(0xFF971208),
       foregroundColor: Colors.white,
       elevation: 0,
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Colors.red,
+      backgroundColor: Color(0xFF971208),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red,
+        backgroundColor: const Color(0xFF971208),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -62,20 +65,23 @@ class ThemeProvider extends ChangeNotifier {
   final ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: Colors.red.shade400,
-    colorScheme: ColorScheme.dark(primary: Colors.red.shade400),
+    primaryColor: const Color(0xFF14131E),
+    colorScheme: ColorScheme.dark(
+      primary: const Color(0xFF14131E),
+      secondary: const Color(0xFF272A3D),
+    ),
     scaffoldBackgroundColor: const Color(0xFF121212),
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.red.shade400,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF14131E),
       foregroundColor: Colors.white,
       elevation: 0,
     ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: Colors.red.shade400,
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: Color(0xFF14131E),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red.shade400,
+        backgroundColor: const Color(0xFF14131E),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),

@@ -90,7 +90,7 @@ class _CandidateManagementScreenState extends State<CandidateManagementScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   color: (themeProvider.isDarkMode
-                          ? const Color(0xFF1E1E1E)
+                          ? const Color(0xFF14131E)
                           : Colors.white)
                       .withOpacity(0.9),
                   child: Row(
@@ -163,7 +163,7 @@ class _CandidateManagementScreenState extends State<CandidateManagementScreen> {
                                           padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
                                             color: (themeProvider.isDarkMode
-                                                    ? const Color(0xFF1E1E1E)
+                                                    ? const Color(0xFF14131E)
                                                     : Colors.white)
                                                 .withOpacity(0.9),
                                             borderRadius:

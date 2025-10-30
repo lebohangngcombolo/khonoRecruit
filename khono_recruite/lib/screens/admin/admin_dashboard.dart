@@ -313,19 +313,22 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Logout"),
-          content: const Text("Are you sure you want to logout?"),
+          title: const Text("Logout", style: TextStyle(fontFamily: 'Poppins')),
+          content: const Text("Are you sure you want to logout?",
+              style: TextStyle(fontFamily: 'Poppins')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cancel"),
+              child:
+                  const Text("Cancel", style: TextStyle(fontFamily: 'Poppins')),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 _performLogout(context);
               },
-              child: const Text("Logout", style: TextStyle(color: Colors.red)),
+              child: const Text("Logout",
+                  style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
             ),
           ],
         );
@@ -375,15 +378,16 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     height: double.infinity,
                     decoration: BoxDecoration(
                       color: themeProvider.isDarkMode
-                          ? const Color(0xFF1E1E1E)
-                          : Colors.white,
+                          ? const Color.fromARGB(171, 20, 19, 30)
+                          : const Color.fromARGB(156, 255, 255, 255),
                       border: Border(
                         right:
                             BorderSide(color: Colors.grey.shade200, width: 1),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
+                          color: const Color.fromARGB(255, 20, 19, 30)
+                              .withOpacity(0.02),
                           blurRadius: 8,
                           offset: const Offset(2, 0),
                         ),
@@ -484,6 +488,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                       child: Text(
                                         "Admin User",
                                         style: TextStyle(
+                                          fontFamily: 'Poppins',
                                           color: themeProvider.isDarkMode
                                               ? Colors.white
                                               : Colors.grey.shade800,
@@ -519,7 +524,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                   onPressed: () =>
                                       _showLogoutConfirmation(context),
                                   icon: const Icon(Icons.logout, size: 16),
-                                  label: const Text("Logout"),
+                                  label: const Text("Logout",
+                                      style: TextStyle(fontFamily: 'Poppins')),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: themeProvider.isDarkMode
                                         ? const Color(0xFF2D2D2D)
@@ -552,34 +558,75 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     Container(
                       height: 72,
                       color: themeProvider.isDarkMode
-                          ? const Color(0xFF1E1E1E).withOpacity(0.8)
+                          ? const Color(0xFF14131E).withOpacity(0.8)
                           : Colors.white.withOpacity(0.8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
                           children: [
+                            // Search Bar - Replaced the welcome text
                             Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Welcome Back, Admin",
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: themeProvider.isDarkMode
-                                              ? Colors.white
-                                              : Colors.grey.shade900)),
-                                  const SizedBox(height: 2),
-                                  Text("Overview of the recruitment platform",
-                                      style: TextStyle(
-                                          color: themeProvider.isDarkMode
-                                              ? Colors.grey.shade400
-                                              : Colors.grey.shade600,
-                                          fontSize: 12)),
-                                ],
+                              child: Container(
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: (themeProvider.isDarkMode
+                                      ? const Color(0xFF14131E)
+                                      : Colors.white.withOpacity(0.8)),
+                                  borderRadius: BorderRadius.circular(40),
+                                  border: Border.all(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.black.withOpacity(0.05),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.black.withOpacity(0.3)
+                                          : Colors.grey.withOpacity(0.2),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: "Search across platform...",
+                                    hintStyle: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade700,
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: Padding(
+                                      padding: const EdgeInsets.all(10.0),
+                                      child: Image.asset(
+                                        'assets/images/SearchRed.png',
+                                        width: 30,
+                                        height: 30,
+                                      ),
+                                    ),
+                                    filled: false,
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,
+                                      borderRadius: BorderRadius.circular(40),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 14, horizontal: 10),
+                                  ),
+                                  cursorColor: Colors.redAccent,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black.withOpacity(0.8),
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 16),
+
                             Row(
                               children: [
                                 // ---------- Theme Toggle Switch ----------
@@ -675,6 +722,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                       color: Colors.redAccent),
                                   label: Text("Create",
                                       style: TextStyle(
+                                          fontFamily: 'Poppins',
                                           color: themeProvider.isDarkMode
                                               ? Colors.white
                                               : Colors.black87)),
@@ -759,6 +807,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 child: Text(
                   label,
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: selected
                         ? Colors.redAccent
                         : themeProvider.isDarkMode
@@ -787,7 +836,9 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         );
       case "candidates":
         if (selectedJobId == null) {
-          return const Center(child: Text("Please select a job first"));
+          return const Center(
+              child: Text("Please select a job first",
+                  style: TextStyle(fontFamily: 'Poppins')));
         }
         return CandidateManagementScreen(jobId: selectedJobId!);
       case "interviews":
@@ -839,6 +890,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   Text(
                     "Audit Analytics Dashboard",
                     style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -859,7 +911,9 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     Text(
                       "${audits.length} Records",
                       style: TextStyle(
-                          color: Colors.redAccent, fontWeight: FontWeight.w600),
+                          fontFamily: 'Poppins',
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -876,10 +930,11 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   controller: auditSearchController,
                   decoration: InputDecoration(
                     hintText: "Search audit logs...",
+                    hintStyle: const TextStyle(fontFamily: 'Poppins'),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: (themeProvider.isDarkMode
-                            ? const Color(0xFF2D2D2D)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.9),
                     contentPadding: const EdgeInsets.symmetric(
@@ -900,7 +955,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   color: (themeProvider.isDarkMode
-                          ? const Color(0xFF2D2D2D)
+                          ? const Color(0xFF14131E)
                           : Colors.white)
                       .withOpacity(0.9),
                   borderRadius: BorderRadius.circular(30),
@@ -908,11 +963,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: auditActionFilter,
-                    hint: const Text("Action Type"),
+                    hint: const Text("Action Type",
+                        style: TextStyle(fontFamily: 'Poppins')),
                     items: [null, ...auditActions]
                         .map((e) => DropdownMenuItem<String>(
                               value: e,
-                              child: Text(e ?? "All"),
+                              child: Text(e ?? "All",
+                                  style:
+                                      const TextStyle(fontFamily: 'Poppins')),
                             ))
                         .toList(),
                     onChanged: (val) {
@@ -931,7 +989,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             height: 300,
             decoration: BoxDecoration(
               color: (themeProvider.isDarkMode
-                      ? const Color(0xFF1E1E1E)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.9),
               borderRadius: BorderRadius.circular(20),
@@ -951,6 +1009,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     title: ChartTitle(
                         text: "Audit Activity Trend - Stacked Lines",
                         textStyle: TextStyle(
+                            fontFamily: 'Poppins',
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: themeProvider.isDarkMode
@@ -961,6 +1020,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                       axisLine: const AxisLine(width: 1, color: Colors.grey),
                       majorGridLines: const MajorGridLines(width: 0),
                       labelStyle: TextStyle(
+                          fontFamily: 'Poppins',
                           color: themeProvider.isDarkMode
                               ? Colors.white
                               : Colors.black54),
@@ -972,6 +1032,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         width: 1,
                       ),
                       labelStyle: TextStyle(
+                          fontFamily: 'Poppins',
                           color: themeProvider.isDarkMode
                               ? Colors.white
                               : Colors.black54),
@@ -980,7 +1041,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                       enable: true,
                       color: Colors.redAccent,
                       borderColor: Colors.redAccent,
-                      textStyle: const TextStyle(color: Colors.white),
+                      textStyle: const TextStyle(
+                          color: Colors.white, fontFamily: 'Poppins'),
                     ),
                     legend: Legend(
                       isVisible: true,
@@ -1042,7 +1104,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Container(
             decoration: BoxDecoration(
               color: (themeProvider.isDarkMode
-                      ? const Color(0xFF1E1E1E)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
@@ -1094,11 +1156,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         ),
                         title: Text(
                           "${action.toUpperCase()} • $user",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins'),
                         ),
                         subtitle: Text(
                           timestamp,
-                          style: TextStyle(color: Colors.grey.shade600),
+                          style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontFamily: 'Poppins'),
                         ),
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(
@@ -1110,7 +1176,9 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                           child: Text(
                             action,
                             style: TextStyle(
-                                color: color, fontWeight: FontWeight.w600),
+                                fontFamily: 'Poppins',
+                                color: color,
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
                       );
@@ -1202,11 +1270,12 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             const SizedBox(height: 8),
             Text("Welcome Back, Admin",
                 style: TextStyle(
+                    fontFamily: 'Poppins',
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: themeProvider.isDarkMode
                         ? Colors.white
-                        : Colors.black87)),
+                        : const Color.fromARGB(225, 20, 19, 30))),
             const SizedBox(height: 12),
 
             // KPI Cards
@@ -1221,7 +1290,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   return Container(
                     decoration: BoxDecoration(
                       color: (themeProvider.isDarkMode
-                              ? const Color(0xFF1E1E1E)
+                              ? const Color(0xFF14131E)
                               : Colors.white)
                           .withOpacity(0.9),
                       borderRadius: BorderRadius.circular(16),
@@ -1279,7 +1348,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1299,6 +1368,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Text(
                 "Jobs by Department",
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color:
@@ -1314,6 +1384,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 child: Text(
                   "Distribution",
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: Colors.redAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1349,7 +1420,9 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                       dataLabelSettings: const DataLabelSettings(
                         isVisible: true,
                         textStyle: TextStyle(
-                            fontSize: 10, fontWeight: FontWeight.bold),
+                            fontFamily: 'Poppins',
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -1383,7 +1456,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1403,6 +1476,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Text(
                 "Candidates by Job Role",
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color:
@@ -1412,13 +1486,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color:
+                      const Color.fromARGB(255, 153, 26, 26).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   "Histogram",
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    fontFamily: 'Poppins',
+                    color: const Color.fromARGB(255, 153, 26, 26),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1433,31 +1509,35 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               primaryXAxis: CategoryAxis(
                 axisLine: const AxisLine(width: 0),
                 majorGridLines: const MajorGridLines(width: 0),
-                labelStyle: const TextStyle(fontSize: 10),
+                labelStyle:
+                    const TextStyle(fontSize: 10, fontFamily: 'Poppins'),
               ),
               primaryYAxis: NumericAxis(
                 axisLine: const AxisLine(width: 0),
                 majorGridLines: const MajorGridLines(width: 0),
-                labelStyle: const TextStyle(fontSize: 10),
+                labelStyle:
+                    const TextStyle(fontSize: 10, fontFamily: 'Poppins'),
               ),
               tooltipBehavior: TooltipBehavior(
                 enable: true,
-                color: Colors.redAccent,
+                color: const Color.fromARGB(255, 153, 26, 26),
               ),
               series: <CartesianSeries<_HistogramData, String>>[
                 ColumnSeries<_HistogramData, String>(
                   dataSource: data,
                   xValueMapper: (d, _) => d.jobRole,
                   yValueMapper: (d, _) => d.candidateCount,
-                  color: Colors.redAccent,
+                  color: const Color.fromARGB(255, 153, 26, 26),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
                     topRight: Radius.circular(4),
                   ),
                   dataLabelSettings: const DataLabelSettings(
                     isVisible: true,
-                    textStyle:
-                        TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                 )
               ],
@@ -1475,7 +1555,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1495,6 +1575,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Text(
                 "Interview Status",
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color:
@@ -1504,13 +1585,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color:
+                      const Color.fromARGB(255, 153, 26, 26).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   "Overview",
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    fontFamily: 'Poppins',
+                    color: const Color.fromARGB(255, 153, 26, 26),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1532,22 +1615,24 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               ),
               tooltipBehavior: TooltipBehavior(
                 enable: true,
-                color: Colors.redAccent,
+                color: const Color.fromARGB(255, 153, 26, 26),
               ),
               series: <CartesianSeries<_InterviewData, String>>[
                 ColumnSeries<_InterviewData, String>(
                   dataSource: data,
                   xValueMapper: (d, _) => d.status,
                   yValueMapper: (d, _) => d.count,
-                  color: Colors.redAccent,
+                  color: const Color.fromARGB(255, 153, 26, 26),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
                     topRight: Radius.circular(4),
                   ),
                   dataLabelSettings: const DataLabelSettings(
                     isVisible: true,
-                    textStyle:
-                        TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                 )
               ],
@@ -1565,7 +1650,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1585,6 +1670,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Text(
                 "CV Reviews Trend",
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color:
@@ -1594,13 +1680,15 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color:
+                      const Color.fromARGB(255, 153, 26, 26).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   "Weekly",
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    fontFamily: 'Poppins',
+                    color: const Color.fromARGB(255, 153, 26, 26),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1622,7 +1710,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               ),
               tooltipBehavior: TooltipBehavior(
                 enable: true,
-                color: Colors.redAccent,
+                color: const Color.fromARGB(255, 153, 26, 26),
               ),
               series: <CartesianSeries<_CvReviewData, String>>[
                 ColumnSeries<_CvReviewData, String>(
@@ -1630,7 +1718,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   xValueMapper: (d, _) => d.week,
                   yValueMapper: (d, _) => d.reviewsCompleted,
                   name: 'Completed',
-                  color: Colors.redAccent,
+                  color: const Color.fromARGB(255, 153, 26, 26),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
                     topRight: Radius.circular(4),
@@ -1670,7 +1758,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1709,16 +1797,18 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.1),
+                      color: const Color.fromARGB(255, 153, 26, 26)
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.calendar_month,
-                        color: Colors.blueAccent, size: 22),
+                        color: Color.fromARGB(255, 250, 250, 250), size: 22),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     "Today's Date",
                     style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                       color: Colors.blueAccent,
@@ -1739,6 +1829,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                     return Text(
                       DateFormat('hh:mm a').format(DateTime.now()),
                       style: const TextStyle(
+                        fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         color: Colors.blueAccent,
                         fontSize: 12,
@@ -1754,7 +1845,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             height: 140,
             decoration: BoxDecoration(
               color: (themeProvider.isDarkMode
-                      ? const Color(0xFF2D2D2D)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
@@ -1773,6 +1864,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   Text(
                     DateTime.now().day.toString(),
                     style: const TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 48,
                       fontWeight: FontWeight.w800,
                       color: Colors.blueAccent,
@@ -1783,6 +1875,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   Text(
                     DateFormat('MMMM yyyy').format(DateTime.now()),
                     style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: themeProvider.isDarkMode
@@ -1818,6 +1911,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         Text(
           value,
           style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: color,
@@ -1826,6 +1920,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         Text(
           label,
           style: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 9,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
@@ -1850,7 +1945,8 @@ class _AdminDAshboardState extends State<AdminDAshboard>
         const SizedBox(width: 6),
         Text(
           text,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w500, fontFamily: 'Poppins'),
         ),
       ],
     );
@@ -1893,7 +1989,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1921,6 +2017,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               const SizedBox(width: 8),
               Text("Recent Activities",
                   style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: themeProvider.isDarkMode
@@ -1942,7 +2039,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: (themeProvider.isDarkMode
-                            ? const Color(0xFF2D2D2D)
+                            ? const Color(0xFF14131E)
                             : Colors.grey.shade50)
                         .withOpacity(0.9),
                     borderRadius: BorderRadius.circular(10),
@@ -1963,6 +2060,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         child: Text(
                           recentActivities[index],
                           style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontSize: 13,
                             color: themeProvider.isDarkMode
                                 ? Colors.white
@@ -1975,6 +2073,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         DateFormat('HH:mm').format(DateTime.now()
                             .subtract(Duration(minutes: index * 15))),
                         style: TextStyle(
+                            fontFamily: 'Poppins',
                             color: Colors.grey.shade600,
                             fontSize: 11,
                             fontWeight: FontWeight.w500),
@@ -2020,6 +2119,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                 child: Text(
                   "+${((count / 10) * 100).round()}%",
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: color,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -2032,6 +2132,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Text(
             count.toString(),
             style: TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
@@ -2041,6 +2142,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
           Text(
             title,
             style: TextStyle(
+              fontFamily: 'Poppins',
               color: themeProvider.isDarkMode
                   ? Colors.grey.shade400
                   : Colors.grey.shade600,

@@ -585,10 +585,15 @@ def manage_interviews():
 
             enriched = []
             for i in interviews:
+                candidate_profile_picture = None
+                if i.candidate and getattr(i.candidate, "profile_picture", None):
+                    candidate_profile_picture = i.candidate.profile_picture
+
                 enriched.append({
                     "id": i.id,
                     "candidate_id": i.candidate_id,
                     "candidate_name": i.candidate.full_name if i.candidate else None,
+                    "candidate_profile_picture": candidate_profile_picture,
                     "hiring_manager_id": i.hiring_manager_id,
                     "application_id": i.application_id,
                     "job_title": i.application.requisition.title if i.application and i.application.requisition else None,
@@ -656,6 +661,7 @@ def manage_interviews():
                 "id": interview.id,
                 "candidate_id": interview.candidate_id,
                 "candidate_name": candidate_profile.full_name if candidate_profile else None,
+                "candidate_profile_picture": candidate_profile.profile_picture if candidate_profile and getattr(candidate_profile, "profile_picture", None) else None,
                 "hiring_manager_id": interview.hiring_manager_id,
                 "application_id": interview.application_id,
                 "job_title": interview.application.requisition.title if interview.application and interview.application.requisition else None,

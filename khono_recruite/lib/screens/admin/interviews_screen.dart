@@ -70,7 +70,7 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
               ),
             ),
             backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             iconTheme: IconThemeData(
@@ -116,7 +116,7 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
                             final i = interviews[index];
                             return Card(
                               color: (themeProvider.isDarkMode
-                                      ? const Color(0xFF1E1E1E)
+                                      ? const Color(0xFF14131E)
                                       : Colors.white)
                                   .withOpacity(0.9),
                               margin: const EdgeInsets.symmetric(vertical: 8),

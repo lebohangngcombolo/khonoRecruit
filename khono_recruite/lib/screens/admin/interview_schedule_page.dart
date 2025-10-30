@@ -142,7 +142,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
               ),
             ),
             backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             elevation: 0,
@@ -165,7 +165,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                     margin: const EdgeInsets.only(bottom: 24),
                     decoration: BoxDecoration(
                       color: (themeProvider.isDarkMode
-                              ? const Color(0xFF1E1E1E)
+                              ? const Color(0xFF14131E)
                               : Colors.white)
                           .withOpacity(0.9),
                       borderRadius: BorderRadius.circular(16),
@@ -277,7 +277,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: (themeProvider.isDarkMode
-                                      ? const Color(0xFF1E1E1E)
+                                      ? const Color(0xFF14131E)
                                       : Colors.white)
                                   .withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
@@ -338,7 +338,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                     ),
                                     filled: true,
                                     fillColor: (themeProvider.isDarkMode
-                                            ? const Color(0xFF2D2D2D)
+                                            ? const Color(0xFF14131E)
                                             : Colors.grey.shade50)
                                         .withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(
@@ -377,7 +377,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                         : Colors.black87,
                                   ),
                                   dropdownColor: (themeProvider.isDarkMode
-                                          ? const Color(0xFF1E1E1E)
+                                          ? const Color(0xFF14131E)
                                           : Colors.white)
                                       .withOpacity(0.95),
                                 ),
@@ -391,7 +391,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: (themeProvider.isDarkMode
-                                      ? const Color(0xFF1E1E1E)
+                                      ? const Color(0xFF14131E)
                                       : Colors.white)
                                   .withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
@@ -437,7 +437,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
                                         color: (themeProvider.isDarkMode
-                                                ? const Color(0xFF2D2D2D)
+                                                ? const Color(0xFF14131E)
                                                 : Colors.grey.shade50)
                                             .withOpacity(0.9),
                                         borderRadius: BorderRadius.circular(12),
@@ -492,7 +492,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: (themeProvider.isDarkMode
-                                      ? const Color(0xFF1E1E1E)
+                                      ? const Color(0xFF14131E)
                                       : Colors.white)
                                   .withOpacity(0.9),
                               borderRadius: BorderRadius.circular(16),
@@ -553,7 +553,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                     ),
                                     filled: true,
                                     fillColor: (themeProvider.isDarkMode
-                                            ? const Color(0xFF2D2D2D)
+                                            ? const Color(0xFF14131E)
                                             : Colors.grey.shade50)
                                         .withOpacity(0.9),
                                     contentPadding: const EdgeInsets.symmetric(
@@ -587,7 +587,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                         : Colors.black87,
                                   ),
                                   dropdownColor: (themeProvider.isDarkMode
-                                          ? const Color(0xFF1E1E1E)
+                                          ? const Color(0xFF14131E)
                                           : Colors.white)
                                       .withOpacity(0.95),
                                 ),
@@ -618,7 +618,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                       ),
                                       filled: true,
                                       fillColor: (themeProvider.isDarkMode
-                                              ? const Color(0xFF2D2D2D)
+                                              ? const Color(0xFF14131E)
                                               : Colors.grey.shade50)
                                           .withOpacity(0.9),
                                       contentPadding:

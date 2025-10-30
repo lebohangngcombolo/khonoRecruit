@@ -64,7 +64,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: (themeProvider.isDarkMode
-                  ? const Color(0xFF1E1E1E)
+                  ? const Color(0xFF14131E)
                   : Colors.white)
               .withOpacity(0.95),
           shape:
@@ -90,7 +90,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               fillColor: (themeProvider.isDarkMode
-                      ? const Color(0xFF2D2D2D)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.9),
               filled: true,
@@ -172,7 +172,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: (themeProvider.isDarkMode
-                      ? const Color(0xFF1E1E1E)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.95),
               shape: RoundedRectangleBorder(
@@ -231,7 +231,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF2D2D2D)
+                                ? const Color(0xFF14131E)
                                 : Colors.white)
                             .withOpacity(0.9),
                         filled: true,
@@ -264,7 +264,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF2D2D2D)
+                                ? const Color(0xFF14131E)
                                 : Colors.white)
                             .withOpacity(0.9),
                         filled: true,
@@ -314,7 +314,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF2D2D2D)
+                                ? const Color(0xFF14131E)
                                 : Colors.white)
                             .withOpacity(0.9),
                         filled: true,
@@ -470,7 +470,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: (themeProvider.isDarkMode
-                      ? const Color(0xFF1E1E1E)
+                      ? const Color(0xFF14131E)
                       : Colors.white)
                   .withOpacity(0.95),
               shape: RoundedRectangleBorder(
@@ -555,7 +555,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
                       fillColor: (themeProvider.isDarkMode
-                              ? const Color(0xFF2D2D2D)
+                              ? const Color(0xFF14131E)
                               : Colors.white)
                           .withOpacity(0.9),
                       filled: true,
@@ -566,7 +566,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       ),
                     ),
                     dropdownColor: (themeProvider.isDarkMode
-                            ? const Color(0xFF1E1E1E)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.95),
                     style: GoogleFonts.inter(
@@ -710,7 +710,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color:
-            (themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white)
+            (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
                 .withOpacity(0.9),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -727,18 +727,34 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: getRoleColor(role).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.person,
-                  color: getRoleColor(role),
-                  size: 24,
-                ),
+              ClipOval(
+                child: user["profile_image"] != null &&
+                        user["profile_image"].toString().isNotEmpty
+                    ? Image.network(
+                        user["profile_image"],
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 48,
+                            height: 48,
+                            color: getRoleColor(role).withOpacity(0.1),
+                            child: Icon(Icons.person,
+                                color: getRoleColor(role), size: 24),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: getRoleColor(role).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.person,
+                            color: getRoleColor(role), size: 24),
+                      ),
               ),
               const SizedBox(width: 16),
               Column(
@@ -803,7 +819,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   icon: Icon(Icons.edit, color: Colors.blue, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: (themeProvider.isDarkMode
-                            ? const Color(0xFF2D2D2D)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.9),
                     padding: const EdgeInsets.all(8),
@@ -869,7 +885,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
             ),
             backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF1E1E1E)
+                    ? const Color(0xFF14131E)
                     : Colors.white)
                 .withOpacity(0.9),
             elevation: 0,
@@ -893,7 +909,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   icon: const Icon(Icons.add_moderator, color: Colors.blue),
                   style: IconButton.styleFrom(
                     backgroundColor: (themeProvider.isDarkMode
-                            ? const Color(0xFF2D2D2D)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.9),
                     padding: const EdgeInsets.all(8),
@@ -917,7 +933,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   icon: const Icon(Icons.person_add, color: Colors.blue),
                   style: IconButton.styleFrom(
                     backgroundColor: (themeProvider.isDarkMode
-                            ? const Color(0xFF2D2D2D)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.9),
                     padding: const EdgeInsets.all(8),
@@ -937,7 +953,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: (themeProvider.isDarkMode
-                            ? const Color(0xFF1E1E1E)
+                            ? const Color(0xFF14131E)
                             : Colors.white)
                         .withOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
