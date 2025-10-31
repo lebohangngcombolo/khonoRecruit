@@ -45,3 +45,5 @@ app.*.map.json
 /android/app/release
 
 myenv
+
+/server/serviceAccountKey.json
