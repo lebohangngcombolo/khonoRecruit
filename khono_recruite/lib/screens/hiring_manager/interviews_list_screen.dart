@@ -101,23 +101,21 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       initialDate: DateTime.now(),
     );
 
-    if (picked != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time != null) {
+      final newDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
       );
-      if (time != null) {
-        final newDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          time.hour,
-          time.minute,
-        );
-        rescheduleInterview(id, newDateTime);
-      }
+      rescheduleInterview(id, newDateTime);
     }
-  }
+    }
 
   @override
   Widget build(BuildContext context) {
