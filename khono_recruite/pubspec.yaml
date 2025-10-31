@@ -14,7 +14,7 @@ dependencies:
   provider: ^6.0.5
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
-  syncfusion_flutter_charts: 31.1.19
+  syncfusion_flutter_charts: ^31.2.4
   flutter_web_auth: ^0.6.0
   percent_indicator: ^4.2.5
   dio: ^5.9.0
@@ -90,6 +90,7 @@ flutter:
     - Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png
     - Khono_Assets2/Khono_Icon/Business Growth_Development/Growth_Development_Red Badge_White.png
     - Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png
+    - Khono_Assets2/Khono_Icon/Account_User Profile/User Profile_White Badge_Red.png
     - Khono_Assets2/Khono_Icon/Information_Detail/Information_Red Badge_White.png
     - Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png
     - Khono_Assets2/Khono_Icon/AI Chatbot_Red Badge_White.png
