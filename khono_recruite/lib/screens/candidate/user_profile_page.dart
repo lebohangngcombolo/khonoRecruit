@@ -516,9 +516,38 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _sidebarButton(String title) {
     final isSelected = selectedSidebar == title;
+    final iconPath = _iconForTitle(title);
     return SizedBox(
       height: 48,
       child: ListTile(
+        leading: iconPath != null
+            ? Image.asset(
+                iconPath,
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  IconData fallback;
+                  switch (title) {
+                    case "Profile":
+                      fallback = Icons.person_outline;
+                      break;
+                    case "Settings":
+                      fallback = Icons.settings_outlined;
+                      break;
+                    case "2FA":
+                      fallback = Icons.lock_outline;
+                      break;
+                    case "Reset Password":
+                      fallback = Icons.password_outlined;
+                      break;
+                    default:
+                      fallback = Icons.circle_outlined;
+                  }
+                  return Icon(fallback, color: Colors.white, size: 20);
+                },
+              )
+            : null,
         title: Text(
           title,
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
@@ -535,6 +564,21 @@ class _ProfilePageState extends State<ProfilePage>
         },
       ),
     );
+  }
+
+  String? _iconForTitle(String title) {
+    switch (title) {
+      case "Profile":
+        return 'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png';
+      case "Settings":
+        return 'Khono_Assets2/Khono_Icon/RED_Settings icon badge.png';
+      case "2FA":
+        return 'Khono_Assets2/Khono_Icon/Login_Lock/Lock_Red Badge_White.png';
+      case "Reset Password":
+        return 'Khono_Assets2/Khono_Icon/Red_chnage password_badge.png';
+      default:
+        return null;
+    }
   }
 
   Widget _buildSelectedTab() {

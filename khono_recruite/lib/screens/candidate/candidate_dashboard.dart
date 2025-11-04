@@ -273,6 +273,9 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                   case 3:
                                     assetIconPath = 'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png';
                                     break;
+                                  case 4:
+                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Red_Notifications_bell.png';
+                                    break;
                                   default:
                                     assetIconPath = 'Khono_Assets2/Khono_Icon/Information_Detail/Information_Red Badge_White.png';
                                 }
@@ -482,18 +485,22 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                             onPressed: () =>
                                                 setState(() => selectedIndex = 4),
                                             icon: Stack(
+                                              clipBehavior: Clip.none,
                                               children: [
-                                                Icon(
-                                                    Icons.notifications_none,
-                                                    color: Colors.white),
+                                                Image.asset(
+                                                  'Khono_Assets2/Khono_Icon/Red_Notifications_bell.png',
+                                                  width: 26,
+                                                  height: 26,
+                                                  fit: BoxFit.contain,
+                                                ),
                                                 if (notifications.isNotEmpty)
                                                   Positioned(
-                                                    right: 0,
-                                                    top: 0,
+                                                    right: -2,
+                                                    top: -2,
                                                     child: Container(
                                                       padding:
                                                           const EdgeInsets.all(2),
-                                                      decoration: BoxDecoration(
+                                                      decoration: const BoxDecoration(
                                                           color: Colors.redAccent,
                                                           shape: BoxShape.circle),
                                                       constraints:
@@ -520,8 +527,8 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                           Builder(builder: (context) {
                                             return Image.asset(
                                               'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
-                                              width: 28,
-                                              height: 28,
+                                              width: 26,
+                                              height: 26,
                                               fit: BoxFit.contain,
                                             );
                                           }),
@@ -865,22 +872,24 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
         height: 550,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(12)),
-        child: Column(
+            color: const Color(0xFF2A2A2A), borderRadius: BorderRadius.circular(12)),
+        child: DefaultTextStyle.merge(
+          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+          child: Column(
           children: [
             Row(
               children: [
                 Text(cvParserMode ? "CV Parser" : "AI Chatbot",
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                        fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 const Spacer(),
                 IconButton(
                     onPressed: () =>
                         setState(() => cvParserMode = !cvParserMode),
-                    icon: const Icon(Icons.swap_horiz))
+                    icon: const Icon(Icons.swap_horiz, color: Colors.white))
               ],
             ),
-            const Divider(),
+            const Divider(color: Colors.white24),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -892,15 +901,29 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                           TextField(
                             controller: jobDescController,
                             maxLines: 4,
-                            decoration: const InputDecoration(
-                                hintText: "Paste Job Description here"),
+                            style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600),
+                            decoration: InputDecoration(
+                                hintText: "Paste Job Description here",
+                                hintStyle: GoogleFonts.poppins(color: Colors.black54, fontWeight: FontWeight.w500),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black45))),
                           ),
                           const SizedBox(height: 12),
                           TextField(
                             controller: cvController,
                             maxLines: 4,
-                            decoration: const InputDecoration(
-                                hintText: "Paste CV here"),
+                            style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600),
+                            decoration: InputDecoration(
+                                hintText: "Paste CV here",
+                                hintStyle: GoogleFonts.poppins(color: Colors.black54, fontWeight: FontWeight.w500),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black45))),
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton(
@@ -910,7 +933,8 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                   : const Text("Analyze CV")),
                           const SizedBox(height: 12),
                           if (cvAnalysisResult != null)
-                            Text("Result: ${cvAnalysisResult!['result']}"),
+                            Text("Result: ${cvAnalysisResult!['result']}",
+                                style: const TextStyle(color: Colors.white))
                         ],
                       )
                     else
@@ -930,7 +954,14 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                               : Colors.redAccent,
                                           borderRadius:
                                               BorderRadius.circular(8)),
-                                      child: Text(msg['text'] ?? "")),
+                                      child: Text(
+                                        msg['text'] ?? "",
+                                        style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            color: msg['type'] == "chat"
+                                                ? Colors.black
+                                                : Colors.white),
+                                      )),
                                 ))
                             .toList(),
                       )
@@ -943,16 +974,30 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                 Expanded(
                   child: TextField(
                     controller: messageController,
-                    decoration: const InputDecoration(
+                    style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
                         hintText: "Type a message...",
-                        border: OutlineInputBorder()),
+                        hintStyle: GoogleFonts.poppins(color: Colors.black54, fontWeight: FontWeight.w500),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.black45))),
                   ),
                 ),
                 IconButton(
-                    onPressed: sendMessage, icon: const Icon(Icons.send)),
+                  onPressed: sendMessage,
+                  icon: Image.asset(
+                    'Khono_Assets2/Khono_Icon/Send_Paper Plane/Send_Paper Plane_Red.png',
+                    width: 45,
+                    height: 45,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ],
             ),
           ],
+          ),
         ),
       ),
     );

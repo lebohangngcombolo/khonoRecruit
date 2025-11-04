@@ -8,9 +8,14 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from authlib.integrations.flask_client import OAuth  # <-- updated
 import redis
+import os
+import json
+from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, auth
 from flask_bcrypt import Bcrypt
+
+load_dotenv()
 
 # ------------------- Flask Extensions -------------------
 db = SQLAlchemy()
@@ -43,8 +48,24 @@ cloudinary_client = CloudinaryClient()
 mongo_client = MongoClient('mongodb://localhost:27017/')
 mongo_db = mongo_client['recruitment_cv']
 
-cred = credentials.Certificate("serviceAccountKey.json")  # download from Firebase console
-firebase_admin.initialize_app(cred)
+firebase_app = None
+_cred = None
+_sa_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+if _sa_json:
+    try:
+        _cred = credentials.Certificate(json.loads(_sa_json))
+    except Exception:
+        _cred = None
+if _cred is None:
+    _path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("FIREBASE_CREDENTIALS")
+    if _path and os.path.exists(_path):
+        _cred = credentials.Certificate(_path)
+if _cred is None:
+    _default_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "serviceAccountKey.json")
+    if os.path.exists(_default_path):
+        _cred = credentials.Certificate(_default_path)
+if _cred:
+    firebase_app = firebase_admin.initialize_app(_cred)
 
 # ------------------- Redis Client -------------------
 redis_client = redis.Redis(
