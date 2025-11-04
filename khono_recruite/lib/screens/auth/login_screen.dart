@@ -82,49 +82,37 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // ------------------- SOCIAL LOGIN (Firebase) -------------------
+  // ------------------- SOCIAL LOGIN -------------------
   void _socialLogin(String provider) async {
-    if (kIsWeb) {
+    setState(() => loading = true);
+    try {
       final url = provider == "Google"
           ? AuthService.googleOAuthUrl
           : AuthService.githubOAuthUrl;
 
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), webOnlyWindowName: "_self");
+      if (kIsWeb) {
+        if (await canLaunchUrl(Uri.parse(url))) {
+          // Opens OAuth URL in the same tab
+          await launchUrl(Uri.parse(url), webOnlyWindowName: "_self");
+          // After redirect, GoRouter /oauth-callback handles the navigation
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not launch OAuth URL")),
-        );
-      }
-      return;
-    }
+        // Mobile: native login
+        final loginResult = provider == "Google"
+            ? await AuthService.loginWithGoogle()
+            : await AuthService.loginWithGithub();
 
-    setState(() => loading = true);
-    try {
-      Map<String, dynamic> loginResult;
-      if (provider == "Google") {
-        loginResult = await AuthService.loginWithGoogle();
-      } else {
-        loginResult = await AuthService.loginWithGithub();
-      }
-
-      if (loginResult['access_token'] != null) {
-        _navigateToDashboard(
-          token: loginResult['access_token'],
-          role: loginResult['role'],
-          dashboard: loginResult['dashboard'],
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loginResult['error'] ?? "$provider login failed"),
-          ),
-        );
+        if (loginResult['access_token'] != null) {
+          _navigateToDashboard(
+            token: loginResult['access_token'],
+            role: loginResult['role'],
+            dashboard: loginResult['dashboard'],
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Social login error: $e")),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Social login error: $e")));
     } finally {
       setState(() => loading = false);
     }

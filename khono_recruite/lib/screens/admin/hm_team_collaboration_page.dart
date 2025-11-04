@@ -130,8 +130,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   color: AppColors.primaryRed.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.group_work,
-                    color: AppColors.primaryRed, size: 28),
+                child: Image.asset(
+                  'assets/icons/teamC.png', // Your custom icon path
+                  width: 30,
+                  height: 30,
+                  color: AppColors.primaryRed, // Same color as before
+                ),
               ),
               const SizedBox(width: 16),
               Column(

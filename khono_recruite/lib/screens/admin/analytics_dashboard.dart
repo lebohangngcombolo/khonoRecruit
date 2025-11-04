@@ -90,12 +90,12 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   color: (themeProvider.isDarkMode
                           ? const Color(0xFF14131E)
                           : Colors.white)
-                      .withOpacity(0.85),
+                      .withOpacity(0.92),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 25,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                   border: Border(
@@ -120,9 +120,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                               : Colors.grey.shade50,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -145,7 +145,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                             Text(
                               "Analytics Dashboard",
                               style: TextStyle(
-                                fontSize: 22,
+                                fontSize: 24,
                                 fontWeight: FontWeight.w800,
                                 color: themeProvider.isDarkMode
                                     ? Colors.white
@@ -173,13 +173,13 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                           // Enhanced time range filter with better styling
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            height: 40,
+                            height: 42,
                             decoration: BoxDecoration(
                               color: (themeProvider.isDarkMode
                                       ? const Color(0xFF14131E)
                                       : Colors.white)
-                                  .withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(12),
+                                  .withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: themeProvider.isDarkMode
                                     ? Colors.white24
@@ -188,9 +188,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
@@ -231,9 +231,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                                   : Colors.grey.shade50,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
@@ -287,35 +287,35 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         children: [
           // Enhanced loading animation
           Container(
-            width: 60,
-            height: 60,
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
                 color: Colors.redAccent.withOpacity(0.2),
-                width: 2,
+                width: 3,
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10.0),
               child: CircularProgressIndicator(
                 strokeWidth: 3,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.redAccent),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           Text(
             'Loading Analytics Data',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: themeProvider.isDarkMode
                   ? Colors.white70
                   : Colors.grey.shade800,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             'Please wait while we gather your insights',
             style: TextStyle(
@@ -339,8 +339,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
           children: [
             // Enhanced error illustration
             Container(
-              width: 100,
-              height: 100,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -353,18 +353,18 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                 ),
               ),
               child: Icon(Icons.error_outline_rounded,
-                  size: 48, color: Colors.redAccent),
+                  size: 52, color: Colors.redAccent),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             Text(
               'Unable to Load Data',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Text(
               _errorMessage,
               style: TextStyle(
@@ -373,26 +373,26 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             // Enhanced retry button
             ElevatedButton(
               onPressed: _loadAnalyticsData,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
-                elevation: 2,
+                elevation: 3,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
                 shadowColor: Colors.redAccent.withOpacity(0.3),
               ),
               child: Text(
                 'Try Again',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 15,
                 ),
               ),
             ),
@@ -404,17 +404,17 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
   Widget _buildDashboard(ThemeProvider themeProvider) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           _buildStatsGrid(themeProvider),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           _buildUsersGrowthChart(themeProvider),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           _buildApplicationsAnalysis(themeProvider),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           _buildInterviewsAnalysis(themeProvider),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           _buildAssessmentsAnalysis(themeProvider),
         ],
       ),
@@ -479,10 +479,10 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.1,
+        crossAxisCount: 3,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+        childAspectRatio: 1.2,
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -513,7 +513,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       title: 'User Growth Trend',
       subtitle: 'Daily user and candidate registration patterns',
       child: Container(
-        height: 320,
+        height: 360,
         child: SfCartesianChart(
           plotAreaBorderWidth: 0,
           primaryXAxis: CategoryAxis(
@@ -565,11 +565,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   (data['count'] as num?) ?? 0,
               name: 'All Users',
               color: const Color(0xFF3B82F6),
-              width: 2.5,
+              width: 3,
               markerSettings: const MarkerSettings(
                 isVisible: true,
-                height: 6,
-                width: 6,
+                height: 7,
+                width: 7,
                 borderWidth: 2,
                 borderColor: Colors.white,
               ),
@@ -582,11 +582,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   (data['count'] as num?) ?? 0,
               name: 'Candidates',
               color: const Color(0xFF10B981),
-              width: 2.5,
+              width: 3,
               markerSettings: const MarkerSettings(
                 isVisible: true,
-                height: 6,
-                width: 6,
+                height: 7,
+                width: 7,
                 borderWidth: 2,
                 borderColor: Colors.white,
               ),
@@ -615,14 +615,14 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
           Text(
             'Top Job Posts by Application Volume',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            height: 220,
+            height: 240,
             child: SfCartesianChart(
               plotAreaBorderWidth: 0,
               primaryXAxis: CategoryAxis(
@@ -658,7 +658,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                       num.tryParse(data['count'].toString()) ?? 0,
                   name: 'Applications',
                   color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   dataLabelSettings: const DataLabelSettings(
                     isVisible: true,
                     textStyle:
@@ -668,7 +668,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
           // Score Distribution and Monthly Applications
           Row(
@@ -680,16 +680,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'CV Score Distribution',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCircularChart(
                         legend: Legend(
                           isVisible: true,
@@ -721,7 +721,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,16 +729,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'Monthly Applications Trend',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCartesianChart(
                         plotAreaBorderWidth: 0,
                         primaryXAxis: CategoryAxis(
@@ -775,7 +775,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                                 (data['count'] as num?) ?? 0,
                             name: 'Applications',
                             color: const Color(0xFF8B5CF6),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                             dataLabelSettings:
                                 const DataLabelSettings(isVisible: true),
                           ),
@@ -815,16 +815,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'Interview Status Distribution',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCircularChart(
                         series: <CircularSeries>[
                           DoughnutSeries<Map<String, dynamic>, String>(
@@ -845,7 +845,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,16 +853,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'Interview Types',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCircularChart(
                         series: <CircularSeries>[
                           PieSeries<Map<String, dynamic>, String>(
@@ -885,20 +885,20 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
           // Monthly Interviews Trend
           Text(
             'Monthly Interviews Trend',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            height: 220,
+            height: 240,
             child: SfCartesianChart(
               plotAreaBorderWidth: 0,
               primaryXAxis: CategoryAxis(
@@ -935,11 +935,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                       (data['count'] as num?) ?? 0,
                   name: 'Interviews',
                   color: const Color(0xFFF59E0B),
-                  width: 2.5,
+                  width: 3,
                   markerSettings: const MarkerSettings(
                     isVisible: true,
-                    height: 6,
-                    width: 6,
+                    height: 7,
+                    width: 7,
                     borderWidth: 2,
                     borderColor: Colors.white,
                   ),
@@ -977,16 +977,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'Assessment Score Distribution',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCartesianChart(
                         plotAreaBorderWidth: 0,
                         primaryXAxis: CategoryAxis(
@@ -1022,7 +1022,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                                 (data['count'] as num?) ?? 0,
                             name: 'Candidates',
                             color: const Color(0xFF06B6D4),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                             dataLabelSettings:
                                 const DataLabelSettings(isVisible: true),
                           ),
@@ -1032,7 +1032,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,16 +1040,16 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     Text(
                       'Recommendation Breakdown',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: themeProvider.isDarkMode
                             ? Colors.white
                             : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: 220,
                       child: SfCircularChart(
                         series: <CircularSeries>[
                           PieSeries<Map<String, dynamic>, String>(
@@ -1072,20 +1072,20 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
           // Average Scores by Requisition
           Text(
             'Average Scores by Job Position',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            height: 260,
+            height: 280,
             child: SfCartesianChart(
               plotAreaBorderWidth: 0,
               primaryXAxis: CategoryAxis(
@@ -1124,7 +1124,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                       (data['avg_score'] as num?) ?? 0,
                   name: 'Average Score',
                   color: const Color(0xFF8B5CF6),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   dataLabelSettings: const DataLabelSettings(isVisible: true),
                 ),
               ],
@@ -1152,18 +1152,18 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color:
             (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
-                .withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
+                .withOpacity(0.92),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
           ),
         ],
         border: Border.all(
@@ -1180,8 +1180,8 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 4,
-                height: 24,
+                width: 5,
+                height: 28,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -1191,10 +1191,10 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1202,7 +1202,7 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: themeProvider.isDarkMode
                             ? Colors.white
@@ -1210,14 +1210,14 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       subtitle,
                       style: TextStyle(
                         color: themeProvider.isDarkMode
                             ? Colors.white60
                             : Colors.grey.shade600,
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -1226,7 +1226,7 @@ class _ProfessionalAnalyticsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           child,
         ],
       ),
@@ -1256,17 +1256,17 @@ class _ProfessionalStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color:
             (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
-                .withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
+                .withOpacity(0.92),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
@@ -1284,41 +1284,41 @@ class _ProfessionalStatCard extends StatelessWidget {
             children: [
               // Enhanced icon container
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: gradient,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: gradient.first.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      color: gradient.first.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 22),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
               // Enhanced percentage badge
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: color.withOpacity(0.2),
-                    width: 1,
+                    color: color.withOpacity(0.3),
+                    width: 1.5,
                   ),
                 ),
                 child: Text(
                   "+12%",
                   style: TextStyle(
                     color: color,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
                   ),
@@ -1326,12 +1326,12 @@ class _ProfessionalStatCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           // Enhanced value display
           Text(
             value,
             style: TextStyle(
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.w900,
               color: themeProvider.isDarkMode
                   ? Colors.white
@@ -1339,25 +1339,25 @@ class _ProfessionalStatCard extends StatelessWidget {
               letterSpacing: -0.8,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             title,
             style: TextStyle(
               color: themeProvider.isDarkMode
                   ? Colors.white70
                   : Colors.grey.shade700,
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             subtitle,
             style: TextStyle(
               color: themeProvider.isDarkMode
                   ? Colors.white54
                   : Colors.grey.shade500,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w400,
             ),
           ),

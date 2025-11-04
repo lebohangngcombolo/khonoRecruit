@@ -1,21 +1,21 @@
-from flask import request, jsonify, current_app, redirect, url_for
+from flask import request, jsonify, current_app, redirect, url_for, make_response
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
     unset_jwt_cookies,
+    verify_jwt_in_request, 
     get_jwt_identity
 )
-from app.extensions import db
-from app.models import User, VerificationCode
+from app.extensions import db, oauth  
+from app.models import User, VerificationCode, OAuthConnection
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.services.audit2 import AuditService
 from app.utils.decorators import role_required
 from datetime import datetime, timedelta
 import secrets
-import firebase_admin
-from firebase_admin import auth as firebase_auth
+
 
 # ------------------- ROLE DASHBOARD MAP -------------------
 ROLE_DASHBOARD_MAP = {
@@ -24,15 +24,60 @@ ROLE_DASHBOARD_MAP = {
     "candidate": "/dashboard/candidate"
 }
 
+# OAuth providers config
+OAUTH_PROVIDERS = {
+    "google": {
+        "userinfo": {
+            "url": "https://www.googleapis.com/oauth2/v3/userinfo",
+            "email": lambda data: data["email"],
+            "first_name": lambda data: data.get("given_name", ""),
+            "last_name": lambda data: data.get("family_name", "")
+        }
+    },
+    "github": {
+        "userinfo": {
+            "url": "https://api.github.com/user",
+            "email": lambda data: data.get("email", ""),
+            "first_name": lambda data: data.get("name", "").split(" ")[0] if data.get("name") else "",
+            "last_name": lambda data: data.get("name", "").split(" ")[1] if data.get("name") and " " in data.get("name") else ""
+        }
+    }
+}
+
+
 def init_auth_routes(app):
+
+    # ------------------- Initialize OAuth -------------------
+    if not hasattr(app, "oauth_initialized"):
+        oauth.init_app(app)
+
+        # Google OAuth
+        oauth.register(
+            name="google",
+            client_id=app.config["GOOGLE_CLIENT_ID"],
+            client_secret=app.config["GOOGLE_CLIENT_SECRET"],
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+            userinfo_endpoint=OAUTH_PROVIDERS["google"]["userinfo"]["url"]
+        )
+
+        # GitHub OAuth
+        oauth.register(
+            name="github",
+            client_id=app.config["GITHUB_CLIENT_ID"],
+            client_secret=app.config["GITHUB_CLIENT_SECRET"],
+            authorize_url="https://github.com/login/oauth/authorize",
+            access_token_url="https://github.com/login/oauth/access_token",
+            client_kwargs={"scope": "user:email"}
+        )
+
+        app.oauth_initialized = True
 
     # ------------------- LOGOUT -------------------
     @app.route("/api/auth/logout", methods=["POST"])
     @jwt_required()
     def logout():
         try:
-            current_user_id = int(get_jwt_identity())
-            AuditService.log(user_id=current_user_id, action="logout")
             response = jsonify({"message": "Successfully logged out"})
             unset_jwt_cookies(response)
             return response, 200
@@ -40,77 +85,107 @@ def init_auth_routes(app):
             current_app.logger.error(f"Logout error: {str(e)}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
 
-    # ------------------- FIREBASE LOGIN -------------------
-    @app.route("/api/auth/firebase-login", methods=["POST"])
-    def firebase_login():
-        id_token = request.headers.get("Authorization", "").replace("Bearer ", "")
-        if not id_token:
-            return jsonify({"error": "Firebase ID token required"}), 400
-
+    # ------------------- GOOGLE LOGIN -------------------
+    @app.route("/api/auth/google")
+    def google_login():
         try:
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            email = decoded_token.get("email")
-            name = decoded_token.get("name", "")
-            first_name = name.split(" ")[0] if name else ""
-            last_name = name.split(" ")[-1] if " " in name else ""
+            redirect_uri = url_for("google_callback", _external=True)
+            # For Flutter Web, navigate in same tab
+            return oauth.google.authorize_redirect(redirect_uri)
+        except Exception as e:
+            current_app.logger.error(f"Google login initiation error: {str(e)}", exc_info=True)
+            return jsonify({"error": "OAuth configuration error"}), 500
 
+    @app.route("/api/auth/google/callback")
+    def google_callback():
+        try:
+            oauth.google.authorize_access_token()
+            user_info = oauth.google.get(OAUTH_PROVIDERS["google"]["userinfo"]["url"]).json()
+            return handle_oauth_callback("google", user_info)
+        except Exception as e:
+            current_app.logger.error(f"Google OAuth callback error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Authentication failed"}), 400
+
+    # ------------------- GITHUB LOGIN -------------------
+    @app.route("/api/auth/github")
+    def github_login():
+        try:
+            redirect_uri = url_for("github_callback", _external=True)
+            return oauth.github.authorize_redirect(redirect_uri)
+        except Exception as e:
+            current_app.logger.error(f"GitHub login initiation error: {str(e)}", exc_info=True)
+            return jsonify({"error": "OAuth configuration error"}), 500
+
+    @app.route("/api/auth/github/callback")
+    def github_callback():
+        try:
+            oauth.github.authorize_access_token()
+            user_info = oauth.github.get(OAUTH_PROVIDERS["github"]["userinfo"]["url"]).json()
+            if not user_info.get("email"):
+                emails = oauth.github.get("https://api.github.com/user/emails").json()
+                primary_email = next((e for e in emails if e.get("primary")), None)
+                if primary_email:
+                    user_info["email"] = primary_email["email"]
+            return handle_oauth_callback("github", user_info)
+        except Exception as e:
+            current_app.logger.error(f"GitHub OAuth callback error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Authentication failed"}), 400
+
+    # ------------------- OAUTH CALLBACK HANDLER -------------------
+    def handle_oauth_callback(provider: str, user_info: dict):
+        try:
+            email = user_info.get("email")
             if not email:
-                return jsonify({"error": "Email not provided by Firebase"}), 400
-
+                return jsonify({"error": "Email not provided by OAuth provider"}), 400
             email = email.strip().lower()
-            user = User.query.filter(db.func.lower(User.email) == email).first()
 
-            # Create user if doesn't exist
+            provider_config = OAUTH_PROVIDERS[provider]
+            first_name = provider_config["userinfo"]["first_name"](user_info)
+            last_name = provider_config["userinfo"]["last_name"](user_info)
+
+            # User lookup / creation
+            user = User.query.filter(db.func.lower(User.email) == email).first()
             if not user:
+                random_password = secrets.token_urlsafe(16)
                 user = AuthService.create_user(
                     email=email,
-                    password=None,
+                    password=random_password,
                     first_name=first_name,
                     last_name=last_name,
                     role="candidate"
                 )
                 user.is_verified = True
-                db.session.add(user)
-                db.session.commit()
 
-            # Log login
-            AuditService.log(user_id=user.id, action="firebase_oauth_login")
+            # OAuth connection
+            oauth_conn = OAuthConnection.query.filter_by(user_id=user.id, provider=provider).first()
+            if not oauth_conn:
+                oauth_conn = OAuthConnection(
+                    user_id=user.id,
+                    provider=provider,
+                    provider_user_id=str(user_info.get("id") or user_info.get("sub")),
+                    access_token=secrets.token_urlsafe(32)
+                )
+                db.session.add(oauth_conn)
+            db.session.commit()
 
+            # Tokens
             additional_claims = {"role": user.role}
             access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
             refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
-            dashboard_url = (
-                "/enrollment" if user.role == "candidate" and not getattr(user, "enrollment_completed", False)
+            # Determine dashboard route
+            dashboard_path = "/enrollment" if user.role == "candidate" and not getattr(user, "enrollment_completed", False) \
                 else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
-            )
 
-            referrer = request.referrer or ""
-            redirect_uri = request.args.get("redirect_uri", "")
-            is_flutter = "myapp" in referrer or "myapp" in redirect_uri
+            # ⚡ Redirect to Flutter frontend with tokens
+            frontend_redirect = f"{current_app.config['FRONTEND_URL']}{dashboard_path}?access_token={access_token}&refresh_token={refresh_token}&role={user.role}"
 
-            if is_flutter:
-                redirect_link = (
-                    f"myapp://callback"
-                    f"?access_token={access_token}"
-                    f"&refresh_token={refresh_token}"
-                    f"&role={user.role}"
-                    f"&dashboard={dashboard_url}"
-                )
-                return redirect(redirect_link)
-
-            frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-            redirect_with_tokens = (
-                f"{frontend_url}{dashboard_url}"
-                f"?access_token={access_token}"
-                f"&refresh_token={refresh_token}"
-                f"&role={user.role}"
-            )
-            return redirect(redirect_with_tokens)
+            return redirect(frontend_redirect)
 
         except Exception as e:
-            current_app.logger.error(f"Firebase login error: {str(e)}", exc_info=True)
-            return jsonify({"error": "Firebase token verification failed"}), 400
+            db.session.rollback()
+            current_app.logger.error(f"OAuth callback handler error: {str(e)}", exc_info=True)
+            return jsonify({"error": "Internal server error"}), 500
 
     # ------------------- REGISTER -------------------
     @app.route('/api/auth/register', methods=['POST'])
@@ -342,6 +417,7 @@ def init_auth_routes(app):
     @app.route("/api/dashboard/admin", methods=["GET"])
     @role_required("admin")
     def admin_dashboard():
+        verify_jwt_in_request()
         current_user_id = int(get_jwt_identity())
         AuditService.log(user_id=current_user_id, action="view_admin_dashboard")
         return jsonify({"message": "Welcome to the Admin Dashboard"}), 200

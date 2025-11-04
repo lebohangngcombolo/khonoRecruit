@@ -203,7 +203,9 @@ class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'))
     requisition_id = db.Column(db.Integer, db.ForeignKey('requisitions.id'))
-    status = db.Column(db.String(50), default='applied')
+    status = db.Column(db.String(50), default='applied')  # could be 'draft', 'applied', 'reviewed', etc.
+    is_draft = db.Column(db.Boolean, default=False)
+    draft_data = db.Column(JSON, nullable=True)  # store partial info before submission
     resume_url = db.Column(db.String(500))
     cv_score = db.Column(db.Float, default=0)
     cv_parser_result = db.Column(JSON, default={})
@@ -224,6 +226,8 @@ class Application(db.Model):
             "candidate_id": self.candidate_id,
             "requisition_id": self.requisition_id,
             "status": self.status,
+            "is_draft": self.is_draft,
+            "draft_data": self.draft_data,
             "resume_url": self.resume_url,
             "cv_score": self.cv_score,
             "cv_parser_result": self.cv_parser_result,

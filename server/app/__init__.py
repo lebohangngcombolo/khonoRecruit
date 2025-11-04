@@ -1,5 +1,5 @@
 from flask import Flask
-from .extensions import db, jwt, mail, cloudinary_client, mongo_client, migrate, cors, bcrypt
+from .extensions import db, jwt, mail, cloudinary_client, mongo_client, migrate, cors, bcrypt, oauth
 from .models import *
 from .routes import auth, admin_routes, candidate_routes, ai_routes
 
@@ -11,6 +11,7 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     mail.init_app(app)
+    oauth.init_app(app)  # ✅ important
     bcrypt.init_app(app)
     cloudinary_client.init_app(app)
     migrate.init_app(app, db)

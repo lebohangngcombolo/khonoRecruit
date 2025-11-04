@@ -106,6 +106,51 @@ class _AssessmentPageState extends State<AssessmentPage> {
     }
   }
 
+  // ✅ NEW: Save draft progress and redirect to dashboard
+  Future<void> saveDraftAndExit() async {
+    if (token == null) return;
+
+    try {
+      final payload = {
+        "draft_data":
+            answers.map((key, value) => MapEntry(key.toString(), value)),
+        "last_step": "assessment"
+      };
+
+      final res = await http.post(
+        Uri.parse(
+            "http://127.0.0.1:5000/api/candidate/apply/save_draft/${widget.applicationId}"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+        body: json.encode(payload),
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Progress saved successfully.")),
+        );
+
+        // Redirect to dashboard after a short delay
+        await Future.delayed(const Duration(milliseconds: 700));
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/dashboard',
+            (route) => false,
+          );
+        }
+      } else {
+        throw Exception("Failed to save draft: ${res.body}");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving draft: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -128,12 +173,12 @@ class _AssessmentPageState extends State<AssessmentPage> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView.builder(
-          itemCount: questions.length + 1,
+          itemCount: questions.length + 2, // ✅ Added 1 more for Save & Exit
           itemBuilder: (context, index) {
             if (index == questions.length) {
-              // Submit button at the end
+              // Submit button
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -145,6 +190,26 @@ class _AssessmentPageState extends State<AssessmentPage> {
                     child: submitting
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text("Submit Assessment"),
+                  ),
+                ),
+              );
+            } else if (index == questions.length + 1) {
+              // ✅ New Save & Exit button
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: saveDraftAndExit,
+                    icon: const Icon(Icons.save, color: Colors.red),
+                    label: const Text(
+                      "Save & Exit",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
                 ),
               );

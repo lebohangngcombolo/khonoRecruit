@@ -664,8 +664,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                               AnalyticsDashboard()),
                                     );
                                   },
-                                  icon: const Icon(Icons.analytics_outlined,
-                                      color: Colors.purpleAccent),
+                                  icon: Image.asset(
+                                    // Changed from Icon to Image.asset
+                                    'assets/icons/data-analytics.png',
+                                    width: 24,
+                                    height: 24,
+                                    color:
+                                        const Color.fromARGB(255, 193, 13, 0),
+                                  ),
                                   tooltip: "Analytics Dashboard",
                                 ),
                                 const SizedBox(width: 8),
@@ -709,8 +715,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                 IconButton(
                                   onPressed: () => setState(() =>
                                       currentScreen = "team_collaboration"),
-                                  icon: const Icon(Icons.group_work_outlined,
-                                      color: Colors.blueAccent),
+                                  icon: Image.asset(
+                                    // Changed from Icon to Image.asset
+                                    'assets/icons/teamC.png',
+                                    width: 34,
+                                    height: 34,
+                                    color:
+                                        const Color.fromARGB(255, 193, 13, 0),
+                                  ),
                                   tooltip: "Team Collaboration",
                                 ),
                                 const SizedBox(width: 8),
@@ -718,8 +730,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                 TextButton.icon(
                                   onPressed: () =>
                                       setState(() => currentScreen = "jobs"),
-                                  icon: const Icon(Icons.add_box_outlined,
-                                      color: Colors.redAccent),
+                                  icon: Image.asset(
+                                    // Changed from Icon to Image.asset
+                                    'assets/icons/add.png',
+                                    width: 30,
+                                    height: 30,
+                                    color:
+                                        const Color.fromARGB(255, 193, 13, 0),
+                                  ),
                                   label: Text("Create",
                                       style: TextStyle(
                                           fontFamily: 'Poppins',
@@ -731,7 +749,14 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                                 IconButton(
                                   onPressed: () => setState(
                                       () => currentScreen = "notifications"),
-                                  icon: const Icon(Icons.notifications_none),
+                                  icon: Image.asset(
+                                    // Changed from Icon to Image.asset
+                                    'assets/icons/notification.png',
+                                    width: 45,
+                                    height: 45,
+                                    color:
+                                        const Color.fromARGB(255, 193, 13, 0),
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 GestureDetector(
@@ -1202,35 +1227,34 @@ class _AdminDAshboardState extends State<AdminDAshboard>
       {
         "title": "Jobs",
         "count": jobsCount,
-        "color": Colors.redAccent,
-        "icon": Icons.work
+        "color": const Color.fromARGB(255, 193, 13, 0),
+        "icon": "assets/icons/jobs.png" // or .svg if using SVG
       },
       {
         "title": "Candidates",
         "count": candidatesCount,
-        "color": Colors.orangeAccent,
-        "icon": Icons.group
+        "color": const Color.fromARGB(255, 193, 13, 0),
+        "icon": "assets/icons/candidates.png"
       },
       {
         "title": "Interviews",
         "count": interviewsCount,
-        "color": Colors.green,
-        "icon": Icons.schedule
+        "color": const Color.fromARGB(255, 193, 13, 0),
+        "icon": "assets/icons/interview.png"
       },
       {
         "title": "CV Reviews",
         "count": cvReviewsCount,
-        "color": Colors.blueAccent,
-        "icon": Icons.description
+        "color": const Color.fromARGB(255, 193, 13, 0),
+        "icon": "assets/icons/review.png"
       },
       {
         "title": "Audits",
         "count": auditsCount,
-        "color": Colors.purpleAccent,
-        "icon": Icons.history
+        "color": const Color.fromARGB(255, 193, 13, 0),
+        "icon": "assets/icons/audit.png"
       },
     ];
-
     final departmentData = [
       _DepartmentData('IT', 35, Colors.redAccent),
       _DepartmentData('Finance', 28, Colors.redAccent.shade200),
@@ -1279,8 +1303,12 @@ class _AdminDAshboardState extends State<AdminDAshboard>
             const SizedBox(height: 12),
 
             // KPI Cards
-            SizedBox(
-              height: 140,
+            // Instead of SizedBox with fixed height, use:
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 160,
+                maxHeight: 180,
+              ),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: stats.length,
@@ -1306,7 +1334,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
                         item["title"].toString(),
                         item["count"] as int,
                         item["color"] as Color,
-                        item["icon"] as IconData),
+                        item["icon"] as String),
                   );
                 },
               ),
@@ -2089,7 +2117,7 @@ class _AdminDAshboardState extends State<AdminDAshboard>
     );
   }
 
-  Widget kpiCard(String title, int count, Color color, IconData icon) {
+  Widget kpiCard(String title, int count, Color color, String iconPath) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Container(
@@ -2105,10 +2133,26 @@ class _AdminDAshboardState extends State<AdminDAshboard>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Image.asset(
+                  iconPath,
+                  width: 30,
+                  height: 30,
+                  color: color,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

@@ -10,7 +10,6 @@ from authlib.integrations.flask_client import OAuth  # <-- updated
 import redis
 import firebase_admin
 from flask_socketio import SocketIO
-from firebase_admin import credentials, auth
 from flask_bcrypt import Bcrypt
 
 # ------------------- Flask Extensions -------------------
@@ -45,8 +44,6 @@ cloudinary_client = CloudinaryClient()
 mongo_client = MongoClient('mongodb://localhost:27017/')
 mongo_db = mongo_client['recruitment_cv']
 
-cred = credentials.Certificate("serviceAccountKey.json")  # download from Firebase console
-firebase_admin.initialize_app(cred)
 
 # ------------------- Redis Client -------------------
 redis_client = redis.Redis(

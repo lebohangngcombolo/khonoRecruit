@@ -10,6 +10,7 @@ import 'screens/hiring_manager/hiring_manager_dashboard.dart';
 import 'screens/landing_page/landing_page.dart';
 import 'screens/auth/reset_password.dart';
 import 'screens/admin/profile_page.dart';
+import 'screens/auth/oath_callback_screen.dart';
 
 import 'providers/theme_provider.dart';
 import 'utils/theme_utils.dart';
@@ -75,6 +76,10 @@ final GoRouter _router = GoRouter(
         final token = state.uri.queryParameters['token'] ?? '';
         return ProfilePage(token: token);
       },
+    ),
+    GoRoute(
+      path: '/oauth-callback',
+      builder: (context, state) => const OAuthCallbackScreen(),
     ),
   ],
 );

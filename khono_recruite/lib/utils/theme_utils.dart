@@ -52,11 +52,12 @@ class ThemeUtils {
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.blue.shade800, // Dark mode: blue shade
+          fillColor:
+              const Color.fromARGB(255, 35, 43, 53), // Dark mode: blue shade
         ),
         cardTheme: CardThemeData(
           // ✅ Correct type
-          color: Colors.blue.shade800, // Dark mode: blue shade
+          color: const Color.fromARGB(255, 16, 26, 37), // Dark mode: blue shade
           elevation: 4,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

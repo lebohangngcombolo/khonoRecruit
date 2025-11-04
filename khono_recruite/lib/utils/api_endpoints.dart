@@ -42,6 +42,12 @@ class ApiEndpoints {
       "$candidateBase/upload_resume"; // POST /upload_resume/<application_id>
   static const getApplications = "$candidateBase/applications"; // GET
   static const getAvailableJobs = "$candidateBase/jobs"; // GET
+  // ✅ NEW: Save for Later (Draft Application Endpoints)
+  static const saveDraft =
+      "$candidateBase/apply/save_draft"; // POST /save_draft/<job_id>
+  static const getDrafts = "$candidateBase/applications/drafts"; // GET
+  static const submitDraft =
+      "$candidateBase/applications/submit_draft"; // PUT /submit_draft/<draft_id>
 
   // ------------------- Admin / Hiring Manager -------------------
   static const adminJobs = "$adminBase/jobs"; // GET / POST / PUT / DELETE
