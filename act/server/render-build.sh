@@ -10,11 +10,15 @@ echo "=========================================="
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install -r requirements.txt
 
-# Download spaCy language model if needed
-echo "🔤 Downloading spaCy language model..."
-python -m spacy download en_core_web_sm || echo "spaCy model already exists"
+# Use lightweight requirements (no heavy ML libraries)
+echo "✨ Using requirements-light.txt (optimized for 512MB free tier)"
+pip install -r requirements-light.txt
+
+# Skip spaCy download for light build (not installed)
+# Uncomment when using full requirements.txt on paid tier
+# echo "🔤 Downloading spaCy language model..."
+# python -m spacy download en_core_web_sm || echo "spaCy model already exists"
 
 # Create necessary directories
 echo "📁 Creating upload directories..."
