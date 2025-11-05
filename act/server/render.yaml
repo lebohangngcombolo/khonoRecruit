@@ -1,0 +1,70 @@
+services:
+  # Main Web Service
+  - type: web
+    name: khonorecruit-api
+    runtime: python
+    region: oregon  # Change to your preferred region
+    plan: starter  # Free tier, upgrade as needed
+    branch: main  # or your deployment branch
+    rootDir: act/server
+    buildCommand: bash render-build.sh
+    startCommand: gunicorn -c gunicorn_config.py run:app
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: run.py
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: khonorecruit-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: khonorecruit-redis
+          type: redis
+          property: connectionString
+      - key: MONGO_URI
+        sync: false
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: True
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+databases:
+  # PostgreSQL Database
+  - name: khonorecruit-db
+    databaseName: recruitment_db
+    user: appuser
+    region: oregon  # Same region as web service
+    plan: starter  # Free tier
+    ipAllowList: []  # Empty = allow all (adjust for security)
+
+  # Redis Instance
+  - name: khonorecruit-redis
+    region: oregon
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

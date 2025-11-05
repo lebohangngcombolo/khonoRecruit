@@ -1,0 +1,50 @@
+{
+  "name": "khonorecruit",
+  "type": "python",
+  "version": "1.0.0",
+  "description": "AI-Powered Recruitment Platform",
+  "build": {
+    "command": "pip install -r requirements.txt && python -m spacy download en_core_web_sm",
+    "output": ".",
+    "prebuild": "pip install --upgrade pip"
+  },
+  "deploy": {
+    "start": "gunicorn -c gunicorn_config.py run:app",
+    "env": {
+      "FLASK_ENV": "production",
+      "PYTHON_VERSION": "3.11",
+      "PORT": "10000"
+    },
+    "healthCheck": {
+      "path": "/api/health",
+      "interval": 30000
+    }
+  },
+  "databases": {
+    "postgresql": {
+      "enabled": true,
+      "name": "recruitment_db",
+      "migrations": true
+    },
+    "redis": {
+      "enabled": true,
+      "maxmemoryPolicy": "allkeys-lru"
+    }
+  },
+  "services": {
+    "external": {
+      "mongodb": true,
+      "cloudinary": true,
+      "smtp": true
+    }
+  },
+  "scripts": {
+    "db:migrate": "flask db upgrade",
+    "db:rollback": "flask db downgrade",
+    "db:reset": "flask db downgrade base && flask db upgrade"
+  },
+  "monitoring": {
+    "logging": true,
+    "metrics": true
+  }
+}

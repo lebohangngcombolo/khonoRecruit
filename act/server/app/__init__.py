@@ -11,7 +11,7 @@ from .extensions import (
     oauth,
 )
 from .models import *
-from .routes import auth, admin_routes, candidate_routes, ai_routes
+from .routes import auth, admin_routes, candidate_routes, ai_routes, health_routes
 
 def create_app():
     app = Flask(__name__)
@@ -38,6 +38,7 @@ def create_app():
     app.register_blueprint(admin_routes.admin_bp, url_prefix="/api/admin")
     app.register_blueprint(candidate_routes.candidate_bp, url_prefix="/api/candidate")
     app.register_blueprint(ai_routes.ai_bp)
+    app.register_blueprint(health_routes.health_bp)
 
     # ---------------- Optional: Auto-create tables (safe) ----------------
     # Only run in dev or if absolutely necessary. Use Flask-Migrate in prod.
