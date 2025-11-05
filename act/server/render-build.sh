@@ -24,6 +24,10 @@ mkdir -p uploads/temp
 # Skip migrations - database already populated via pg_dump restore
 echo "⏭️  Skipping migrations - using existing database schema..."
 
+# Test app import
+echo "🧪 Testing app import..."
+python -c "from app import create_app; app = create_app(); print('✅ App import successful')" || echo "❌ App import failed"
+
 # Clear any existing cache
 echo "🧹 Clearing cache..."
 find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

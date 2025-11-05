@@ -22,7 +22,8 @@ max_requests_jitter = 100
 # Logging
 accesslog = "-"  # Log to stdout
 errorlog = "-"   # Log to stderr
-loglevel = "info"
+loglevel = "debug"  # Changed to debug for troubleshooting
+capture_output = True  # Capture stdout/stderr from app
 
 # Process naming
 proc_name = "khonorecruit"
@@ -34,6 +35,7 @@ umask = 0
 user = None
 group = None
 tmp_upload_dir = None
+preload_app = True  # Load app before forking to catch import errors
 
 # SSL (if needed)
 keyfile = None
