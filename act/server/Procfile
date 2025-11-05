@@ -1,1 +1,1 @@
-web: gunicorn -c gunicorn_config.py run:app
+web: python check_env.py && gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --log-level debug run:app

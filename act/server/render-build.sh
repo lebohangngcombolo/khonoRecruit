@@ -24,6 +24,10 @@ mkdir -p uploads/temp
 # Skip migrations - database already populated via pg_dump restore
 echo "⏭️  Skipping migrations - using existing database schema..."
 
+# Check environment variables
+echo "🔍 Checking environment variables..."
+python check_env.py
+
 # Test app import
 echo "🧪 Testing app import..."
 python -c "from app import create_app; app = create_app(); print('✅ App import successful')" || echo "❌ App import failed"
