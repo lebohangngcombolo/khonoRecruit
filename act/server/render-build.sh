@@ -21,9 +21,8 @@ echo "📁 Creating upload directories..."
 mkdir -p uploads/cvs
 mkdir -p uploads/temp
 
-# Run database migrations
-echo "🗄️  Running database migrations..."
-flask db upgrade || echo "⚠️  No migrations to apply or database not ready"
+# Skip migrations - database already populated via pg_dump restore
+echo "⏭️  Skipping migrations - using existing database schema..."
 
 # Clear any existing cache
 echo "🧹 Clearing cache..."

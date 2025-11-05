@@ -4,8 +4,8 @@ import multiprocessing
 # Bind to the port provided by Render (defaults to 10000)
 bind = "0.0.0.0:" + str(os.environ.get("PORT", 10000))
 
-# Worker configuration
-workers = multiprocessing.cpu_count() * 2 + 1  # Recommended formula
+# Worker configuration (optimized for Render Free tier: 512MB RAM)
+workers = 2  # Reduced for free tier
 worker_class = "gthread"
 threads = 2
 worker_connections = 1000
