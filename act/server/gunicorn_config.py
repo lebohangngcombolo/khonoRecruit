@@ -1,41 +1,34 @@
 import os
-import multiprocessing
 
-# Bind to the port provided by Render (defaults to 10000)
-bind = "0.0.0.0:" + str(os.environ.get("PORT", 10000))
+# Bind to the port provided by Render environment variable
+bind = "0.0.0.0:" + str(os.environ.get("PORT", "10000"))
 
-# Worker configuration (optimized for Render Free tier: 512MB RAM)
-workers = 2  # Reduced for free tier
-worker_class = "gthread"
-threads = 2
-worker_connections = 1000
+# Worker configuration - MINIMIZED for 512MB free tier
+workers = 1  # Single worker to minimize memory
+worker_class = "sync"  # Sync worker uses less memory than gthread
+# No threads setting for sync worker
 
-# Timeout and restart configuration
-timeout = 120  # Increased for AI processing tasks
-graceful_timeout = 120
-keepalive = 5
+# Timeout configuration
+timeout = 120  # Allow time for AI processing
+graceful_timeout = 30
+keepalive = 2
 
-# Restart workers after this many requests (helps prevent memory leaks)
-max_requests = 1000
-max_requests_jitter = 100
+# Restart workers periodically to prevent memory leaks
+max_requests = 500
+max_requests_jitter = 50
 
 # Logging
 accesslog = "-"  # Log to stdout
 errorlog = "-"   # Log to stderr
-loglevel = "debug"  # Changed to debug for troubleshooting
-capture_output = True  # Capture stdout/stderr from app
+loglevel = "info"  # Changed back to info for production
+capture_output = True
 
 # Process naming
 proc_name = "khonorecruit"
 
 # Server mechanics
 daemon = False
-pidfile = None
-umask = 0
-user = None
-group = None
-tmp_upload_dir = None
-preload_app = True  # Load app before forking to catch import errors
+preload_app = False  # Disabled to reduce memory footprint
 
 # SSL (if needed)
 keyfile = None

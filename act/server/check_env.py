@@ -22,6 +22,7 @@ OPTIONAL_ENV_VARS = [
     'CLOUDINARY_API_KEY',
     'CLOUDINARY_API_SECRET',
     'OPENROUTER_API_KEY',
+    'ENABLE_AI_FEATURES',  # Set to 'true' only if on paid tier with 2GB+ RAM
 ]
 
 def check_env():
