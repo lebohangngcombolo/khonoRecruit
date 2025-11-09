@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:http/http.dart' as http;
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
+import '../../utils/khono_icons.dart';
 import 'candidate_management_screen.dart';
 import 'cv_reviews_screen.dart';
 import 'interviews_screen.dart';
@@ -12,7 +16,9 @@ import 'notifications_screen.dart';
 import 'job_management.dart';
 import 'hm_analytics_page.dart';
 import 'hm_team_collaboration_page.dart';
-import 'package:http/http.dart' as http;
+
+// Custom red color #C10D00
+const Color kPrimaryRed = Color(0xFFC10D00);
 
 class HMMainDashboard extends StatefulWidget {
   const HMMainDashboard({super.key});
@@ -25,6 +31,7 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     with SingleTickerProviderStateMixin {
   String currentScreen = "dashboard";
   bool loadingStats = true;
+  String userName = "User";  // User name for personalized greeting
 
   int jobsCount = 0;
   int candidatesCount = 0;
@@ -58,6 +65,7 @@ class _HMMainDashboardState extends State<HMMainDashboard>
   void initState() {
     super.initState();
     fetchStats();
+    _loadUserInfo();  // Load user info for greeting
 
     _sidebarAnimController = AnimationController(
       vsync: this,
@@ -72,6 +80,25 @@ class _HMMainDashboardState extends State<HMMainDashboard>
   void dispose() {
     _sidebarAnimController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userInfo = await AuthService.getUserInfo();
+      if (userInfo != null) {
+        setState(() {
+          // Try to get name from email (before @)
+          final email = userInfo['email'] ?? '';
+          userName = email.split('@')[0].replaceAll('.', ' ').toUpperCase();
+          // Capitalize first letter of each word
+          userName = userName.split(' ').map((word) => 
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1).toLowerCase()
+          ).join(' ');
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading user info: $e");
+    }
   }
 
   Future<void> fetchStats() async {
@@ -109,31 +136,56 @@ class _HMMainDashboardState extends State<HMMainDashboard>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
-      body: SafeArea(
-        child: Row(
-          children: [
-            // ---------- Collapsible Sidebar ----------
-            AnimatedBuilder(
-              animation: _sidebarAnimController,
-              builder: (context, child) {
-                final width = _sidebarWidthAnimation.value;
+      body: Stack(
+        children: [
+          // ---------- Background Image ----------
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background_image.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to a gradient background if image fails to load
                 return Container(
-                  width: width,
-                  height: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade200, width: 1),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF1E1E1E),
+                        const Color(0xFF2D2D2D),
+                        kPrimaryRed.withOpacity(0.1),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 8,
-                        offset: const Offset(2, 0),
-                      ),
-                    ],
                   ),
+                );
+              },
+            ),
+          ),
+          // ---------- Main Content ----------
+          SafeArea(
+            child: Row(
+              children: [
+                // ---------- Collapsible Sidebar ----------
+                AnimatedBuilder(
+                  animation: _sidebarAnimController,
+                  builder: (context, child) {
+                    final width = _sidebarWidthAnimation.value;
+                    return Container(
+                      width: width,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E).withOpacity(0.85),
+                        border: Border(
+                          right: BorderSide(color: kPrimaryRed.withOpacity(0.3), width: 1),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: kPrimaryRed.withOpacity(0.15),
+                            blurRadius: 20,
+                            offset: const Offset(2, 0),
+                          ),
+                        ],
+                      ),
                   child: Column(
                     children: [
                       // Sidebar header
@@ -144,39 +196,44 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Flexible(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
+                              Expanded(
+                                child: Center(
                                   child: sidebarCollapsed
                                       ? Image.asset(
-                                          'assets/images/icon.png',
+                                          'assets/images/logo.png',
+                                          width: 50,
                                           height: 40,
                                           fit: BoxFit.contain,
                                         )
-                                      : Image.asset(
-                                          'assets/images/logo2.png',
-                                          height: 40,
-                                          fit: BoxFit.contain,
+                                      : Text(
+                                          'KHONOLOGY',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: kPrimaryRed,
+                                            letterSpacing: 3,
+                                          ),
                                         ),
                                 ),
                               ),
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: EdgeInsets.zero,
-                                icon: Icon(
-                                  sidebarCollapsed
-                                      ? Icons.arrow_forward_ios
-                                      : Icons.arrow_back_ios,
-                                  size: 16,
-                                  color: Colors.grey.shade600,
+                              if (!sidebarCollapsed)
+                                IconButton(
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                  icon: Icon(
+                                    sidebarCollapsed
+                                        ? Icons.arrow_forward_ios
+                                        : Icons.arrow_back_ios,
+                                    size: 16,
+                                    color: kPrimaryRed,
+                                  ),
+                                  onPressed: toggleSidebar,
                                 ),
-                                onPressed: toggleSidebar,
-                              ),
                             ],
                           ),
                         ),
                       ),
-                      const Divider(height: 1, color: Colors.grey),
+                      Divider(height: 1, color: kPrimaryRed.withOpacity(0.2)),
                       Expanded(
                         child: ListView(
                           padding: EdgeInsets.zero,
@@ -192,14 +249,23 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                                 'CV Reviews', 'cv_reviews'),
                             _sidebarEntry(Icons.analytics_outlined, 'Analytics',
                                 'analytics'),
-                            _sidebarEntry(Icons.group_outlined,
+                            _sidebarEntry(Icons.people_outline,
                                 'Team Collaboration', 'team_collaboration'),
-                            _sidebarEntry(Icons.notifications_active_outlined,
+                            _sidebarEntry(Icons.notifications_outlined,
                                 'Notifications', 'notifications'),
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: Colors.grey),
+                      Divider(height: 1, color: kPrimaryRed.withOpacity(0.2)),
+                      if (sidebarCollapsed)
+                        Center(
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                            color: kPrimaryRed,
+                            onPressed: toggleSidebar,
+                            tooltip: 'Expand Sidebar',
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 12.0, horizontal: 8),
@@ -208,19 +274,25 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                             if (!sidebarCollapsed)
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    backgroundColor: Colors.redAccent,
-                                    radius: 16,
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: kPrimaryRed, width: 2),
+                                      color: Colors.grey.shade900,
+                                    ),
                                     child: const Icon(Icons.person,
-                                        color: Colors.white, size: 16),
+                                        color: kPrimaryRed, size: 16),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      "Admin User",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade800,
+                                      "Hiring Manager",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -240,20 +312,31 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                             if (!sidebarCollapsed)
                               ElevatedButton.icon(
                                 onPressed: () {},
-                                icon: const Icon(Icons.logout, size: 16),
-                                label: const Text("Logout"),
+                                icon: Image.asset(
+                                  KhonoIcons.logoutIcon,
+                                  width: 16,
+                                  height: 16,
+                                  color: Colors.white,
+                                ),
+                                label: Text("Logout", style: GoogleFonts.poppins()),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.redAccent,
-                                  side: BorderSide(color: Colors.grey.shade300),
+                                  backgroundColor: kPrimaryRed,
+                                  foregroundColor: Colors.white,
                                   minimumSize: const Size.fromHeight(40),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
                               )
                             else
                               IconButton(
                                 onPressed: () {},
-                                icon: const Icon(Icons.logout,
-                                    color: Colors.grey),
+                                icon: Image.asset(
+                                  KhonoIcons.logoutIcon,
+                                  width: 20,
+                                  height: 20,
+                                  color: Colors.grey,
+                                ),
                               ),
                           ],
                         ),
@@ -263,74 +346,101 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                 );
               },
             ),
-            // ---------- Main content ----------
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    height: 72,
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Welcome Back, Admin",
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade900)),
-                                const SizedBox(height: 2),
-                                Text("Overview of the recruitment platform",
-                                    style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12)),
-                              ],
-                            ),
+                // ---------- Main content ----------
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E).withOpacity(0.75),
+                          border: Border(
+                            bottom: BorderSide(color: kPrimaryRed.withOpacity(0.3), width: 1),
                           ),
-                          Row(
+                          boxShadow: [
+                            BoxShadow(
+                              color: kPrimaryRed.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
                             children: [
-                              TextButton.icon(
-                                onPressed: () =>
-                                    setState(() => currentScreen = "jobs"),
-                                icon: const Icon(Icons.add_box_outlined,
-                                    color: Colors.redAccent),
-                                label: const Text("Create",
-                                    style: TextStyle(color: Colors.black87)),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("Welcome Back, Hiring Manager",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white)),
+                                    const SizedBox(height: 2),
+                                    Text("Manage recruitment operations",
+                                        style: GoogleFonts.poppins(
+                                            color: Colors.grey.shade400,
+                                            fontSize: 12)),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 12),
-                              IconButton(
-                                onPressed: () => setState(
-                                    () => currentScreen = "notifications"),
-                                icon: const Icon(Icons.notifications_none),
-                              ),
-                              const SizedBox(width: 12),
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.grey.shade200,
-                                child: const Icon(Icons.person,
-                                    color: Colors.redAccent),
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () =>
+                                        setState(() => currentScreen = "jobs"),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: Text("Create", style: GoogleFonts.poppins()),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: kPrimaryRed,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  IconButton(
+                                    onPressed: () => setState(
+                                        () => currentScreen = "notifications"),
+                                    icon: const Icon(Icons.notifications_outlined,
+                                        color: Colors.white),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: kPrimaryRed, width: 2),
+                                      color: Colors.grey.shade900,
+                                    ),
+                                    child: const Icon(Icons.person,
+                                        color: kPrimaryRed, size: 18),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      Expanded(child: getCurrentScreen()),
+                    ],
                   ),
-                  Expanded(child: getCurrentScreen()),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.redAccent,
-        child: const Icon(Icons.refresh),
+        backgroundColor: kPrimaryRed,
+        child: const Icon(Icons.refresh, color: Colors.white),
         onPressed: fetchStats,
         tooltip: "Refresh stats",
       ),
@@ -353,21 +463,42 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return InkWell(
       onTap: () => setState(() => currentScreen = screenKey),
       child: Container(
-        color:
-            selected ? Colors.redAccent.withOpacity(0.06) : Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? kPrimaryRed.withOpacity(0.2) : Colors.transparent,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         child: Row(
           children: [
-            Icon(icon,
-                color: selected ? Colors.redAccent : Colors.grey.shade800),
+            Container(
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: kPrimaryRed,
+                shape: BoxShape.circle,
+                boxShadow: selected ? [
+                  BoxShadow(
+                    color: kPrimaryRed.withOpacity(0.4),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ] : null,
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(width: 12),
             if (!sidebarCollapsed)
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    color: selected ? Colors.redAccent : Colors.grey.shade800,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  style: GoogleFonts.poppins(
+                    color: selected ? Colors.white : Colors.grey.shade400,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -389,7 +520,15 @@ class _HMMainDashboardState extends State<HMMainDashboard>
           },
         );
       case "candidates":
-        return CandidateManagementScreen(jobId: selectedJobId ?? 0);
+        if (selectedJobId == null || selectedJobId == 0) {
+          return const Center(
+            child: Text(
+              "Please select a job first",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
+        }
+        return CandidateManagementScreen(jobId: selectedJobId!);
       case "interviews":
         return InterviewsScreen();
       case "cv_reviews":
@@ -453,28 +592,132 @@ class _HMMainDashboardState extends State<HMMainDashboard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            const Text("Welcome Back, Admin",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 120,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+            const SizedBox(height: 16),
+            // Personalized Greeting Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E).withOpacity(0.4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kPrimaryRed.withOpacity(0.5), width: 2),
+              ),
+              child: Row(
                 children: [
-                  kpiCard("Jobs", jobsCount, Colors.redAccent, Icons.work),
-                  kpiCard("Candidates", candidatesCount, Colors.orangeAccent,
-                      Icons.group),
-                  kpiCard("Interviews", interviewsCount, Colors.green,
-                      Icons.schedule),
-                  kpiCard("CV Reviews", cvReviewsCount, Colors.blueAccent,
-                      Icons.description),
-                  kpiCard("Audits", auditsCount, Colors.purpleAccent,
-                      Icons.history),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: kPrimaryRed, width: 3),
+                      color: Colors.grey.shade900,
+                    ),
+                    child: Image.asset(
+                      KhonoIcons.hrTeamRed,
+                      color: kPrimaryRed,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Welcome back, $userName!",
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Ready to find top talent today?",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey.shade400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: kPrimaryRed.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: kPrimaryRed),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: kPrimaryRed, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          "Level 1",
+                          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
+            // Gamification Stats Grid
+            GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1.5,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildStatCard(
+                  iconPath: KhonoIcons.projectRed,
+                  value: "$jobsCount",
+                  label: "Active Jobs",
+                  color: kPrimaryRed,
+                ),
+                _buildStatCard(
+                  iconPath: KhonoIcons.approvedRed,
+                  value: "$candidatesCount",
+                  label: "Shortlisted",
+                  color: kPrimaryRed,
+                ),
+                _buildStatCard(
+                  iconPath: KhonoIcons.goalRed,
+                  value: "0",
+                  label: "Points",
+                  color: kPrimaryRed,
+                ),
+                _buildStatCard(
+                  iconPath: KhonoIcons.taskRed,
+                  value: "1 days",
+                  label: "Current Streak",
+                  color: const Color(0xFFFF9800),
+                ),
+                _buildStatCard(
+                  iconPath: KhonoIcons.calendarRed,
+                  value: "$interviewsCount",
+                  label: "Today's Interviews",
+                  color: kPrimaryRed,
+                ),
+                _buildStatCard(
+                  iconPath: KhonoIcons.approvedRed,
+                  value: "0",
+                  label: "Badges",
+                  color: const Color(0xFF4CAF50),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
             LayoutBuilder(builder: (context, constraints) {
               int crossAxisCount = constraints.maxWidth > 900 ? 2 : 1;
               double aspectRatio = constraints.maxWidth > 900 ? 2.7 : 2.2;
@@ -510,27 +753,63 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return teamCollaborationCard("Team Collaboration", teamMessages);
   }
 
-  // ---------------- KPI Card ----------------
-  Widget kpiCard(String label, int value, Color color, IconData icon) {
+  // ---------------- Gamification Stat Card ----------------
+  Widget _buildStatCard({
+    IconData? icon,
+    String? iconPath,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
     return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 28),
+          Container(
+            width: 48,
+            height: 48,
+            padding: iconPath != null ? const EdgeInsets.all(10) : null,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 2),
+            ),
+            child: iconPath != null
+                ? Image.asset(
+                    iconPath,
+                    width: 28,
+                    height: 28,
+                    color: color,
+                    fit: BoxFit.contain,
+                  )
+                : Icon(icon, color: color, size: 24),
+          ),
           const SizedBox(height: 12),
-          Text(value.toString(),
-              style: TextStyle(
-                  fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey.shade400,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -541,14 +820,14 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: SfCartesianChart(
@@ -572,14 +851,14 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: SfCartesianChart(
@@ -605,14 +884,14 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: Row(
@@ -657,14 +936,14 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -680,7 +959,7 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                         backgroundColor: Colors.blueAccent,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(messages[index])),
+                      Expanded(child: Text(messages[index], style: TextStyle(color: Colors.grey.shade300))),
                     ],
                   ),
                 );
@@ -696,21 +975,60 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
-      child: TableCalendar(
-        firstDay: DateTime.utc(2020, 1, 1),
-        lastDay: DateTime.utc(2030, 12, 31),
-        focusedDay: focusedDay,
-        selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-        onDaySelected: (selectedDayValue, focusedDayValue) {
-          setState(() {
-            selectedDay = selectedDayValue;
-            focusedDay = focusedDayValue;
-          });
-        },
+      child: ClipRect(
+        child: SingleChildScrollView(
+          child: TableCalendar(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: focusedDay,
+            selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+            onDaySelected: (selectedDayValue, focusedDayValue) {
+              setState(() {
+                selectedDay = selectedDayValue;
+                focusedDay = focusedDayValue;
+              });
+            },
+            calendarFormat: CalendarFormat.week, // Show only week view by default
+            availableCalendarFormats: const {
+              CalendarFormat.week: 'Week',
+              CalendarFormat.month: 'Month',
+            },
+            headerStyle: HeaderStyle(
+              formatButtonVisible: true,
+              titleCentered: true,
+              formatButtonShowsNext: false,
+              formatButtonDecoration: BoxDecoration(
+                color: kPrimaryRed.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              formatButtonTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+              ),
+            ),
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(color: Colors.white70, fontSize: 12),
+              weekendStyle: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            calendarStyle: CalendarStyle(
+              selectedDecoration: BoxDecoration(
+                color: kPrimaryRed,
+                shape: BoxShape.circle,
+              ),
+              todayDecoration: BoxDecoration(
+                color: kPrimaryRed.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              defaultTextStyle: const TextStyle(color: Colors.white, fontSize: 12),
+              weekendTextStyle: const TextStyle(color: Colors.white70, fontSize: 12),
+              outsideTextStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -719,15 +1037,15 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E).withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Recent Activities",
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text("Recent Activities",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -735,7 +1053,28 @@ class _HMMainDashboardState extends State<HMMainDashboard>
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(recentActivities[index]),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(top: 6, right: 8),
+                        decoration: const BoxDecoration(
+                          color: kPrimaryRed,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          recentActivities[index],
+                          style: TextStyle(color: Colors.grey.shade300),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),

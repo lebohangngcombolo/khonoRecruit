@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../../constants/app_colors.dart';
 import '../../widgets/widgets1/glass_card.dart';
+import '../../services/admin_service.dart';
 
 class HMAnalyticsPage extends StatefulWidget {
   const HMAnalyticsPage({super.key});
@@ -14,6 +15,12 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   bool _isLoading = false;
   String _selectedTimeRange = 'Last 6 Months';
   Map<String, dynamic> _analyticsData = {};
+  Map<String, dynamic> _statusBreakdown = {};
+  List<dynamic> _timelineData = [];
+  List<dynamic> _topJobs = [];
+  Map<String, dynamic> _conversionFunnel = {};
+  
+  final AdminService _adminService = AdminService();
 
   @override
   void initState() {
@@ -21,26 +28,60 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     _loadAnalytics();
   }
 
-  void _loadAnalytics() {
-    setState(() {
-      _isLoading = true;
-    });
+  void _loadAnalytics() async {
+    setState(() => _isLoading = true);
 
-    // Mock data
-    Future.delayed(const Duration(milliseconds: 500), () {
+    try {
+      // Map time range to API format
+      String apiTimeRange = '6m';
+      switch (_selectedTimeRange) {
+        case 'Last Month':
+          apiTimeRange = '1m';
+          break;
+        case 'Last 3 Months':
+          apiTimeRange = '3m';
+          break;
+        case 'Last 6 Months':
+          apiTimeRange = '6m';
+          break;
+        case 'Last Year':
+          apiTimeRange = '1y';
+          break;
+      }
+
+      // Fetch real data from API
+      final data = await _adminService.getAnalytics(timeRange: apiTimeRange);
+
       setState(() {
-        _analyticsData = {
-          'total_hires': 78,
-          'avg_time_to_fill': 32,
-          'cost_per_hire': 4200,
-          'quality_score': 88,
-          'predicted_hires': 25,
-          'risk_level': 'Medium',
-          'market_conditions': 'Favorable',
-        };
+        _analyticsData = data['summary'] ?? {};
+        _statusBreakdown = data['status_breakdown'] ?? {};
+        _timelineData = data['timeline'] ?? [];
+        _topJobs = data['top_jobs'] ?? [];
+        _conversionFunnel = data['conversion_funnel'] ?? {};
         _isLoading = false;
       });
-    });
+    } catch (e) {
+      debugPrint('Error loading analytics: $e');
+      setState(() {
+        _isLoading = false;
+        _analyticsData = {};
+      });
+
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load analytics: $e'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () => _loadAnalytics(),
+              textColor: Colors.white,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -69,9 +110,17 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
         const Text(
           'Analytics & Insights',
           style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black54,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              )
+            ],
+          ),
         ),
         Row(
           children: [
@@ -146,6 +195,54 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   }
 
   Widget _buildAnalyticsContent() {
+    // Check if data is empty
+    if (_analyticsData.isEmpty || 
+        (_analyticsData['total_applications'] ?? 0) == 0) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 100,
+              color: Colors.grey.withOpacity(0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Analytics Data Available',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start recruiting to see analytics and insights',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade400,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _loadAnalytics,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Data'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [

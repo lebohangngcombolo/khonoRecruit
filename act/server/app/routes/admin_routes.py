@@ -330,7 +330,13 @@ def get_application(application_id):
 @admin_bp.route("/jobs/<int:job_id>/shortlist", methods=["GET"])
 @role_required(["admin", "hiring_manager"])
 def shortlist_candidates(job_id):
-    job = Requisition.query.get_or_404(job_id)
+    # Validate job_id
+    if job_id <= 0:
+        return jsonify({"error": "Invalid job ID"}), 400
+    
+    job = Requisition.query.get(job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
     applications = Application.query.filter_by(requisition_id=job.id).all()
     shortlisted = []
 
@@ -550,14 +556,15 @@ def list_audits():
         return jsonify({"error": "Internal server error"}), 500
 
 @admin_bp.route("/dashboard-counts", methods=["GET"])
+@jwt_required()
 @role_required(["admin", "hiring_manager"])
 def dashboard_counts():
     try:
         counts = {
             "jobs": Requisition.query.count(),
             "candidates": Candidate.query.count(),
-            "cv_reviews": Application.query.count(),
-            "audits": AuditLog.query.count(),
+            "cv_reviews": AssessmentResult.query.count(),
+            "audits": AuditLog.query.count() if 'AuditLog' in globals() else 0,
             "interviews": Interview.query.count()
         }
         return jsonify(counts), 200
@@ -946,7 +953,7 @@ def get_all_interviews():
     
 @admin_bp.route("/recent-activities", methods=["GET"])
 @jwt_required()
-@role_required("admin")
+@role_required(["admin", "hiring_manager"])
 def recent_activities():
     try:
         activities = []
@@ -983,11 +990,41 @@ def recent_activities():
         for n in notifications:
             activities.append(f"Notification: {n.message}")
 
-        return jsonify({"recentActivities": activities}), 200
+        return jsonify({"recent_activities": activities}), 200
 
     except Exception as e:
         current_app.logger.error(f"Error fetching recent activities: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+# ----------------- NOTIFICATIONS: MARK AS READ -----------------
+@admin_bp.route("/notifications/<int:notification_id>/read", methods=["PATCH"])
+@role_required(["admin", "hiring_manager"])
+def mark_notification_read(notification_id):
+    try:
+        notif = Notification.query.get_or_404(notification_id)
+        notif.is_read = True
+        db.session.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        current_app.logger.error(f"Mark notification read error: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+# ----------------- NOTIFICATIONS: MARK ALL READ -----------------
+@admin_bp.route("/notifications/mark-all-read", methods=["POST"])
+@jwt_required()
+@role_required(["admin", "hiring_manager"])
+def mark_all_notifications_read():
+    try:
+        user_id = get_jwt_identity()
+        Notification.query.filter_by(user_id=user_id, is_read=False).update({Notification.is_read: True})
+        db.session.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        current_app.logger.error(f"Mark all notifications read error: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"success": False, "error": "Internal server error"}), 500
 
 # ==========================
 # Power BI Data & Status

@@ -50,14 +50,7 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
             ? 2
             : 1;
 
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text("CV Reviews"),
-        backgroundColor: Colors.redAccent,
-        elevation: 0,
-      ),
-      body: loading
+    return loading
           ? const Center(
               child: CircularProgressIndicator(color: Colors.redAccent))
           : Padding(
@@ -94,29 +87,23 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                         final education = cvParser['education'] ?? [];
                         final workExp = cvParser['work_experience'] ?? [];
 
-                        return Card(
-                          shape: RoundedRectangleBorder(
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E1E).withOpacity(0.8),
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: topColor, width: 2),
                           ),
-                          elevation: 4,
                           child: Column(
                             children: [
-                              // Top color indicator
-                              Container(
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: topColor,
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16)),
-                                ),
-                              ),
                               Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
+                                child: SingleChildScrollView(
+                                  physics: const BouncingScrollPhysics(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
                                       // Candidate & Score
                                       Row(
                                         children: [
@@ -129,7 +116,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                               "${score.toStringAsFixed(0)}%",
                                               style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 12),
+                                                  fontSize: 14,
+                                                  color: Colors.white),
                                             ),
                                             progressColor: topColor,
                                             backgroundColor: Colors.grey[300]!,
@@ -143,7 +131,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                                   "Unknown Candidate",
                                               style: const TextStyle(
                                                   fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
                                             ),
                                           ),
                                         ],
@@ -154,7 +143,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                       Text(
                                         "CV Fit Score",
                                         style: const TextStyle(
-                                            fontWeight: FontWeight.bold),
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white),
                                       ),
                                       const SizedBox(height: 6),
                                       LinearPercentIndicator(
@@ -174,7 +164,15 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                             const Text(
                                               "Skills",
                                               style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              "Skills: ${skills.length}",
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey.shade400),
                                             ),
                                             const SizedBox(height: 4),
                                             Wrap(
@@ -186,7 +184,9 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                                           s.toString(),
                                                           style:
                                                               const TextStyle(
-                                                                  fontSize: 10),
+                                                                  fontSize: 10,
+                                                                  color: Colors
+                                                                      .white),
                                                         ),
                                                         backgroundColor:
                                                             topColor
@@ -208,17 +208,19 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
-                                              "Education",
+                                            Text(
+                                              "Edu: ${education.length}",
                                               style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                                  fontSize: 11,
+                                                  color: Colors.grey.shade400),
                                             ),
                                             const SizedBox(height: 4),
                                             ...education
                                                 .map<Widget>((edu) => Text(
                                                       "${edu['degree'] ?? ''} - ${edu['institution'] ?? ''} (${edu['year'] ?? ''})",
                                                       style: const TextStyle(
-                                                          fontSize: 11),
+                                                          fontSize: 11,
+                                                          color: Colors.white),
                                                     )),
                                             const SizedBox(height: 8),
                                           ],
@@ -230,17 +232,19 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
-                                              "Work Experience",
+                                            Text(
+                                              "Exp: ${workExp.length}",
                                               style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                                  fontSize: 11,
+                                                  color: Colors.grey.shade400),
                                             ),
                                             const SizedBox(height: 4),
                                             ...workExp
                                                 .map<Widget>((exp) => Text(
                                                       "${exp['role'] ?? ''} at ${exp['company'] ?? ''} (${exp['years'] ?? ''})",
                                                       style: const TextStyle(
-                                                          fontSize: 11),
+                                                          fontSize: 11,
+                                                          color: Colors.white),
                                                     )),
                                             const SizedBox(height: 8),
                                           ],
@@ -277,7 +281,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                             },
                                           ),
                                         ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -286,7 +291,6 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                         );
                       },
                     ),
-            ),
-    );
+            );
   }
 }

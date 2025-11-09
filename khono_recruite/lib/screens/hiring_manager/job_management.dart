@@ -61,7 +61,14 @@ class _JobManagementState extends State<JobManagement> {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          )
+                        ],
                       ),
                     ),
                     CustomButton(
@@ -71,7 +78,7 @@ class _JobManagementState extends State<JobManagement> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Divider(color: Colors.grey),
+                Divider(color: Colors.red.withOpacity(0.3)),
                 const SizedBox(height: 20),
 
                 // Job List
@@ -81,7 +88,7 @@ class _JobManagementState extends State<JobManagement> {
                           child: Text(
                             "No jobs available",
                             style: TextStyle(
-                              color: Colors.black54,
+                              color: Colors.white70,
                               fontSize: 16,
                             ),
                           ),
@@ -90,19 +97,18 @@ class _JobManagementState extends State<JobManagement> {
                           itemCount: jobs.length,
                           itemBuilder: (_, index) {
                             final job = jobs[index];
-                            return Card(
-                              color: Colors.white,
-                              elevation: 3,
+                            return Container(
                               margin: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(
-                                      color: Colors.grey, width: 0.3)),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E1E1E).withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+                              ),
                               child: ListTile(
                                 title: Text(
                                   job['title'] ?? '',
                                   style: const TextStyle(
-                                    color: Colors.black87,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 18,
                                   ),
@@ -111,8 +117,8 @@ class _JobManagementState extends State<JobManagement> {
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
                                     job['description'] ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.black54,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -122,7 +128,7 @@ class _JobManagementState extends State<JobManagement> {
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.edit,
-                                          color: Colors.blueAccent),
+                                          color: Colors.red),
                                       onPressed: () => openJobForm(job: job),
                                     ),
                                     IconButton(

@@ -85,6 +85,11 @@ def role_required(*roles):
                 }), 403
 
             except Exception as e:
+                # Don't catch HTTPExceptions (404, 500, etc.) - let them propagate
+                from werkzeug.exceptions import HTTPException
+                if isinstance(e, HTTPException):
+                    raise
+                
                 logging.error(f"Role decorator exception: {e}", exc_info=True)
                 return jsonify({"error": "Invalid or expired token", "details": str(e)}), 401
 

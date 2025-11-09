@@ -1,3 +1,4 @@
+import 'dart:io' as io;
 import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'interview_schedule_page.dart';
 import 'package:http/http.dart' as http;
+import '../../services/auth_service.dart';
 
 class CandidateDetailScreen extends StatefulWidget {
   final int candidateId;
@@ -205,12 +207,13 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
       _buildFlatTile(
         icon: Icons.insert_drive_file_outlined,
         topRightIcon: Icons.download_outlined,
-        onTopRightTap: () {
-          downloadCV(
+        onTopRightTap: () async {
+          final token = await AuthService.getAccessToken();
+          await downloadCV(
             candidateData!['candidate_id'],
             context,
             candidateData!['full_name'] ?? "candidate",
-            "YOUR_JWT_TOKEN_HERE",
+            token ?? '',
           );
         },
         child: Column(

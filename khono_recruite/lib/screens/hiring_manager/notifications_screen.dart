@@ -24,6 +24,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     fetchNotifications();
   }
 
+  Future<void> _markAsRead(int notificationId) async {
+    try {
+      final token = await AuthService.getAccessToken();
+      final res = await http.patch(
+        Uri.parse("${ApiEndpoints.adminBase}/notifications/$notificationId/read"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        setState(() {
+          final idx = notifications.indexWhere((n) => n['id'] == notificationId);
+          if (idx != -1) {
+            notifications[idx]['is_read'] = true;
+          }
+        });
+      } else {
+        throw Exception('Failed to mark as read');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to mark as read: $e')));
+      }
+    }
+  }
+
+  Future<void> _markAllAsRead() async {
+    try {
+      final token = await AuthService.getAccessToken();
+      final res = await http.post(
+        Uri.parse("${ApiEndpoints.adminBase}/notifications/mark-all-read"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        setState(() {
+          for (final n in notifications) {
+            n['is_read'] = true;
+          }
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('All notifications marked as read')));
+        }
+      } else {
+        throw Exception('Failed to mark all as read');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to mark all as read: $e')));
+      }
+    }
+  }
+
   Future<void> fetchNotifications() async {
     setState(() {
       loading = true;
@@ -85,28 +146,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Notifications",
-          style: TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blue),
-            )
-          : errorMessage != null
-              ? Center(child: Text(errorMessage!))
-              : notifications.isEmpty
-                  ? const Center(child: Text("No notifications"))
-                  : RefreshIndicator(
-                      onRefresh: fetchNotifications,
-                      child: ListView.builder(
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Notifications",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black54,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    )
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: notifications.isEmpty ? null : _markAllAsRead,
+                icon: const Icon(Icons.mark_email_read, color: Colors.white70),
+                label: const Text('Mark all as read',
+                    style: TextStyle(color: Colors.white70)),
+              )
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.redAccent),
+                  )
+                : errorMessage != null
+                    ? Center(
+                        child: Text(
+                          errorMessage!,
+                          style: const TextStyle(color: Colors.white70),
+                        ))
+                    : notifications.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "No notifications",
+                              style: TextStyle(color: Colors.white70, fontSize: 16),
+                            ))
+                        : RefreshIndicator(
+                            onRefresh: fetchNotifications,
+                            child: ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: notifications.length,
                         itemBuilder: (_, index) {
@@ -160,16 +251,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     style: const TextStyle(
                                         color: Colors.black87, fontSize: 14),
                                   ),
-                                  if (createdAt != null)
-                                    Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: Text(
-                                        "${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')} "
-                                        "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}",
-                                        style: const TextStyle(
-                                            fontSize: 12, color: Colors.grey),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      if (createdAt != null)
+                                        Text(
+                                          "${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')} "
+                                          "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}",
+                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                        ),
+                                      Row(
+                                        children: [
+                                          if (!(n['is_read'] == true))
+                                            TextButton(
+                                              onPressed: () => _markAsRead(n['id'] as int),
+                                              child: const Text('Mark as read'),
+                                            ),
+                                          Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: (n['is_read'] == true)
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -177,6 +289,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         },
                       ),
                     ),
+          ),
+        ],
+      ),
     );
   }
 }

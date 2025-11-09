@@ -6,8 +6,22 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from app.models import Requisition
 from cloudinary.uploader import upload as cloudinary_upload
-import spacy
-from sentence_transformers import SentenceTransformer, util
+
+# Optional imports for NLP features
+try:
+    import spacy
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    spacy = None
+
+try:
+    from sentence_transformers import SentenceTransformer, util
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
+    util = None
 
 # ----------------------------
 # Environment & Logging Setup

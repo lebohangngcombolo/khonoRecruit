@@ -1,0 +1,34 @@
+# Sensitive test data - DO NOT COMMIT
+test_tokens.txt
+*_tokens.txt
+
+# Test scripts with hardcoded credentials
+run_tests_auto.py
+*_auto.py
+
+# Test reports
+test_report_*.txt
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

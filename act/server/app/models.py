@@ -22,12 +22,37 @@ class User(db.Model):
     mfa_secret = db.Column(db.String(32), nullable=True)  # TOTP secret
     mfa_enabled = db.Column(db.Boolean, default=False)    # Is MFA turned on
     mfa_verified = db.Column(db.Boolean, default=False)   # Used during setup
+    
+    # Team collaboration fields
+    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
+    is_online = db.Column(db.Boolean, default=False)
 
     # 🔗 Relationships
     candidates = db.relationship('Candidate', back_populates='user', lazy=True)
     notifications = db.relationship('Notification', back_populates='user', lazy=True)
     oauth_connections = db.relationship('OAuthConnection', back_populates='user', lazy=True)
     managed_interviews = db.relationship('Interview', back_populates='hiring_manager', lazy=True)
+
+    @property
+    def full_name(self):
+        """Get user's full name from profile."""
+        if self.profile:
+            first = self.profile.get('first_name', '')
+            last = self.profile.get('last_name', '')
+            return f"{first} {last}".strip() or self.email.split('@')[0]
+        return self.email.split('@')[0]
+    
+    def update_activity(self):
+        """Update user's last activity timestamp and set online status."""
+        self.last_activity = datetime.utcnow()
+        self.is_online = True
+        db.session.commit()
+    
+    def check_online_status(self):
+        """Check if user is considered online (active in last 5 minutes)."""
+        if not self.last_activity:
+            return False
+        return (datetime.utcnow() - self.last_activity).total_seconds() < 300
 
     def to_dict(self):
         """Return sanitized user data for API responses."""
@@ -413,5 +438,106 @@ class AuditLog(db.Model):
             "user_agent": self.user_agent,
             "extra_data": self.extra_data,  # <- updated here too
             "timestamp": self.timestamp.isoformat(),
+        }
+
+
+# ------------------- TEAM COLLABORATION MODELS -------------------
+
+class TeamNote(db.Model):
+    __tablename__ = 'team_notes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_shared = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    author = db.relationship('User', backref=db.backref('team_notes', lazy=True), foreign_keys=[user_id])
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'author': self.author.full_name if self.author else 'Unknown',
+            'author_role': self.author.role if self.author else 'Unknown',
+            'title': self.title,
+            'content': self.content,
+            'is_shared': self.is_shared,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'last_modified': self.updated_at
+        }
+
+
+class TeamMessage(db.Model):
+    __tablename__ = 'team_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    author = db.relationship('User', backref=db.backref('team_messages', lazy=True), foreign_keys=[user_id])
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'author': self.author.full_name if self.author else 'Unknown',
+            'author_role': self.author.role if self.author else 'Unknown',
+            'content': self.message,
+            'message': self.message,
+            'entity': 'general',
+            'entity_type': 'general',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'timestamp': self.created_at
+        }
+
+
+class TeamActivity(db.Model):
+    __tablename__ = 'team_activities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    action = db.Column(db.String(100), nullable=False)
+    target_type = db.Column(db.String(50))
+    target_id = db.Column(db.Integer, nullable=True)
+    details = db.Column(JSON)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref=db.backref('team_activities', lazy=True), foreign_keys=[user_id])
+    
+    def get_time_ago(self):
+        if not self.created_at:
+            return 'Just now'
+        now = datetime.utcnow()
+        diff = now - self.created_at
+        
+        if diff.days > 0:
+            return f'{diff.days}d ago'
+        elif diff.seconds >= 3600:
+            return f'{diff.seconds // 3600}h ago'
+        elif diff.seconds >= 60:
+            return f'{diff.seconds // 60}m ago'
+        else:
+            return 'Just now'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_name': self.user.full_name if self.user else 'Unknown',
+            'user_role': self.user.role if self.user else 'Unknown',
+            'action': self.action,
+            'target_type': self.target_type,
+            'target_id': self.target_id,
+            'details': self.details or {},
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'time_ago': self.get_time_ago()
         }
 

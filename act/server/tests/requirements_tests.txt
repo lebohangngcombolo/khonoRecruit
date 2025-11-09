@@ -1,0 +1,15 @@
+# Test suite dependencies
+# Install with: pip install -r requirements_tests.txt
+
+# HTTP requests
+requests>=2.31.0
+
+# Optional: JWT decoding for debugging
+PyJWT>=2.8.0
+
+# Optional: Enhanced terminal output
+colorama>=0.4.6
+
+# Optional: Test reporting
+pytest>=7.4.0
+pytest-html>=3.2.0
