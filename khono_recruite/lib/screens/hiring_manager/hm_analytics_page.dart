@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../../../constants/app_colors.dart';
+import '../../constants/app_colors.dart';
 import '../../widgets/widgets1/glass_card.dart';
 import '../../services/admin_service.dart';
 
@@ -12,13 +12,10 @@ class HMAnalyticsPage extends StatefulWidget {
 }
 
 class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
-  bool _isLoading = false;
-  String _selectedTimeRange = 'Last 6 Months';
+  bool _isLoading = true;
+  String _selectedTimeRange = '1m';
   Map<String, dynamic> _analyticsData = {};
-  Map<String, dynamic> _statusBreakdown = {};
-  List<dynamic> _timelineData = [];
-  List<dynamic> _topJobs = [];
-  Map<String, dynamic> _conversionFunnel = {};
+  String _error = '';
   
   final AdminService _adminService = AdminService();
 
@@ -28,46 +25,26 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     _loadAnalytics();
   }
 
-  void _loadAnalytics() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadAnalytics() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
 
     try {
-      // Map time range to API format
-      String apiTimeRange = '6m';
-      switch (_selectedTimeRange) {
-        case 'Last Month':
-          apiTimeRange = '1m';
-          break;
-        case 'Last 3 Months':
-          apiTimeRange = '3m';
-          break;
-        case 'Last 6 Months':
-          apiTimeRange = '6m';
-          break;
-        case 'Last Year':
-          apiTimeRange = '1y';
-          break;
-      }
-
-      // Fetch real data from API
-      final data = await _adminService.getAnalytics(timeRange: apiTimeRange);
-
+      final data = await _adminService.getAnalytics(timeRange: _selectedTimeRange);
+      
       setState(() {
-        _analyticsData = data['summary'] ?? {};
-        _statusBreakdown = data['status_breakdown'] ?? {};
-        _timelineData = data['timeline'] ?? [];
-        _topJobs = data['top_jobs'] ?? [];
-        _conversionFunnel = data['conversion_funnel'] ?? {};
+        _analyticsData = data;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error loading analytics: $e');
       setState(() {
+        _error = e.toString();
         _isLoading = false;
-        _analyticsData = {};
       });
 
-      // Show error snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -75,12 +52,27 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
             backgroundColor: Colors.red,
             action: SnackBarAction(
               label: 'Retry',
-              onPressed: () => _loadAnalytics(),
+              onPressed: _loadAnalytics,
               textColor: Colors.white,
             ),
           ),
         );
       }
+    }
+  }
+
+  String _getTimeRangeLabel(String value) {
+    switch (value) {
+      case '1m':
+        return 'Last Month';
+      case '3m':
+        return 'Last 3 Months';
+      case '6m':
+        return 'Last 6 Months';
+      case '1y':
+        return 'Last Year';
+      default:
+        return 'Last Month';
     }
   }
 
@@ -96,7 +88,11 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
           _buildTimeRangeSelector(),
           const SizedBox(height: 16),
           Expanded(
-            child: _isLoading ? _buildLoadingState() : _buildAnalyticsContent(),
+            child: _isLoading
+                ? _buildLoadingState()
+                : _error.isNotEmpty
+                    ? _buildErrorState()
+                    : _buildAnalyticsContent(),
           ),
         ],
       ),
@@ -124,20 +120,20 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
         ),
         Row(
           children: [
+            // Export button hidden until backend supports it
+            // ElevatedButton.icon(
+            //   onPressed: () {},
+            //   icon: const Icon(Icons.download),
+            //   label: const Text('Export CSV'),
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Colors.green,
+            //     foregroundColor: AppColors.primaryWhite,
+            //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            //   ),
+            // ),
+            // const SizedBox(width: 8),
             ElevatedButton.icon(
-              onPressed: () => _showSnack('Export CSV clicked'),
-              icon: const Icon(Icons.download),
-              label: const Text('Export CSV'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: () => _showSnack('Refresh clicked'),
+              onPressed: _loadAnalytics,
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
               style: ElevatedButton.styleFrom(
@@ -166,14 +162,21 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
         const SizedBox(width: 12),
         DropdownButton<String>(
           value: _selectedTimeRange,
-          items: ['Last Month', 'Last 3 Months', 'Last 6 Months', 'Last Year']
-              .map(
-                  (range) => DropdownMenuItem(value: range, child: Text(range)))
+          items: ['1m', '3m', '6m', '1y']
+              .map((range) => DropdownMenuItem(
+                    value: range,
+                    child: Text(_getTimeRangeLabel(range)),
+                  ))
               .toList(),
           onChanged: (value) {
             setState(() => _selectedTimeRange = value!);
             _loadAnalytics();
           },
+        ),
+        const SizedBox(width: 8),
+        const Text(
+          '(Note: Time range applies to User Growth chart only)',
+          style: TextStyle(fontSize: 12, color: AppColors.textGrey, fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -194,10 +197,57 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     );
   }
 
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 100,
+            color: Colors.red.withOpacity(0.5),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Failed to Load Analytics',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _error,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textGrey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: _loadAnalytics,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalyticsContent() {
+    final summary = _analyticsData['summary'] ?? {};
+    
     // Check if data is empty
-    if (_analyticsData.isEmpty || 
-        (_analyticsData['total_applications'] ?? 0) == 0) {
+    if (summary.isEmpty || (summary['total_applications'] ?? 0) == 0) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -246,366 +296,644 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
+          // Row 1: Key Metrics Tiles
           _buildKeyMetrics(),
           const SizedBox(height: 24),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.2,
+          
+          // Row 2: Status Breakdown | Top Jobs
+          Row(
             children: [
-              _buildHiringTrendChart(),
-              _buildSourcePerformanceChart(),
-              _buildTimeToFillChart(),
-              _buildDiversityChart(),
+              Expanded(child: _buildStatusBreakdownChart()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildTopJobsChart()),
             ],
           ),
+          const SizedBox(height: 16),
+          
+          // Row 3: User Growth | Monthly Applications
+          Row(
+            children: [
+              Expanded(child: _buildUserGrowthChart()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildMonthlyApplicationsChart()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Row 4: Interview Status | Interviews by Type
+          Row(
+            children: [
+              Expanded(child: _buildInterviewStatusChart()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInterviewsByTypeChart()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Row 5: CV Score Distribution | Assessment Score Distribution
+          Row(
+            children: [
+              Expanded(child: _buildCVScoreDistributionChart()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildAssessmentScoreDistributionChart()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Row 6: Average Assessment by Requisition
+          _buildAverageAssessmentByRequisitionChart(),
           const SizedBox(height: 24),
-          _buildPredictiveAnalytics(),
-          const SizedBox(height: 24),
-          _buildDetailedReports(),
+          
+          // Footer: Conversion Funnel
+          _buildConversionFunnel(),
         ],
       ),
     );
   }
 
   Widget _buildKeyMetrics() {
+    final summary = _analyticsData['summary'] ?? {};
+    
     return Row(
       children: [
         Expanded(
-            child: _buildMetricCard(
-                'Total Hires',
-                '${_analyticsData['total_hires']}',
-                '+12%',
-                AppColors.primaryRed,
-                Icons.work)),
+          child: _buildMetricCard(
+            'Total Applications',
+            '${summary['total_applications'] ?? 0}',
+            AppColors.primaryRed,
+            Icons.description_outlined,
+            isPlaceholder: false,
+          ),
+        ),
         const SizedBox(width: 16),
         Expanded(
-            child: _buildMetricCard(
-                'Avg Time to Fill',
-                '${_analyticsData['avg_time_to_fill']} days',
-                '-8%',
-                Colors.blue,
-                Icons.timer)),
+          child: _buildMetricCard(
+            'Total Hires',
+            '${summary['total_hires'] ?? 0}',
+            Colors.green,
+            Icons.people_alt_outlined,
+            isPlaceholder: false,
+          ),
+        ),
         const SizedBox(width: 16),
         Expanded(
-            child: _buildMetricCard(
-                'Cost per Hire',
-                '\$${_analyticsData['cost_per_hire']}',
-                '+5%',
-                Colors.green,
-                Icons.attach_money)),
+          child: _buildMetricCard(
+            'Quality Score',
+            '${summary['quality_score'] ?? '0'}%',
+            Colors.orange,
+            Icons.star_outlined,
+            isPlaceholder: false,
+          ),
+        ),
         const SizedBox(width: 16),
         Expanded(
-            child: _buildMetricCard(
-                'Quality Score',
-                '${_analyticsData['quality_score']}%',
-                '+3%',
-                Colors.orange,
-                Icons.star)),
+          child: _buildMetricCard(
+            'Avg Time to Fill',
+            '${summary['avg_time_to_fill'] ?? 0} days',
+            Colors.blue.withOpacity(0.5),
+            Icons.schedule_outlined,
+            isPlaceholder: true,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildMetricCard(
+            'Cost per Hire',
+            '\$${summary['cost_per_hire'] ?? 0}',
+            Colors.teal.withOpacity(0.5),
+            Icons.attach_money_outlined,
+            isPlaceholder: true,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildMetricCard(
-      String title, String value, String change, Color color, IconData icon) {
+    String title,
+    String value,
+    Color color,
+    IconData icon, {
+    bool isPlaceholder = false,
+  }) {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: isPlaceholder ? 0.05 : 0.1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: change.startsWith('+')
-                        ? Colors.green
-                        : AppColors.primaryRed,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(change,
-                      style: const TextStyle(
-                          color: AppColors.primaryWhite,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
+            Icon(icon, color: isPlaceholder ? Colors.grey : color, size: 32),
             const SizedBox(height: 12),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isPlaceholder ? Colors.grey : color,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(title,
-                style:
-                    const TextStyle(color: AppColors.textGrey, fontSize: 14)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHiringTrendChart() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Hiring Trend',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SfCartesianChart(
-                primaryXAxis: const CategoryAxis(
-                    labelStyle: TextStyle(color: AppColors.textGrey)),
-                primaryYAxis: const NumericAxis(
-                    labelStyle: TextStyle(color: AppColors.textGrey)),
-                series: <CartesianSeries<Map<String, dynamic>, String>>[
-                  LineSeries<Map<String, dynamic>, String>(
-                    dataSource: _getHiringTrendData(),
-                    xValueMapper: (data, _) => data['month'],
-                    yValueMapper: (data, _) => data['hires'],
-                    color: AppColors.primaryRed,
-                    width: 3,
-                    markerSettings: const MarkerSettings(
-                        isVisible: true, color: AppColors.primaryRed),
-                  ),
-                ],
+            Text(
+              title,
+              style: TextStyle(
+                color: isPlaceholder ? Colors.grey : AppColors.textGrey,
+                fontSize: 14,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourcePerformanceChart() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Source Performance',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SfCircularChart(
-                series: <CircularSeries>[
-                  DoughnutSeries<Map<String, dynamic>, String>(
-                    dataSource: _getSourceData(),
-                    xValueMapper: (data, _) => data['source'],
-                    yValueMapper: (data, _) => data['hires'],
-                    innerRadius: '60%',
-                    dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelPosition: ChartDataLabelPosition.outside),
+            if (isPlaceholder)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Coming soon',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
                   ),
-                ],
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTimeToFillChart() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Time to Fill by Department',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SfCartesianChart(
-                primaryXAxis: const CategoryAxis(
-                    labelStyle: TextStyle(color: AppColors.textGrey)),
-                primaryYAxis: const NumericAxis(
-                    labelStyle: TextStyle(color: AppColors.textGrey)),
-                series: <CartesianSeries<Map<String, dynamic>, String>>[
-                  ColumnSeries<Map<String, dynamic>, String>(
-                    dataSource: _getTimeToFillData(),
-                    xValueMapper: (data, _) => data['department'],
-                    yValueMapper: (data, _) => data['days'],
-                    color: Colors.blue,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDiversityChart() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Diversity Metrics',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SfCircularChart(
-                series: <CircularSeries>[
-                  PieSeries<Map<String, dynamic>, String>(
-                    dataSource: _getDiversityData(),
-                    xValueMapper: (data, _) => data['category'],
-                    yValueMapper: (data, _) => data['percentage'],
-                    dataLabelSettings: const DataLabelSettings(isVisible: true),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPredictiveAnalytics() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Predictive Analytics',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 16),
-            Text('Predicted Hires: ${_analyticsData['predicted_hires']}',
-                style:
-                    const TextStyle(fontSize: 16, color: AppColors.textGrey)),
-            Text('Risk Level: ${_analyticsData['risk_level']}',
-                style:
-                    const TextStyle(fontSize: 16, color: AppColors.textGrey)),
-            Text('Market Conditions: ${_analyticsData['market_conditions']}',
-                style:
-                    const TextStyle(fontSize: 16, color: AppColors.textGrey)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailedReports() {
-    return Column(
-      children: [
-        _buildReportCard('Hiring Report'),
-        const SizedBox(height: 12),
-        _buildReportCard('Source Report'),
-        const SizedBox(height: 12),
-        _buildReportCard('Time to Fill Report'),
-        const SizedBox(height: 12),
-        _buildReportCard('Diversity Report'),
-      ],
-    );
-  }
-
-  Widget _buildReportCard(String title) {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: ListTile(
-        title: Text(title, style: const TextStyle(color: AppColors.textDark)),
-        trailing: const Icon(Icons.arrow_forward, color: AppColors.primaryRed),
-        onTap: () => _viewDetailedReport(title),
-      ),
-    );
-  }
-
-  // Mock data functions
-  List<Map<String, dynamic>> _getHiringTrendData() => [
-        {'month': 'Jan', 'hires': 5},
-        {'month': 'Feb', 'hires': 8},
-        {'month': 'Mar', 'hires': 12},
-        {'month': 'Apr', 'hires': 10},
-        {'month': 'May', 'hires': 15},
-        {'month': 'Jun', 'hires': 18},
-      ];
-
-  List<Map<String, dynamic>> _getSourceData() => [
-        {'source': 'LinkedIn', 'hires': 25},
-        {'source': 'Indeed', 'hires': 15},
-        {'source': 'Referrals', 'hires': 20},
-        {'source': 'Website', 'hires': 10},
-        {'source': 'Other', 'hires': 5},
-      ];
-
-  List<Map<String, dynamic>> _getTimeToFillData() => [
-        {'department': 'Engineering', 'days': 45},
-        {'department': 'Sales', 'days': 30},
-        {'department': 'Marketing', 'days': 35},
-        {'department': 'HR', 'days': 25},
-        {'department': 'Finance', 'days': 40},
-      ];
-
-  List<Map<String, dynamic>> _getDiversityData() => [
-        {'category': 'Gender', 'percentage': 45},
-        {'category': 'Ethnicity', 'percentage': 35},
-        {'category': 'Age', 'percentage': 60},
-        {'category': 'Education', 'percentage': 70},
-      ];
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _viewDetailedReport(String reportType) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$reportType Report'),
-        content: Text('Mock report content for $reportType'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close')),
+  Widget _buildStatusBreakdownChart() {
+    final statusBreakdown = _analyticsData['status_breakdown'] ?? {};
+    
+    if (statusBreakdown.isEmpty) {
+      return _buildEmptyChart('Application Status Breakdown');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = [];
+    statusBreakdown.forEach((key, value) {
+      if (value != null) {
+        chartData.add({
+          'status': key.toString(),
+          'count': value is int ? value.toDouble() : (value as num).toDouble()
+        });
+      }
+    });
+    
+    return _buildChartContainer(
+      'Application Status Breakdown',
+      SfCircularChart(
+        legend: Legend(isVisible: true, position: LegendPosition.bottom),
+        series: <CircularSeries>[
+          DoughnutSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['status'],
+            yValueMapper: (data, _) => data['count'],
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+            innerRadius: '60%',
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildTopJobsChart() {
+    final topJobs = _analyticsData['top_jobs'] ?? [];
+    
+    if (topJobs.isEmpty) {
+      return _buildEmptyChart('Top Jobs by Applications');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (topJobs as List).map((e) {
+      return {
+        'requisition': e['requisition']?.toString() ?? 'Unknown',
+        'count': (e['count'] is int ? e['count'].toDouble() : (e['count'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'Top Jobs by Applications',
+      SfCartesianChart(
+        primaryXAxis: CategoryAxis(
+          labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 10),
+          labelRotation: -45,
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          ColumnSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['requisition'],
+            yValueMapper: (data, _) => data['count'],
+            color: AppColors.primaryRed,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserGrowthChart() {
+    final timeline = _analyticsData['timeline'] ?? [];
+    
+    if (timeline.isEmpty) {
+      return _buildEmptyChart('User Growth (${_getTimeRangeLabel(_selectedTimeRange)})');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (timeline as List).map((e) {
+      return {
+        'date': DateTime.parse(e['date']),
+        'count': (e['count'] is int ? e['count'].toDouble() : (e['count'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'User Growth (${_getTimeRangeLabel(_selectedTimeRange)})',
+      SfCartesianChart(
+        primaryXAxis: DateTimeAxis(
+          labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 10),
+          labelRotation: -45,
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          LineSeries<Map<String, dynamic>, DateTime>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['date'] as DateTime,
+            yValueMapper: (data, _) => data['count'],
+            color: Colors.blue,
+            markerSettings: const MarkerSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthlyApplicationsChart() {
+    final monthlyApps = _analyticsData['monthly_applications'] ?? [];
+    
+    if (monthlyApps.isEmpty) {
+      return _buildEmptyChart('Monthly Applications');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (monthlyApps as List).map((e) {
+      return {
+        'month': e['month']?.toString() ?? 'Unknown',
+        'count': (e['count'] is int ? e['count'].toDouble() : (e['count'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'Monthly Applications',
+      SfCartesianChart(
+        primaryXAxis: CategoryAxis(
+          labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 10),
+          labelRotation: -45,
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          ColumnSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['month'],
+            yValueMapper: (data, _) => data['count'],
+            color: Colors.teal,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterviewStatusChart() {
+    final interviewStatus = _analyticsData['interview_status_breakdown'] ?? {};
+    
+    if (interviewStatus.isEmpty) {
+      return _buildEmptyChart('Interview Status Breakdown');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = [];
+    interviewStatus.forEach((key, value) {
+      if (value != null) {
+        chartData.add({
+          'status': key.toString(),
+          'count': value is int ? value.toDouble() : (value as num).toDouble()
+        });
+      }
+    });
+    
+    return _buildChartContainer(
+      'Interview Status Breakdown',
+      SfCartesianChart(
+        primaryXAxis: const CategoryAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey, fontSize: 10),
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          BarSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['status'],
+            yValueMapper: (data, _) => data['count'],
+            color: Colors.orange,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterviewsByTypeChart() {
+    final interviewsByType = _analyticsData['interviews_by_type'] ?? {};
+    
+    if (interviewsByType.isEmpty) {
+      return _buildEmptyChart('Interviews by Type');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = [];
+    interviewsByType.forEach((key, value) {
+      if (value != null) {
+        chartData.add({
+          'type': key.toString(),
+          'count': value is int ? value.toDouble() : (value as num).toDouble()
+        });
+      }
+    });
+    
+    return _buildChartContainer(
+      'Interviews by Type',
+      SfCircularChart(
+        legend: Legend(isVisible: true, position: LegendPosition.bottom),
+        series: <CircularSeries>[
+          PieSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['type'],
+            yValueMapper: (data, _) => data['count'],
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCVScoreDistributionChart() {
+    final cvScoreDist = _analyticsData['cv_score_distribution'] ?? [];
+    
+    if (cvScoreDist.isEmpty) {
+      return _buildEmptyChart('CV Score Distribution');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (cvScoreDist as List).map((e) {
+      return {
+        'range': e['range']?.toString() ?? 'Unknown',
+        'count': (e['count'] is int ? e['count'].toDouble() : (e['count'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'CV Score Distribution',
+      SfCartesianChart(
+        primaryXAxis: const CategoryAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey, fontSize: 10),
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          ColumnSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['range'],
+            yValueMapper: (data, _) => data['count'],
+            color: Colors.purple,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssessmentScoreDistributionChart() {
+    final assessmentScoreDist = _analyticsData['assessment_score_distribution'] ?? [];
+    
+    if (assessmentScoreDist.isEmpty) {
+      return _buildEmptyChart('Assessment Score Distribution');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (assessmentScoreDist as List).map((e) {
+      return {
+        'range': e['range']?.toString() ?? 'Unknown',
+        'count': (e['count'] is int ? e['count'].toDouble() : (e['count'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'Assessment Score Distribution',
+      SfCartesianChart(
+        primaryXAxis: const CategoryAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey, fontSize: 10),
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+        ),
+        series: <CartesianSeries>[
+          ColumnSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['range'],
+            yValueMapper: (data, _) => data['count'],
+            color: Colors.indigo,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAverageAssessmentByRequisitionChart() {
+    final avgScores = _analyticsData['average_scores_by_requisition'] ?? [];
+    
+    if (avgScores.isEmpty) {
+      return _buildEmptyChart('Average Assessment Scores by Requisition');
+    }
+    
+    // Use Map-based data structure for better type safety
+    final List<Map<String, dynamic>> chartData = (avgScores as List).map((e) {
+      return {
+        'requisition': e['requisition']?.toString() ?? 'Unknown',
+        'score': (e['avg_score'] is int ? e['avg_score'].toDouble() : (e['avg_score'] as num).toDouble())
+      };
+    }).toList();
+    
+    return _buildChartContainer(
+      'Average Assessment Scores by Requisition',
+      SfCartesianChart(
+        primaryXAxis: CategoryAxis(
+          labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 10),
+          labelRotation: -45,
+        ),
+        primaryYAxis: const NumericAxis(
+          labelStyle: TextStyle(color: AppColors.textGrey),
+          minimum: 0,
+          maximum: 100,
+        ),
+        series: <CartesianSeries>[
+          BarSeries<Map<String, dynamic>, String>(
+            dataSource: chartData,
+            xValueMapper: (data, _) => data['requisition'],
+            yValueMapper: (data, _) => data['score'],
+            color: Colors.cyan,
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConversionFunnel() {
+    final funnel = _analyticsData['conversion_funnel'] ?? {};
+    
+    return GlassCard(
+      blur: 8,
+      opacity: 0.1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recruitment Conversion Funnel',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildFunnelStep(
+                    'Applied',
+                    '${funnel['applied'] ?? 0}',
+                    Colors.blue,
+                  ),
+                ),
+                const Icon(Icons.arrow_forward, color: AppColors.textGrey),
+                Expanded(
+                  child: _buildFunnelStep(
+                    'Interviewed',
+                    '${funnel['interviewed'] ?? 0}',
+                    Colors.orange,
+                  ),
+                ),
+                const Icon(Icons.arrow_forward, color: AppColors.textGrey),
+                Expanded(
+                  child: _buildFunnelStep(
+                    'Hired',
+                    '${funnel['hired'] ?? 0}',
+                    Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFunnelStep(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textGrey,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartContainer(String title, Widget chart) {
+    return GlassCard(
+      blur: 8,
+      opacity: 0.1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 300,
+              child: chart,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChart(String title) {
+    return GlassCard(
+      blur: 8,
+      opacity: 0.1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const SizedBox(
+              height: 300,
+              child: Center(
+                child: Text(
+                  'No data available',
+                  style: TextStyle(color: AppColors.textGrey),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
+// Note: Removed _ChartData and _DateChartData classes.
+// Using Map<String, dynamic> directly for better type safety with Syncfusion charts.
