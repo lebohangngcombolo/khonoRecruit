@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 import '../../../constants/app_colors.dart';
 import '../../widgets/widgets1/glass_card.dart';
 
@@ -14,75 +15,187 @@ class HMTeamCollaborationPage extends StatefulWidget {
 class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<CollaborationMessage> _messages = [];
-  final List<TeamMember> _teamMembers = [];
   final List<SharedNote> _sharedNotes = [];
+  final List<Meeting> _meetings = [];
 
-  WebSocketChannel? _channel;
-  bool _isConnected = false;
+  bool _isLoadingNotes = true;
+  bool _isLoadingMeetings = true;
   String _selectedEntity = 'general';
   String _currentUser = 'Hiring Manager';
+
+  final String baseUrl =
+      "http://127.0.0.1:5000/api/admin"; // replace with actual
 
   @override
   void initState() {
     super.initState();
-    _initializeWebSocket();
-    _loadTeamData();
+    _loadNotes();
+    _loadMeetings();
   }
 
-  void _initializeWebSocket() {
-    // Temporarily disabled to avoid connection errors during development
-    _isConnected = false;
-    return;
-    // try {
-    //   _channel = WebSocketChannel.connect(Uri.parse('ws://localhost:8000/ws/collab'));
-    //   _channel!.stream.listen(
-    //     (data) {
-    //       final message = CollaborationMessage.fromJson(data);
-    //       setState(() {
-    //         _messages.insert(0, message);
-    //       });
-    //     },
-    //     onError: (error) {
-    //       setState(() => _isConnected = false);
-    //     },
-    //     onDone: () {
-    //       setState(() => _isConnected = false);
-    //     },
-    //   );
-    //   setState(() => _isConnected = true);
-    // } catch (e) {
-    //   setState(() => _isConnected = false);
-    // }
+  // ---------------- API CALLS ----------------
+  Future<void> _loadNotes() async {
+    setState(() => _isLoadingNotes = true);
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/notes'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        setState(() {
+          _sharedNotes.clear();
+          _sharedNotes.addAll(data.map((e) => SharedNote.fromJson(e)));
+        });
+      } else {
+        throw Exception('Failed to load notes');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to load notes: $e')));
+    } finally {
+      setState(() => _isLoadingNotes = false);
+    }
   }
 
-  Future<void> _loadTeamData() async {
-    // Load team members and shared notes
-    setState(() {
-      _teamMembers.addAll([
-        TeamMember(
-            name: 'John Smith', role: 'Senior Recruiter', isOnline: true),
-        TeamMember(name: 'Sarah Johnson', role: 'HR Manager', isOnline: true),
-        TeamMember(name: 'Mike Davis', role: 'Technical Lead', isOnline: false),
-        TeamMember(name: 'Lisa Chen', role: 'Recruiter', isOnline: true),
-      ]);
-
-      _sharedNotes.addAll([
-        SharedNote(
-          title: 'Frontend Developer Requirements',
-          content: 'Looking for React/TypeScript experience...',
-          author: 'John Smith',
-          lastModified: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-        SharedNote(
-          title: 'Interview Process Updates',
-          content: 'Updated interview questions for technical roles...',
-          author: 'Sarah Johnson',
-          lastModified: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ]);
-    });
+  Future<void> _loadMeetings() async {
+    setState(() => _isLoadingMeetings = true);
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/meetings'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        setState(() {
+          _meetings.clear();
+          _meetings.addAll(data.map((e) => Meeting.fromJson(e)));
+        });
+      } else {
+        throw Exception('Failed to load meetings');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to load meetings: $e')));
+    } finally {
+      setState(() => _isLoadingMeetings = false);
+    }
   }
 
+  Future<void> _createNote(String title, String content) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notes/create'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'title': title, 'content': content}),
+      );
+      if (response.statusCode == 201) {
+        _loadNotes();
+      } else {
+        throw Exception('Failed to create note');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error creating note: $e')));
+    }
+  }
+
+  Future<void> _updateNote(String id, String title, String content) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/notes/update/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'title': title, 'content': content}),
+      );
+      if (response.statusCode == 200) {
+        _loadNotes();
+      } else {
+        throw Exception('Failed to update note');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error updating note: $e')));
+    }
+  }
+
+  Future<void> _deleteNote(String id) async {
+    try {
+      final response =
+          await http.delete(Uri.parse('$baseUrl/notes/delete/$id'));
+      if (response.statusCode == 200) {
+        _loadNotes();
+      } else {
+        throw Exception('Failed to delete note');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
+    }
+  }
+
+  Future<void> _shareNote(String id) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/notes/share'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'note_id': id}));
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Note shared successfully!')));
+      } else {
+        throw Exception('Failed to share note');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error sharing note: $e')));
+    }
+  }
+
+  Future<void> _createMeeting(String title, String datetime) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/meetings/create'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'title': title, 'datetime': datetime}),
+      );
+      if (response.statusCode == 201) {
+        _loadMeetings();
+      } else {
+        throw Exception('Failed to create meeting');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error creating meeting: $e')));
+    }
+  }
+
+  Future<void> _updateMeeting(String id, String title, String datetime) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/meetings/update/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'title': title, 'datetime': datetime}),
+      );
+      if (response.statusCode == 200) {
+        _loadMeetings();
+      } else {
+        throw Exception('Failed to update meeting');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error updating meeting: $e')));
+    }
+  }
+
+  Future<void> _deleteMeeting(String id) async {
+    try {
+      final response =
+          await http.delete(Uri.parse('$baseUrl/meetings/delete/$id'));
+      if (response.statusCode == 200) {
+        _loadMeetings();
+      } else {
+        throw Exception('Failed to delete meeting');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error deleting meeting: $e')));
+    }
+  }
+
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -99,24 +212,21 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left Panel - Team & Notes
+                // Left Panel - Notes & Meetings
                 Expanded(
                   flex: 1,
                   child: Column(
                     children: [
-                      _buildTeamMembersPanel(),
-                      const SizedBox(height: 16),
                       _buildSharedNotesPanel(),
+                      const SizedBox(height: 16),
+                      _buildMeetingsPanel(),
                     ],
                   ),
                 ),
                 const SizedBox(width: 16),
 
-                // Right Panel - Chat & Comments
-                Expanded(
-                  flex: 2,
-                  child: _buildChatPanel(),
-                ),
+                // Right Panel - Chat (in-memory)
+                Expanded(flex: 2, child: _buildChatPanel()),
               ],
             ),
           ),
@@ -129,69 +239,22 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              'Team Collaboration',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isConnected ? Colors.green : AppColors.primaryRed,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isConnected ? Icons.wifi : Icons.wifi_off,
-                    size: 12,
-                    color: AppColors.primaryWhite,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isConnected ? 'Connected' : 'Disconnected',
-                    style: const TextStyle(
-                      color: AppColors.primaryWhite,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const Text(
+          'Team Collaboration',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         Row(
           children: [
             ElevatedButton.icon(
-              onPressed: _createSharedNote,
+              onPressed: () => _showCreateNoteDialog(),
               icon: const Icon(Icons.note_add),
               label: const Text('New Note'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
             ),
             const SizedBox(width: 8),
             ElevatedButton.icon(
-              onPressed: _scheduleMeeting,
+              onPressed: () => _showScheduleMeetingDialog(),
               icon: const Icon(Icons.video_call),
               label: const Text('Schedule Meeting'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryRed,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
             ),
           ],
         ),
@@ -199,101 +262,74 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildTeamMembersPanel() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Team Members',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+  // ---------------- Dialogs ----------------
+  void _showCreateNoteDialog() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Create Note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: contentController,
+                      decoration: const InputDecoration(labelText: 'Content')),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 240,
-              child: ListView.builder(
-                itemCount: _teamMembers.length,
-                itemBuilder: (context, index) {
-                  final member = _teamMembers[index];
-                  return _buildTeamMemberCard(member);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeamMemberCard(TeamMember member) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.primaryRed.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor:
-                member.isOnline ? Colors.green : AppColors.textGrey,
-            child: Text(
-              member.name.substring(0, 2).toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.primaryWhite,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  member.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                Text(
-                  member.role,
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 12,
-                  ),
-                ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _createNote(titleController.text, contentController.text);
+                    },
+                    child: const Text('Create')),
               ],
-            ),
-          ),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: member.isOnline ? Colors.green : AppColors.textGrey,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
-    );
+            ));
   }
 
+  void _showScheduleMeetingDialog() {
+    final titleController = TextEditingController();
+    final datetimeController = TextEditingController();
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Schedule Meeting'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: datetimeController,
+                      decoration:
+                          const InputDecoration(labelText: 'Date & Time')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _createMeeting(
+                          titleController.text, datetimeController.text);
+                    },
+                    child: const Text('Schedule')),
+              ],
+            ));
+  }
+
+  // ---------------- Notes & Meetings Panels ----------------
   Widget _buildSharedNotesPanel() {
     return GlassCard(
       blur: 8,
@@ -303,34 +339,23 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text(
-                  'Shared Notes',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: _createSharedNote,
-                  icon: const Icon(Icons.add, color: AppColors.primaryRed),
-                ),
-              ],
-            ),
+            const Text('Shared Notes',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 240,
-              child: ListView.builder(
-                itemCount: _sharedNotes.length,
-                itemBuilder: (context, index) {
-                  final note = _sharedNotes[index];
-                  return _buildSharedNoteCard(note);
-                },
-              ),
-            ),
+            _isLoadingNotes
+                ? const Center(child: CircularProgressIndicator())
+                : _sharedNotes.isEmpty
+                    ? const Text('No notes yet')
+                    : SizedBox(
+                        height: 240,
+                        child: ListView.builder(
+                          itemCount: _sharedNotes.length,
+                          itemBuilder: (context, index) {
+                            final note = _sharedNotes[index];
+                            return _buildSharedNoteCard(note);
+                          },
+                        ),
+                      ),
           ],
         ),
       ),
@@ -340,64 +365,173 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   Widget _buildSharedNoteCard(SharedNote note) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () => _viewSharedNote(note),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.lightGrey.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.primaryRed.withValues(alpha: 0.1),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.lightGrey.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(note.title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: AppColors.textDark)),
+          const SizedBox(height: 4),
+          Text(note.content, maxLines: 2, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                note.title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                note.content,
-                style: const TextStyle(
-                  color: AppColors.textGrey,
-                  fontSize: 12,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    'By ${note.author}',
-                    style: const TextStyle(
-                      color: AppColors.textGrey,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _formatTimeAgo(note.lastModified),
-                    style: const TextStyle(
-                      color: AppColors.textGrey,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
+              IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: () => _showUpdateNoteDialog(note)),
+              IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteNote(note.id)),
+              IconButton(
+                  icon: const Icon(Icons.share, color: Colors.green),
+                  onPressed: () => _shareNote(note.id)),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showUpdateNoteDialog(SharedNote note) {
+    final titleController = TextEditingController(text: note.title);
+    final contentController = TextEditingController(text: note.content);
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Update Note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: contentController,
+                      decoration: const InputDecoration(labelText: 'Content')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _updateNote(note.id, titleController.text,
+                          contentController.text);
+                    },
+                    child: const Text('Update')),
+              ],
+            ));
+  }
+
+  Widget _buildMeetingsPanel() {
+    return GlassCard(
+      blur: 8,
+      opacity: 0.1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Meetings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _isLoadingMeetings
+                ? const Center(child: CircularProgressIndicator())
+                : _meetings.isEmpty
+                    ? const Text('No meetings yet')
+                    : SizedBox(
+                        height: 240,
+                        child: ListView.builder(
+                          itemCount: _meetings.length,
+                          itemBuilder: (context, index) {
+                            final meeting = _meetings[index];
+                            return _buildMeetingCard(meeting);
+                          },
+                        ),
+                      ),
+          ],
         ),
       ),
     );
   }
 
+  Widget _buildMeetingCard(Meeting meeting) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.lightGrey.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(meeting.title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: AppColors.textDark)),
+          Text(meeting.datetime, style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: () => _showUpdateMeetingDialog(meeting)),
+              IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteMeeting(meeting.id)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUpdateMeetingDialog(Meeting meeting) {
+    final titleController = TextEditingController(text: meeting.title);
+    final datetimeController = TextEditingController(text: meeting.datetime);
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Update Meeting'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: datetimeController,
+                      decoration:
+                          const InputDecoration(labelText: 'Date & Time')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _updateMeeting(meeting.id, titleController.text,
+                          datetimeController.text);
+                    },
+                    child: const Text('Update')),
+              ],
+            ));
+  }
+
+  // ---------------- Chat Panel ----------------
   Widget _buildChatPanel() {
     return GlassCard(
       blur: 8,
@@ -406,17 +540,11 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Chat Header
             Row(
               children: [
-                const Text(
-                  'Team Chat',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
+                const Text('Team Chat',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 DropdownButton<String>(
                   value: _selectedEntity,
@@ -435,41 +563,27 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Messages
             Expanded(
               child: _messages.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            size: 48,
-                            color: AppColors.textGrey.withValues(alpha: 0.5),
-                          ),
+                          Icon(Icons.chat_bubble_outline,
+                              size: 48,
+                              color: AppColors.textGrey.withValues(alpha: 0.5)),
                           const SizedBox(height: 8),
-                          Text(
-                            'No messages yet',
-                            style: TextStyle(
-                              color: AppColors.textGrey,
-                              fontSize: 16,
-                            ),
-                          ),
+                          const Text('No messages yet'),
                         ],
                       ),
                     )
                   : ListView.builder(
                       reverse: true,
                       itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        return _buildMessageCard(message);
-                      },
+                      itemBuilder: (context, index) =>
+                          _buildMessageCard(_messages[index]),
                     ),
             ),
-
-            // Message Input
             const SizedBox(height: 16),
             _buildMessageInput(),
           ],
@@ -480,28 +594,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
 
   Widget _buildMessageCard(CollaborationMessage message) {
     final isCurrentUser = message.author == _currentUser;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment:
             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isCurrentUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryRed.withValues(alpha: 0.1),
-              child: Text(
-                message.author.substring(0, 2).toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.primaryRed,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -510,57 +608,10 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     ? AppColors.primaryRed.withValues(alpha: 0.1)
                     : AppColors.lightGrey.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isCurrentUser
-                      ? AppColors.primaryRed.withValues(alpha: 0.3)
-                      : AppColors.primaryRed.withValues(alpha: 0.1),
-                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isCurrentUser)
-                    Text(
-                      message.author,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                        fontSize: 12,
-                      ),
-                    ),
-                  Text(
-                    message.content,
-                    style: const TextStyle(
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatTimeAgo(message.timestamp),
-                    style: const TextStyle(
-                      color: AppColors.textGrey,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
+              child: Text(message.content),
             ),
           ),
-          if (isCurrentUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryRed,
-              child: Text(
-                message.author.substring(0, 2).toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -571,206 +622,92 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       children: [
         Expanded(
           child: TextField(
-            controller: _messageController,
-            decoration: InputDecoration(
-              hintText: 'Type a message...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(
-                    color: AppColors.primaryRed.withValues(alpha: 0.3)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: AppColors.primaryRed),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            maxLines: null,
-            onSubmitted: (value) => _sendMessage(),
-          ),
+              controller: _messageController,
+              decoration: const InputDecoration(hintText: 'Type a message...')),
         ),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: _sendMessage,
-          icon: const Icon(Icons.send, color: AppColors.primaryRed),
-        ),
+        IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
       ],
     );
   }
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
-
-    final message = CollaborationMessage(
-      author: _currentUser,
-      content: _messageController.text.trim(),
-      timestamp: DateTime.now(),
-      entity: _selectedEntity,
-    );
-
-    if (_channel != null && _isConnected) {
-      _channel!.sink.add(message.toJson());
-    }
-
     setState(() {
-      _messages.insert(0, message);
+      _messages.insert(
+          0,
+          CollaborationMessage(
+            author: _currentUser,
+            content: _messageController.text.trim(),
+            timestamp: DateTime.now(),
+            entity: _selectedEntity,
+          ));
     });
-
     _messageController.clear();
-  }
-
-  void _createSharedNote() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Shared Note'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Content',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Shared note created successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryRed,
-              foregroundColor: AppColors.primaryWhite,
-            ),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _viewSharedNote(SharedNote note) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(note.title),
-        content: SingleChildScrollView(
-          child: Text(note.content),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _scheduleMeeting() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Meeting scheduling feature coming soon'),
-        backgroundColor: AppColors.primaryRed,
-      ),
-    );
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
   }
 
   @override
   void dispose() {
     _messageController.dispose();
-    _channel?.sink.close();
     super.dispose();
   }
 }
 
-// Data Models
+// ---------------- Models ----------------
 class CollaborationMessage {
   final String author;
   final String content;
   final DateTime timestamp;
   final String entity;
-
-  CollaborationMessage({
-    required this.author,
-    required this.content,
-    required this.timestamp,
-    required this.entity,
-  });
-
-  factory CollaborationMessage.fromJson(String json) {
-    // Parse JSON string to create message
-    return CollaborationMessage(
-      author: 'User',
-      content: json,
-      timestamp: DateTime.now(),
-      entity: 'general',
-    );
-  }
-
-  String toJson() {
-    return content; // Simplified for WebSocket
-  }
-}
-
-class TeamMember {
-  final String name;
-  final String role;
-  final bool isOnline;
-
-  TeamMember({
-    required this.name,
-    required this.role,
-    required this.isOnline,
-  });
+  CollaborationMessage(
+      {required this.author,
+      required this.content,
+      required this.timestamp,
+      required this.entity});
 }
 
 class SharedNote {
+  final String id;
   final String title;
   final String content;
   final String author;
   final DateTime lastModified;
 
-  SharedNote({
-    required this.title,
-    required this.content,
-    required this.author,
-    required this.lastModified,
-  });
+  SharedNote(
+      {required this.id,
+      required this.title,
+      required this.content,
+      required this.author,
+      required this.lastModified});
+
+  factory SharedNote.fromJson(Map<String, dynamic> json) {
+    return SharedNote(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      author: json['author'] ?? 'Unknown',
+      lastModified: DateTime.parse(json['last_modified']),
+    );
+  }
+}
+
+class Meeting {
+  final String id;
+  final String title;
+  final String datetime;
+  final String organizer;
+
+  Meeting(
+      {required this.id,
+      required this.title,
+      required this.datetime,
+      required this.organizer});
+
+  factory Meeting.fromJson(Map<String, dynamic> json) {
+    return Meeting(
+      id: json['id'],
+      title: json['title'],
+      datetime: json['datetime'],
+      organizer: json['organizer'] ?? 'Unknown',
+    );
+  }
 }

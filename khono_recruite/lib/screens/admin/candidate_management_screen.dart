@@ -67,6 +67,23 @@ class _CandidateManagementScreenState extends State<CandidateManagementScreen> {
     );
   }
 
+  // Helper method to safely get initials
+  String getInitials(String? fullName) {
+    if (fullName == null || fullName.isEmpty) return "?";
+
+    // Split by spaces and take first character of each word
+    final parts = fullName.trim().split(' ');
+    if (parts.isEmpty) return "?";
+
+    if (parts.length == 1) {
+      return parts[0].substring(0, 1).toUpperCase();
+    } else {
+      // Return first character of first and last name
+      return '${parts[0].substring(0, 1)}${parts[parts.length - 1].substring(0, 1)}'
+          .toUpperCase();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -188,9 +205,7 @@ class _CandidateManagementScreenState extends State<CandidateManagementScreen> {
                                                 backgroundColor:
                                                     Colors.red.shade50,
                                                 child: Text(
-                                                  c['full_name']
-                                                          ?.substring(0, 1) ??
-                                                      "?",
+                                                  getInitials(c['full_name']),
                                                   style: const TextStyle(
                                                       color: Colors.redAccent,
                                                       fontWeight:

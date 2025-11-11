@@ -3,10 +3,13 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../services/auth_service.dart';
 import 'cv_upload_page.dart';
+import 'package:go_router/go_router.dart';
 
 class AssessmentPage extends StatefulWidget {
   final int applicationId;
-  const AssessmentPage({super.key, required this.applicationId});
+  final Map<String, dynamic>? draftData; // <-- add this line
+  const AssessmentPage(
+      {super.key, required this.applicationId, this.draftData});
 
   @override
   State<AssessmentPage> createState() => _AssessmentPageState();
@@ -24,6 +27,14 @@ class _AssessmentPageState extends State<AssessmentPage> {
   void initState() {
     super.initState();
     loadTokenAndFetch();
+
+    // ✅ Autofill from draft if available
+    if (widget.draftData != null && widget.draftData!['assessment'] != null) {
+      final savedAnswers =
+          Map<String, dynamic>.from(widget.draftData!['assessment']);
+      answers = savedAnswers
+          .map((key, value) => MapEntry(int.parse(key), value.toString()));
+    }
   }
 
   Future<void> loadTokenAndFetch() async {
@@ -111,10 +122,13 @@ class _AssessmentPageState extends State<AssessmentPage> {
     if (token == null) return;
 
     try {
+      // Wrap assessment answers under 'assessment' key
       final payload = {
-        "draft_data":
-            answers.map((key, value) => MapEntry(key.toString(), value)),
-        "last_step": "assessment"
+        "draft_data": {
+          "assessment":
+              answers.map((key, value) => MapEntry(key.toString(), value))
+        },
+        "last_saved_screen": "assessment"
       };
 
       final res = await http.post(
@@ -132,14 +146,10 @@ class _AssessmentPageState extends State<AssessmentPage> {
           const SnackBar(content: Text("Progress saved successfully.")),
         );
 
-        // Redirect to dashboard after a short delay
+        // ✅ Use GoRouter to navigate
         await Future.delayed(const Duration(milliseconds: 700));
         if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/dashboard',
-            (route) => false,
-          );
+          GoRouter.of(context).go('/candidate-dashboard');
         }
       } else {
         throw Exception("Failed to save draft: ${res.body}");
@@ -251,7 +261,8 @@ class _AssessmentPageState extends State<AssessmentPage> {
                             style: const TextStyle(color: Colors.black),
                           ),
                           value: optionLabel,
-                          groupValue: answers[index],
+                          groupValue:
+                              answers[index], // already prefilled from draft
                           onChanged: (val) {
                             setState(() {
                               answers[index] = val!;

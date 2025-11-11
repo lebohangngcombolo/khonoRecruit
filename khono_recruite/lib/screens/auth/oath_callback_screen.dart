@@ -1,6 +1,6 @@
-// screens/auth/oauth_callback_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../services/auth_service.dart';
 
 class OAuthCallbackScreen extends StatelessWidget {
   const OAuthCallbackScreen({super.key});
@@ -11,34 +11,34 @@ class OAuthCallbackScreen extends StatelessWidget {
     final accessToken = uri.queryParameters['access_token'];
     final refreshToken = uri.queryParameters['refresh_token'];
     final role = uri.queryParameters['role'];
-    final dashboard = uri.queryParameters['dashboard'] ?? '';
 
-    // Automatically navigate after frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (accessToken != null && role != null) {
-        _navigateToDashboard(context, accessToken, role, dashboard);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (accessToken != null && refreshToken != null && role != null) {
+        await AuthService.storeTokens(accessToken, refreshToken, role);
+
+        String path;
+        switch (role) {
+          case 'admin':
+            path = '/admin-dashboard';
+            break;
+          case 'hiring_manager':
+            path = '/hiring-manager-dashboard';
+            break;
+          case 'candidate':
+            path = '/enrollment';
+            break;
+          default:
+            path = '/candidate-dashboard';
+        }
+
+        context.go('$path?token=$accessToken');
+      } else {
+        context.go('/'); // fallback if query params missing
       }
     });
 
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
     );
-  }
-
-  void _navigateToDashboard(
-      BuildContext context, String token, String role, String dashboard) {
-    String path;
-    if (role == "admin") {
-      path = '/admin-dashboard';
-    } else if (role == "hiring_manager") {
-      path = '/hiring-manager-dashboard';
-    } else if (role == "candidate" && dashboard == "/enrollment") {
-      path = '/enrollment';
-    } else {
-      path = '/candidate-dashboard';
-    }
-
-    // GoRouter navigation with token
-    context.go('$path?token=$token');
   }
 }

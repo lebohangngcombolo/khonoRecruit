@@ -45,7 +45,7 @@ class AuthService {
     throw Exception('User not logged in');
   }
 
-  // ----------------- LOGIN -----------------
+  // ----------------- LOGIN (UPDATED WITH MFA) -----------------
   static Future<Map<String, dynamic>> login(
     String email,
     String password,
@@ -56,14 +56,26 @@ class AuthService {
       body: jsonEncode({'email': email, 'password': password}),
     );
 
+    final data = jsonDecode(response.body);
+
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      // 🆕 Check if MFA is required
+      if (data['mfa_required'] == true) {
+        // 🆕 FIX: Convert user_id to string to prevent type errors
+        final userId = data['user_id']?.toString() ?? '';
 
-      // Save token locally
+        return {
+          'success': true,
+          'mfa_required': true,
+          'mfa_session_token': data['mfa_session_token'],
+          'user_id': userId, // 🆕 Now guaranteed to be string
+          'message': data['message'],
+        };
+      }
+
+      // 🆕 Normal login without MFA
       await saveToken(data['access_token']);
-
-      // Save full user info locally
-      await saveUserInfo(data['user']); // <-- ADD THIS
+      await saveUserInfo(data['user']);
 
       return {
         'success': true,
@@ -73,8 +85,41 @@ class AuthService {
         'dashboard': data['dashboard'],
       };
     } else {
-      final err = jsonDecode(response.body);
-      return {'success': false, 'message': err['error'] ?? 'Login failed'};
+      return {'success': false, 'message': data['error'] ?? 'Login failed'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyMfaLogin(
+      String mfaSessionToken, String token) async {
+    final response = await http.post(
+      Uri.parse(ApiEndpoints.mfaLogin), // <-- fixed
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'mfa_session_token': mfaSessionToken,
+        'token': token,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      await saveToken(data['access_token']);
+      await saveUserInfo(data['user']);
+
+      return {
+        'success': true,
+        'access_token': data['access_token'],
+        'refresh_token': data['refresh_token'],
+        'user': data['user'],
+        'dashboard': data['dashboard'],
+        'used_backup_code': data['used_backup_code'] ?? false,
+        'message': data['message'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': data['error'] ?? 'MFA verification failed'
+      };
     }
   }
 
@@ -331,5 +376,114 @@ class AuthService {
       return jsonDecode(userStr) as Map<String, dynamic>;
     }
     return null;
+  }
+
+  // ----------------- GET USER PROFILE -----------------
+  static Future<Map<String, dynamic>> getUserProfile(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiEndpoints.currentUser), // Using existing endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to load profile: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching profile: $e');
+    }
+  }
+
+  // ----------------- STORE TOKENS WITH ROLE -----------------
+  static Future<void> storeTokens(
+      String accessToken, String? refreshToken, String role) async {
+    await saveTokens(accessToken, refreshToken);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('role', role);
+  }
+
+// Retrieve stored role
+  static Future<String?> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('role');
+  }
+
+  // 🆕 MFA MANAGEMENT METHODS
+  static Future<Map<String, dynamic>> enableMfa() async {
+    final token = await getAccessToken();
+    final response = await http.post(
+      Uri.parse(ApiEndpoints.enableMfa),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> verifyMfaSetup(String token) async {
+    final authToken = await getAccessToken();
+    final response = await http.post(
+      Uri.parse(ApiEndpoints.verifyMfaSetup),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({'token': token}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> disableMfa(String password) async {
+    final authToken = await getAccessToken();
+    final response = await http.post(
+      Uri.parse(ApiEndpoints.disableMfa),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({'password': password}),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getMfaStatus() async {
+    final token = await getAccessToken();
+    final response = await http.get(
+      Uri.parse(ApiEndpoints.mfaStatus),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getBackupCodes() async {
+    final token = await getAccessToken();
+    final response = await http.get(
+      Uri.parse(ApiEndpoints.backupCodes),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> regenerateBackupCodes() async {
+    final token = await getAccessToken();
+    final response = await http.post(
+      Uri.parse(ApiEndpoints.regenerateBackupCodes),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    return jsonDecode(response.body);
   }
 }

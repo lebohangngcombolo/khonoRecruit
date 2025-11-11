@@ -76,7 +76,7 @@ flutter:
     - assets/images/team4.jpg
     - assets/images/simba.jpg
     - assets/images/team5.jpg
-    - assets/images/logy.jpg
+    - assets/images/final.jpg
     - assets/icons/Linkedin1.png
     - assets/icons/Linkedin.png
     - assets/icons/Instagram1.png
@@ -110,3 +110,7 @@ flutter:
     - assets/icons/add.png
     - assets/icons/data-analytics.png
     - assets/icons/teamC.png
+    - assets/icons/User_Profile_White_Badge_Red.png
+    - assets/icons/RED_Settings icon badge.png
+    - assets/icons/Lock_Red Badge_White.png
+    - assets/icons/Red_chnage password_badge.png

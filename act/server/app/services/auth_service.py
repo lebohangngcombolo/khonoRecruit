@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from app.extensions import redis_client
 import pyotp
 from flask_jwt_extended import create_access_token, create_refresh_token
+import secrets
+import string
+import logging
 
 
 class AuthService:
@@ -130,3 +133,151 @@ class AuthService:
         except Exception as e:
             print(f"Token generation error: {e}")
             return None
+        
+        
+    @staticmethod
+    def generate_mfa_secret() -> str:
+        """Generate a new TOTP secret for MFA."""
+        return pyotp.random_base32()
+
+    @staticmethod
+    def verify_totp(secret: str, token: str) -> bool:
+        """
+        Verify TOTP token against secret.
+        Uses valid_window=1 to allow for time sync issues.
+        """
+        try:
+            totp = pyotp.TOTP(secret)
+            return totp.verify(token, valid_window=1)
+        except Exception as e:
+            logging.error(f"TOTP verification error: {e}")
+            return False
+
+    @staticmethod
+    def generate_backup_codes(count: int = 10) -> list:
+        """Generate backup codes for MFA recovery."""
+        codes = []
+        for _ in range(count):
+            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+            codes.append({'code': code, 'used': False})
+        return codes
+
+    @staticmethod
+    def verify_backup_code(user: User, token: str) -> bool:
+        """
+        Verify if token is a valid backup code.
+        Marks the code as used if valid.
+        """
+        if not user.mfa_backup_codes:
+            return False
+
+        for code_data in user.mfa_backup_codes:
+            if not code_data['used'] and code_data['code'] == token:
+                code_data['used'] = True
+                return True
+        return False
+
+    @staticmethod
+    def create_mfa_session_token(user_id: int, role: str) -> str:
+        """
+        Create a temporary token for MFA verification during login.
+        Short-lived (5 minutes) and only for MFA purposes.
+        """
+        return create_access_token(
+            identity=str(user_id),
+            expires_delta=timedelta(minutes=5),
+            additional_claims={"mfa_pending": True, "role": role}
+        )
+
+    @staticmethod
+    def validate_mfa_login(user: User, token: str) -> dict:
+        """
+        Validate MFA token during login.
+        Returns dict with success status and backup code usage info.
+        """
+        if not user.mfa_enabled:
+            return {"success": False, "error": "MFA not enabled"}
+
+        # Check if it's a backup code first
+        is_backup_code = AuthService.verify_backup_code(user, token)
+        
+        if is_backup_code:
+            return {
+                "success": True, 
+                "is_backup_code": True,
+                "message": "Backup code accepted"
+            }
+
+        # Verify as TOTP code
+        if AuthService.verify_totp(user.mfa_secret, token):
+            return {
+                "success": True,
+                "is_backup_code": False,
+                "message": "TOTP code accepted"
+            }
+
+        return {
+            "success": False, 
+            "error": "Invalid MFA code"
+        }
+
+    @staticmethod
+    def enable_mfa_for_user(user: User, secret: str, verification_token: str) -> bool:
+        """
+        Enable MFA for a user after verifying the initial token.
+        """
+        if not AuthService.verify_totp(secret, verification_token):
+            return False
+
+        user.mfa_secret = secret
+        user.mfa_enabled = True
+        user.mfa_verified = True
+        user.mfa_backup_codes = AuthService.generate_backup_codes()
+        
+        try:
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Failed to enable MFA for user {user.id}: {e}")
+            return False
+
+    @staticmethod
+    def disable_mfa_for_user(user: User, password: str) -> bool:
+        """
+        Disable MFA for a user after password verification.
+        """
+        if not AuthService.verify_password(password, user.password):
+            return False
+
+        user.mfa_enabled = False
+        user.mfa_verified = False
+        user.mfa_secret = None
+        user.mfa_backup_codes = None
+        
+        try:
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Failed to disable MFA for user {user.id}: {e}")
+            return False
+
+    @staticmethod
+    def get_remaining_backup_codes(user: User) -> list:
+        """Get list of unused backup codes."""
+        if not user.mfa_backup_codes:
+            return []
+        return [c['code'] for c in user.mfa_backup_codes if not c['used']]
+
+    @staticmethod
+    def regenerate_backup_codes(user: User) -> bool:
+        """Regenerate all backup codes for a user."""
+        user.mfa_backup_codes = AuthService.generate_backup_codes()
+        try:
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Failed to regenerate backup codes for user {user.id}: {e}")
+            return False

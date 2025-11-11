@@ -628,46 +628,54 @@ def get_candidate_notifications():
         return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
 
 # ----------------- SAVE APPLICATION DRAFT -----------------
-@candidate_bp.route("/apply/save_draft/<int:application_id>", methods=["POST"])
+@candidate_bp.route("/applications/<int:application_id>/draft", methods=["POST"])
 @role_required(["candidate"])
 def save_application_draft(application_id):
     """
-    Allows a candidate to save an existing application as a draft (by application ID).
+    Save or update a draft for an existing application.
+    Supports multiple screens (job_details, assessment, etc.) with merged draft data.
     """
     try:
         user_id = get_jwt_identity()
-        user = User.query.get_or_404(user_id)
-
-        candidate = Candidate.query.filter_by(user_id=user.id).first()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
         if not candidate:
             return jsonify({"error": "Candidate profile not found"}), 404
 
         data = request.get_json() or {}
-        draft_data = data.get("draft_data", {})
+        draft_data = data.get("draft_data", {})  # The actual form/answers
+        last_saved_screen = data.get("last_saved_screen", "job_details")
 
-        # Look up the application by ID and candidate
         application = Application.query.filter_by(
             id=application_id, candidate_id=candidate.id
         ).first()
-
         if not application:
-            return jsonify({"error": f"Application with id {application_id} not found"}), 404
+            return jsonify({"error": "Application not found"}), 404
 
-        # Update the draft
-        application.draft_data = draft_data
+        # Merge per-screen draft data
+        existing_draft = application.draft_data or {}
+        existing_draft[last_saved_screen] = draft_data
+
+        # Update application
+        application.draft_data = existing_draft
         application.is_draft = True
+        application.status = "draft"
+        application.last_saved_screen = last_saved_screen
+        application.saved_at = datetime.utcnow()
+
         db.session.commit()
 
         return jsonify({
-            "message": "Draft updated",
-            "application_id": application.id
+            "message": "Draft saved successfully",
+            "application_id": application.id,
+            "draft_data": application.draft_data,  # structured per page
+            "last_saved_screen": last_saved_screen,
+            "saved_at": application.saved_at.isoformat() if application.saved_at else None
         }), 200
 
     except Exception as e:
-        current_app.logger.error(f"Update draft error: {e}", exc_info=True)
+        current_app.logger.error(f"Save draft error: {e}", exc_info=True)
         db.session.rollback()
         return jsonify({"error": "Internal server error"}), 500
-
 
 
 # ----------------- GET ALL DRAFT APPLICATIONS -----------------
@@ -676,6 +684,7 @@ def save_application_draft(application_id):
 def get_application_drafts():
     """
     Retrieve all saved (draft) applications for the current candidate.
+    Each draft includes per-screen saved data for resuming the application.
     """
     try:
         user_id = get_jwt_identity()
@@ -684,11 +693,20 @@ def get_application_drafts():
             return jsonify([]), 200
 
         drafts = Application.query.filter_by(candidate_id=candidate.id, is_draft=True).all()
-        return jsonify([d.to_dict() for d in drafts]), 200
+
+        draft_list = []
+        for d in drafts:
+            draft_dict = d.to_dict()
+            # Ensure draft_data is structured per screen
+            draft_dict["draft_data"] = d.draft_data or {}
+            draft_list.append(draft_dict)
+
+        return jsonify(draft_list), 200
 
     except Exception as e:
         current_app.logger.error(f"Get application drafts error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+
 
 
 # ----------------- SUBMIT SAVED DRAFT -----------------

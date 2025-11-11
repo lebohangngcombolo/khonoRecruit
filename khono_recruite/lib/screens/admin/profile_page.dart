@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_textfield.dart';
+import '../../services/auth_service.dart';
 
 // ------------------- API Base URL -------------------
 const String candidateBase = "http://127.0.0.1:5000/api/candidate";
@@ -71,6 +72,14 @@ class _ProfilePageState extends State<ProfilePage>
   bool profileVisible = true;
   bool enrollmentCompleted = false;
 
+  // 🆕 MFA State
+  bool _mfaEnabled = false;
+  bool _mfaLoading = false;
+  String? _mfaSecret;
+  String? _mfaQrCode;
+  List<String> _backupCodes = [];
+  int _backupCodesRemaining = 0;
+
   List<dynamic> documents = [];
 
   final String apiBase = "http://127.0.0.1:5000/api/candidate";
@@ -79,8 +88,358 @@ class _ProfilePageState extends State<ProfilePage>
   void initState() {
     super.initState();
     fetchProfileAndSettings();
+    _loadMfaStatus();
   }
 
+  // 🆕 MFA METHODS
+  Future<void> _loadMfaStatus() async {
+    try {
+      final result = await AuthService.getMfaStatus();
+      if (result.containsKey('mfa_enabled')) {
+        setState(() {
+          _mfaEnabled = result['mfa_enabled'];
+          _backupCodesRemaining = result['backup_codes_remaining'] ?? 0;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading MFA status: $e");
+    }
+  }
+
+  Future<void> _enableMfa() async {
+    setState(() => _mfaLoading = true);
+    try {
+      final result = await AuthService.enableMfa();
+      if (result.containsKey('qr_code')) {
+        setState(() {
+          _mfaSecret = result['secret'];
+          _mfaQrCode = result['qr_code'];
+        });
+        _showMfaSetupDialog();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to enable MFA: $e")),
+      );
+    } finally {
+      setState(() => _mfaLoading = false);
+    }
+  }
+
+  Future<void> _verifyMfaSetup(String token) async {
+    setState(() => _mfaLoading = true);
+    try {
+      final result = await AuthService.verifyMfaSetup(token);
+      if (result.containsKey('backup_codes')) {
+        setState(() {
+          _mfaEnabled = true;
+          _backupCodes = List<String>.from(result['backup_codes']);
+          _backupCodesRemaining = _backupCodes.length;
+        });
+        Navigator.pop(context); // Close setup dialog
+        _showBackupCodesDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("MFA enabled successfully")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("MFA setup failed: $e")),
+      );
+    } finally {
+      setState(() => _mfaLoading = false);
+    }
+  }
+
+  Future<void> _disableMfa(String password) async {
+    setState(() => _mfaLoading = true);
+    try {
+      final result = await AuthService.disableMfa(password);
+      if (result.containsKey('message')) {
+        setState(() {
+          _mfaEnabled = false;
+          _mfaSecret = null;
+          _mfaQrCode = null;
+          _backupCodes = [];
+          _backupCodesRemaining = 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("MFA disabled successfully")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to disable MFA: $e")),
+      );
+    } finally {
+      setState(() => _mfaLoading = false);
+    }
+  }
+
+  Future<void> _loadBackupCodes() async {
+    try {
+      final result = await AuthService.getBackupCodes();
+      if (result.containsKey('backup_codes')) {
+        setState(() {
+          _backupCodes = List<String>.from(result['backup_codes']);
+          _backupCodesRemaining = _backupCodes.length;
+        });
+        _showBackupCodesDialog();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to load backup codes: $e")),
+      );
+    }
+  }
+
+  Future<void> _regenerateBackupCodes() async {
+    setState(() => _mfaLoading = true);
+    try {
+      final result = await AuthService.regenerateBackupCodes();
+      if (result.containsKey('backup_codes')) {
+        setState(() {
+          _backupCodes = List<String>.from(result['backup_codes']);
+          _backupCodesRemaining = _backupCodes.length;
+        });
+        _showBackupCodesDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Backup codes regenerated")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to regenerate backup codes: $e")),
+      );
+    } finally {
+      setState(() => _mfaLoading = false);
+    }
+  }
+
+  void _showMfaSetupDialog() {
+    final TextEditingController tokenController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Setup Two-Factor Authentication"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Scan the QR code with your authenticator app:",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                if (_mfaQrCode != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.network(_mfaQrCode!, height: 200, width: 200),
+                  ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Or enter this secret manually:",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    _mfaSecret ?? '',
+                    style:
+                        const TextStyle(fontFamily: 'Monospace', fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text("Enter the 6-digit code from your app:"),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: tokenController,
+                  decoration: const InputDecoration(
+                    labelText: 'Verification Code',
+                    border: OutlineInputBorder(),
+                    hintText: '123456',
+                  ),
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, letterSpacing: 4),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: _mfaLoading
+                  ? null
+                  : () {
+                      if (tokenController.text.length == 6) {
+                        _verifyMfaSetup(tokenController.text);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Please enter a 6-digit code")),
+                        );
+                      }
+                    },
+              child: _mfaLoading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text("Verify & Enable"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBackupCodesDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.security, color: Colors.orange),
+            SizedBox(width: 8),
+            Text("Backup Codes"),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Save these backup codes in a secure place. Each code can be used once if you lose access to your authenticator app.",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  children: _backupCodes
+                      .map((code) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Icon(Icons.vpn_key,
+                                    color: Colors.grey.shade600, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: SelectableText(
+                                    code,
+                                    style: const TextStyle(
+                                        fontFamily: 'Monospace',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "⚠️ These codes won't be shown again. Make sure to save them now!",
+                style: TextStyle(fontSize: 12, color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("I've Saved These Codes"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDisableMfaDialog() {
+    final TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Disable Two-Factor Authentication"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Enter your password to disable 2FA:"),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: _mfaLoading
+                ? null
+                : () {
+                    if (passwordController.text.isNotEmpty) {
+                      _disableMfa(passwordController.text);
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text("Please enter your password")),
+                      );
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: _mfaLoading
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text("Disable 2FA"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // EXISTING PROFILE METHODS
   Future<void> fetchProfileAndSettings() async {
     try {
       final profileRes = await http.get(
@@ -193,41 +552,6 @@ class _ProfilePageState extends State<ProfilePage>
       }
     } catch (e) {
       debugPrint("Profile image upload error: $e");
-    }
-  }
-
-  Future<void> uploadDocument(String type) async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) return;
-
-    var fileBytes = kIsWeb
-        ? await pickedFile.readAsBytes()
-        : File(pickedFile.path).readAsBytesSync();
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse("$apiBase/upload_document"),
-    );
-    request.headers['Authorization'] = 'Bearer ${widget.token}';
-    request.fields['type'] = type;
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        fileBytes,
-        filename: pickedFile.name,
-      ),
-    );
-
-    var response = await request.send();
-    final respStr = await response.stream.bytesToString();
-    final respJson = json.decode(respStr);
-
-    if (response.statusCode == 200 && respJson['success'] == true) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("$type uploaded successfully")));
-      fetchProfileAndSettings();
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Failed to upload $type")));
     }
   }
 
@@ -433,33 +757,36 @@ class _ProfilePageState extends State<ProfilePage>
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundImage: _getProfileImageProvider(),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
+                        GestureDetector(
+                          onTap: _pickProfileImage,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundImage: _getProfileImageProvider(),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
                                     color: Colors.white,
-                                    width: 2,
+                                    size: 16,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -478,7 +805,7 @@ class _ProfilePageState extends State<ProfilePage>
                         Text(
                           titleController.text.isNotEmpty
                               ? titleController.text
-                              : "Administrator",
+                              : "Your Title",
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: themeProvider.isDarkMode
@@ -487,6 +814,35 @@ class _ProfilePageState extends State<ProfilePage>
                           ),
                           textAlign: TextAlign.center,
                         ),
+                        // 🆕 MFA Status in Sidebar
+                        if (_mfaEnabled) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.green),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified,
+                                    color: Colors.green, size: 12),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "2FA Enabled",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -588,6 +944,467 @@ class _ProfilePageState extends State<ProfilePage>
       default:
         return _buildProfileSummary();
     }
+  }
+
+  // 🆕 ENHANCED 2FA TAB
+  Widget _build2FATab() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode
+                        ? const Color(0xFF14131E)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.arrow_back, color: Colors.redAccent),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "Two-Factor Authentication",
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: themeProvider.isDarkMode
+                      ? Colors.white
+                      : Colors.grey.shade900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Security Status Card
+          _modernCard(
+            "Security Status",
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _mfaEnabled
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _mfaEnabled ? Icons.verified : Icons.security,
+                        color: _mfaEnabled ? Colors.green : Colors.orange,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _mfaEnabled ? "2FA Enabled" : "2FA Disabled",
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.white
+                                  : Colors.grey.shade800,
+                            ),
+                          ),
+                          Text(
+                            _mfaEnabled
+                                ? "Your account is protected with two-factor authentication"
+                                : "Add an extra layer of security to your account",
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                          if (_mfaEnabled) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              "$_backupCodesRemaining backup codes remaining",
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.green,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (!_mfaEnabled) ...[
+                  Text(
+                    "Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to sign in.",
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: themeProvider.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _mfaLoading ? null : _enableMfa,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _mfaLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.security),
+                                SizedBox(width: 8),
+                                Text("Enable 2FA"),
+                              ],
+                            ),
+                    ),
+                  ),
+                ] else ...[
+                  // MFA Management when enabled
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _mfaOption(
+                        "View Backup Codes",
+                        "Get your current backup codes",
+                        Icons.backup,
+                        onTap: _loadBackupCodes,
+                      ),
+                      _mfaOption(
+                        "Regenerate Backup Codes",
+                        "Generate new backup codes (invalidates old ones)",
+                        Icons.refresh,
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Regenerate Backup Codes"),
+                              content: const Text(
+                                "This will invalidate all your existing backup codes. Are you sure?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Cancel"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _regenerateBackupCodes();
+                                  },
+                                  child: const Text("Regenerate"),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _mfaLoading ? null : _showDisableMfaDialog,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _mfaLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.red),
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.remove_circle_outline),
+                                    SizedBox(width: 8),
+                                    Text("Disable 2FA"),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Security Tips Card
+          if (_mfaEnabled) ...[
+            const SizedBox(height: 24),
+            _modernCard(
+              "Security Tips",
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _securityTip(
+                    "Save Backup Codes",
+                    "Keep your backup codes in a safe place. You'll need them if you lose access to your authenticator app.",
+                    Icons.warning_amber,
+                    color: Colors.orange,
+                  ),
+                  _securityTip(
+                    "Use Authenticator App",
+                    "We recommend using Google Authenticator, Authy, or Microsoft Authenticator.",
+                    Icons.security,
+                    color: Colors.blue,
+                  ),
+                  _securityTip(
+                    "Secure Your Device",
+                    "Make sure your phone is protected with a PIN, pattern, or biometric lock.",
+                    Icons.phone_android,
+                    color: Colors.green,
+                  ),
+                ],
+              ),
+              headerColor: Colors.blue.withOpacity(0.1),
+            ),
+          ],
+
+          // How It Works Card
+          const SizedBox(height: 24),
+          _modernCard(
+            "How It Works",
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _howItWorksStep(1, "Scan QR Code",
+                    "Use your authenticator app to scan the QR code"),
+                _howItWorksStep(
+                    2, "Enter Code", "Enter the 6-digit code from your app"),
+                _howItWorksStep(3, "Save Backup Codes",
+                    "Keep your backup codes in a safe place"),
+                _howItWorksStep(4, "Enhanced Security",
+                    "Your account is now protected with 2FA"),
+              ],
+            ),
+            headerColor: Colors.purple.withOpacity(0.1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mfaOption(String title, String subtitle, IconData icon,
+      {required VoidCallback onTap}) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.grey.shade800,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _securityTip(String title, String content, IconData icon,
+      {Color color = Colors.blue}) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _howItWorksStep(int step, String title, String description) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.redAccent,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                step.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : Colors.grey.shade800,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: themeProvider.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
 // ----- Profile Summary -----
@@ -1212,97 +2029,6 @@ class _ProfilePageState extends State<ProfilePage>
             value: value,
             onChanged: onChanged,
             activeColor: Colors.redAccent,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _build2FATab() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Two-Factor Authentication",
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.isDarkMode
-                  ? Colors.white
-                  : Colors.grey.shade900,
-            ),
-          ),
-          const SizedBox(height: 24),
-          _modernCard(
-            "Security",
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.security, color: Colors.orange),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        "Add an extra layer of security to your account",
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: themeProvider.isDarkMode
-                              ? Colors.white
-                              : Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  "Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to sign in.",
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: themeProvider.isDarkMode
-                        ? Colors.grey.shade400
-                        : Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement 2FA enable logic
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      "Enable 2FA",
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

@@ -14,6 +14,7 @@ import 'forgot_password_screen.dart';
 import '../candidate/candidate_dashboard.dart';
 import '../enrollment/enrollment_screen.dart';
 import '../admin/admin_dashboard.dart';
+import 'mfa_verification_screen.dart'; // 🆕 Import MFA screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +28,11 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool loading = false;
+
+  // 🆕 MFA state variables - PROPERLY TYPED
+  String? _mfaSessionToken;
+  String? _userId; // 🆕 Ensure this is String, not int
+  bool _showMfaForm = false;
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -53,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // ------------------- EMAIL/PASSWORD LOGIN -------------------
+  // 🆕 UPDATED LOGIN WITH MFA SUPPORT - Navigation approach
   void _login() async {
     setState(() => loading = true);
     try {
@@ -63,11 +69,44 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (result['success']) {
-        _navigateToDashboard(
-          token: result['access_token'],
-          role: result['role'],
-          dashboard: result['dashboard'],
-        );
+        // 🆕 Check if MFA is required
+        if (result['mfa_required'] == true) {
+          // 🆕 STORE THE MFA SESSION TOKEN IN STATE
+          setState(() {
+            _mfaSessionToken = result['mfa_session_token'];
+            _userId =
+                result['user_id']?.toString() ?? ''; // 🆕 Convert to string
+          });
+
+          // Navigate to MFA verification screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MfaVerificationScreen(
+                mfaSessionToken: result['mfa_session_token'],
+                userId:
+                    result['user_id']?.toString() ?? '', // 🆕 Convert to string
+                onVerify: _verifyMfa,
+                onBack: () {
+                  Navigator.pop(context);
+                  // 🆕 Clear MFA state when going back
+                  setState(() {
+                    _mfaSessionToken = null;
+                    _userId = null;
+                  });
+                },
+                isLoading: false,
+              ),
+            ),
+          );
+        } else {
+          // Normal login without MFA
+          _navigateToDashboard(
+            token: result['access_token'],
+            role: result['role'],
+            dashboard: result['dashboard'],
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? "Login failed")),
@@ -82,6 +121,56 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+// 🆕 MFA VERIFICATION - Updated for navigation approach
+  void _verifyMfa(String token) async {
+    // 🆕 ADD NULL SAFETY CHECK
+    if (_mfaSessionToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("MFA session expired. Please login again.")),
+      );
+      return;
+    }
+
+    try {
+      final result = await AuthService.verifyMfaLogin(_mfaSessionToken!, token);
+
+      if (result['success']) {
+        // 🆕 CLEAR MFA STATE AFTER SUCCESS
+        setState(() {
+          _mfaSessionToken = null;
+          _userId = null;
+        });
+
+        // Pop MFA screen and navigate to dashboard
+        Navigator.pop(context); // Close MFA screen
+        _navigateToDashboard(
+          token: result['access_token'],
+          role: result['user']['role'],
+          dashboard: result['dashboard'],
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(result['message'] ?? "MFA verification failed")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("MFA verification error: $e")),
+      );
+    }
+  }
+
+  // 🆕 BACK TO LOGIN FORM
+  void _backToLogin() {
+    setState(() {
+      _showMfaForm = false;
+      _mfaSessionToken = null;
+      _userId = null;
+    });
+  }
+
   // ------------------- SOCIAL LOGIN -------------------
   void _socialLogin(String provider) async {
     setState(() => loading = true);
@@ -92,12 +181,9 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (kIsWeb) {
         if (await canLaunchUrl(Uri.parse(url))) {
-          // Opens OAuth URL in the same tab
           await launchUrl(Uri.parse(url), webOnlyWindowName: "_self");
-          // After redirect, GoRouter /oauth-callback handles the navigation
         }
       } else {
-        // Mobile: native login
         final loginResult = provider == "Google"
             ? await AuthService.loginWithGoogle()
             : await AuthService.loginWithGithub();
@@ -113,7 +199,6 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Social login error: $e")));
-    } finally {
       setState(() => loading = false);
     }
   }
@@ -151,6 +236,17 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final size = MediaQuery.of(context).size;
+
+    // 🆕 Show MFA form if required
+    if (_showMfaForm) {
+      return MfaVerificationScreen(
+        mfaSessionToken: _mfaSessionToken!,
+        userId: _userId!,
+        onVerify: _verifyMfa,
+        onBack: _backToLogin,
+        isLoading: loading,
+      );
+    }
 
     return Scaffold(
       body: Stack(
@@ -295,7 +391,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 width: double.infinity,
                                 height: 48,
                                 child: ElevatedButton(
-                                  onPressed: _login,
+                                  onPressed: loading ? null : _login,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         Colors.white.withOpacity(0.8),
@@ -305,12 +401,23 @@ class _LoginScreenState extends State<LoginScreen>
                                             BorderRadius.circular(20)),
                                     elevation: 5,
                                   ),
-                                  child: const Text(
-                                    "LOGIN",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold),
-                                  ),
+                                  child: loading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.red),
+                                          ),
+                                        )
+                                      : const Text(
+                                          "LOGIN",
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -341,13 +448,17 @@ class _LoginScreenState extends State<LoginScreen>
                                   IconButton(
                                     icon: const FaIcon(FontAwesomeIcons.google,
                                         color: Colors.white, size: 32),
-                                    onPressed: () => _socialLogin("Google"),
+                                    onPressed: loading
+                                        ? null
+                                        : () => _socialLogin("Google"),
                                   ),
                                   const SizedBox(width: 24),
                                   IconButton(
                                     icon: const FaIcon(FontAwesomeIcons.github,
                                         color: Colors.white, size: 32),
-                                    onPressed: () => _socialLogin("GitHub"),
+                                    onPressed: loading
+                                        ? null
+                                        : () => _socialLogin("GitHub"),
                                   ),
                                 ],
                               ),
@@ -358,12 +469,14 @@ class _LoginScreenState extends State<LoginScreen>
                                   const Text("Don't have an account? ",
                                       style: TextStyle(color: Colors.white70)),
                                   GestureDetector(
-                                    onTap: () => Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RegisterScreen()),
-                                    ),
+                                    onTap: loading
+                                        ? null
+                                        : () => Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const RegisterScreen()),
+                                            ),
                                     child: const Text("Register",
                                         style:
                                             TextStyle(color: Colors.redAccent)),
@@ -377,7 +490,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         ? Icons.light_mode
                                         : Icons.dark_mode,
                                     color: Colors.white),
-                                onPressed: () => themeProvider.toggleTheme(),
+                                onPressed: loading
+                                    ? null
+                                    : () => themeProvider.toggleTheme(),
                               ),
                               const SizedBox(height: 16),
                             ],
@@ -391,7 +506,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          if (loading)
+          if (loading && !_showMfaForm)
             const Center(child: CircularProgressIndicator(color: Colors.white)),
         ],
       ),

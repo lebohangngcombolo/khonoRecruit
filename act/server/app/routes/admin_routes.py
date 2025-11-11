@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import User, Requisition, Candidate, Application, AssessmentResult, Interview, Notification, AuditLog, Conversation
+from app.models import User, Requisition, Candidate, Application, AssessmentResult, Interview, Notification, AuditLog, Conversation, SharedNote, Meeting
 from datetime import datetime, timedelta
 from app.utils.decorators import role_required
 from app.services.email_service import EmailService
@@ -1167,3 +1167,160 @@ def enroll_mfa(user_id):
         'otp_uri': otp_uri,
         'secret': user.mfa_secret
     }), 200
+    
+# ============================================================
+# SHARED NOTES & MEETINGS MANAGEMENT (ADMIN + HIRING MANAGER)
+# ============================================================
+
+# -------------------- SHARED NOTES --------------------
+@admin_bp.route('/shared-notes', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_shared_notes():
+    """Get all shared notes"""
+    notes = SharedNote.query.order_by(SharedNote.created_at.desc()).all()
+    return jsonify([note.to_dict() for note in notes]), 200
+
+
+@admin_bp.route('/shared-notes', methods=['POST'])
+@role_required(["admin", "hiring_manager"])
+def create_shared_note():
+    """Create a new shared note"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+
+    title = data.get("title")
+    content = data.get("content")
+
+    if not title or not content:
+        return jsonify({"error": "Title and content are required"}), 400
+
+    note = SharedNote(title=title, content=content, author_id=user_id)
+    db.session.add(note)
+    db.session.commit()
+
+    AuditService.log_event(user_id, "create_shared_note", f"Created note '{title}'")
+    return jsonify({"message": "Note created successfully", "note": note.to_dict()}), 201
+
+
+@admin_bp.route('/shared-notes/<int:note_id>', methods=['PUT'])
+@role_required(["admin", "hiring_manager"])
+def update_shared_note(note_id):
+    """Update an existing shared note"""
+    user_id = get_jwt_identity()
+    note = SharedNote.query.get_or_404(note_id)
+
+    data = request.get_json()
+    note.title = data.get("title", note.title)
+    note.content = data.get("content", note.content)
+    db.session.commit()
+
+    AuditService.log_event(user_id, "update_shared_note", f"Updated note '{note.title}'")
+    return jsonify({"message": "Note updated successfully", "note": note.to_dict()}), 200
+
+
+@admin_bp.route('/shared-notes/<int:note_id>', methods=['DELETE'])
+@role_required(["admin", "hiring_manager"])
+def delete_shared_note(note_id):
+    """Delete a shared note"""
+    user_id = get_jwt_identity()
+    note = SharedNote.query.get_or_404(note_id)
+
+    db.session.delete(note)
+    db.session.commit()
+
+    AuditService.log_event(user_id, "delete_shared_note", f"Deleted note '{note.title}'")
+    return jsonify({"message": "Note deleted successfully"}), 200
+
+
+# -------------------- MEETINGS --------------------
+@admin_bp.route('/meetings', methods=['GET'])
+@role_required(["admin", "hiring_manager"])
+def get_meetings():
+    """Get all meetings"""
+    meetings = Meeting.query.order_by(Meeting.start_time.desc()).all()
+    return jsonify([m.to_dict() for m in meetings]), 200
+
+
+@admin_bp.route('/meetings', methods=['POST'])
+@role_required(["admin", "hiring_manager"])
+def create_meeting():
+    """Create a new meeting"""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    title = data.get("title")
+    description = data.get("description")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    participants = data.get("participants", [])
+    meeting_link = data.get("meeting_link")
+
+    if not (title and start_time and end_time):
+        return jsonify({"error": "Title, start_time, and end_time are required"}), 400
+
+    meeting = Meeting(
+        title=title,
+        description=description,
+        start_time=datetime.fromisoformat(start_time),
+        end_time=datetime.fromisoformat(end_time),
+        organizer_id=user_id,
+        participants=participants,
+        meeting_link=meeting_link
+    )
+
+    db.session.add(meeting)
+    db.session.commit()
+
+    # Optional email notifications
+    try:
+        for participant in participants:
+            EmailService.send_interview_invitation(
+                email=participant,
+                candidate_name="Team Member",
+                interview_date=start_time,
+                interview_type="Team Meeting",
+                meeting_link=meeting_link
+            )
+    except Exception as e:
+        current_app.logger.warning(f"Failed to send meeting invite emails: {e}")
+
+    AuditService.log_event(user_id, "create_meeting", f"Created meeting '{title}'")
+    return jsonify({"message": "Meeting created successfully", "meeting": meeting.to_dict()}), 201
+
+
+@admin_bp.route('/meetings/<int:meeting_id>', methods=['PUT'])
+@role_required(["admin", "hiring_manager"])
+def update_meeting(meeting_id):
+    """Update meeting details"""
+    user_id = get_jwt_identity()
+    meeting = Meeting.query.get_or_404(meeting_id)
+    data = request.get_json()
+
+    meeting.title = data.get("title", meeting.title)
+    meeting.description = data.get("description", meeting.description)
+    meeting.participants = data.get("participants", meeting.participants)
+    meeting.meeting_link = data.get("meeting_link", meeting.meeting_link)
+    if "start_time" in data:
+        meeting.start_time = datetime.fromisoformat(data["start_time"])
+    if "end_time" in data:
+        meeting.end_time = datetime.fromisoformat(data["end_time"])
+
+    db.session.commit()
+    AuditService.log_event(user_id, "update_meeting", f"Updated meeting '{meeting.title}'")
+
+    return jsonify({"message": "Meeting updated successfully", "meeting": meeting.to_dict()}), 200
+
+
+@admin_bp.route('/meetings/<int:meeting_id>', methods=['DELETE'])
+@role_required(["admin", "hiring_manager"])
+def delete_meeting(meeting_id):
+    """Delete a meeting"""
+    user_id = get_jwt_identity()
+    meeting = Meeting.query.get_or_404(meeting_id)
+
+    db.session.delete(meeting)
+    db.session.commit()
+
+    AuditService.log_event(user_id, "delete_meeting", f"Deleted meeting '{meeting.title}'")
+    return jsonify({"message": "Meeting deleted successfully"}), 200
+

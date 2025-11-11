@@ -11,6 +11,7 @@ import 'screens/landing_page/landing_page.dart';
 import 'screens/auth/reset_password.dart';
 import 'screens/admin/profile_page.dart';
 import 'screens/auth/oath_callback_screen.dart';
+import 'screens/auth/mfa_verification_screen.dart'; // 🆕 Import MFA screen
 
 import 'providers/theme_provider.dart';
 import 'utils/theme_utils.dart';
@@ -26,7 +27,7 @@ void main() {
   );
 }
 
-// ✅ Move router outside build so it doesn’t rebuild every theme toggle
+// ✅ Move router outside build so it doesn't rebuild every theme toggle
 final GoRouter _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -37,6 +38,28 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    // 🆕 MFA Verification Route
+    GoRoute(
+      path: '/mfa-verification',
+      builder: (context, state) {
+        final mfaSessionToken =
+            state.uri.queryParameters['mfa_session_token'] ?? '';
+        final userId = state.uri.queryParameters['user_id'] ?? '';
+        return MfaVerificationScreen(
+          mfaSessionToken: mfaSessionToken,
+          userId: userId,
+          onVerify: (String token) {
+            // This will be handled by the MfaVerificationScreen logic
+            // You might want to use a different approach for navigation
+            // or handle this through a provider
+          },
+          onBack: () {
+            context.go('/login');
+          },
+          isLoading: false,
+        );
+      },
     ),
     GoRoute(
       path: '/reset-password',

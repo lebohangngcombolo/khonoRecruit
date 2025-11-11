@@ -12,16 +12,19 @@ class User(db.Model):
     role = db.Column(db.String(50), default='candidate')
 
     profile = db.Column(JSON, default={})
-    settings = db.Column(JSON, default=dict)   # ✅ new: stores user preferences (language, alerts, privacy, etc.)
+    settings = db.Column(JSON, default=dict)
     is_verified = db.Column(db.Boolean, default=False)
     enrollment_completed = db.Column(db.Boolean, default=False)
     dark_mode = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)  # ✅ new: used for deactivation
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     first_login = db.Column(db.Boolean, default=True)
-    mfa_secret = db.Column(db.String(32), nullable=True)  # TOTP secret
-    mfa_enabled = db.Column(db.Boolean, default=False)    # Is MFA turned on
-    mfa_verified = db.Column(db.Boolean, default=False)   # Used during setup
+    
+    # MFA Fields
+    mfa_secret = db.Column(db.String(32), nullable=True)
+    mfa_enabled = db.Column(db.Boolean, default=False)
+    mfa_verified = db.Column(db.Boolean, default=False)
+    mfa_backup_codes = db.Column(db.JSON, nullable=True)  # 🆕 ADD THIS LINE
 
     # 🔗 Relationships
     candidates = db.relationship('Candidate', back_populates='user', lazy=True)
@@ -36,13 +39,14 @@ class User(db.Model):
             "email": self.email,
             "role": self.role,
             "profile": self.profile,
-            "settings": self.settings,        # ✅ added
+            "settings": self.settings,
             "is_verified": self.is_verified,
             "enrollment_completed": self.enrollment_completed,
             "dark_mode": self.dark_mode,
-            "is_active": self.is_active,      # ✅ added
+            "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),
-            "first_login": self.first_login
+            "first_login": self.first_login,
+            "mfa_enabled": self.mfa_enabled  # 🆕 Include MFA status
         }
 
 
@@ -214,6 +218,8 @@ class Application(db.Model):
     recommendation = db.Column(db.String(50))
     assessed_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_saved_screen = db.Column(db.String(50))
+    saved_at = db.Column(db.DateTime)
 
     candidate = db.relationship('Candidate', back_populates='applications')
     requisition = db.relationship('Requisition', back_populates='applications')
@@ -236,7 +242,9 @@ class Application(db.Model):
             "recommendation": self.recommendation,
             "assessed_date": self.assessed_date.isoformat() if self.assessed_date else None,
             "created_at": self.created_at.isoformat(),
-            "assessment_results": [ar.to_dict() for ar in self.assessment_results]
+            "assessment_results": [ar.to_dict() for ar in self.assessment_results],
+            "last_saved_screen": self.last_saved_screen,
+            "saved_at": self.saved_at.isoformat() if self.saved_at else None
         }
 
 
@@ -415,3 +423,65 @@ class AuditLog(db.Model):
             "timestamp": self.timestamp.isoformat(),
         }
 
+# ------------------- SHARED NOTE -------------------
+class SharedNote(db.Model):
+    __tablename__ = "shared_notes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    author = db.relationship("User", backref=db.backref("shared_notes", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "author_id": self.author_id,
+            "author": {
+                "id": self.author.id,
+                "email": self.author.email,
+                "profile": self.author.profile
+            } if self.author else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+        }
+
+
+# ------------------- MEETING -------------------
+class Meeting(db.Model):
+    __tablename__ = "meetings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    organizer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    participants = db.Column(JSON, default=[])  # list of user emails or IDs
+    meeting_link = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    organizer = db.relationship("User", backref=db.backref("organized_meetings", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat(),
+            "organizer_id": self.organizer_id,
+            "organizer": {
+                "id": self.organizer.id,
+                "email": self.organizer.email,
+                "profile": self.organizer.profile
+            } if self.organizer else None,
+            "participants": self.participants,
+            "meeting_link": self.meeting_link,
+            "created_at": self.created_at.isoformat()
+        }

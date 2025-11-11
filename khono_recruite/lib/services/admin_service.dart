@@ -284,4 +284,117 @@ class AdminService {
     if (res.statusCode == 200) return json.decode(res.body);
     throw Exception('Failed to load assessments analysis: ${res.body}');
   }
+
+  // ---------- SHARED NOTES ----------
+  Future<Map<String, dynamic>> createNote(Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.post(
+      Uri.parse(ApiEndpoints.createNote),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 201) return json.decode(res.body);
+    throw Exception('Failed to create note: ${res.body}');
+  }
+
+  Future<List<Map<String, dynamic>>> getNotes() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse(ApiEndpoints.getNotes),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200)
+      return List<Map<String, dynamic>>.from(json.decode(res.body));
+    throw Exception('Failed to fetch notes: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> updateNote(
+      int noteId, Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.put(
+      Uri.parse('${ApiEndpoints.updateNote}/$noteId'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to update note: ${res.body}');
+  }
+
+  Future<void> deleteNote(int noteId) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.delete(
+      Uri.parse('${ApiEndpoints.deleteNote}/$noteId'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode != 200)
+      throw Exception('Failed to delete note: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> shareNote(Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.post(
+      Uri.parse(ApiEndpoints.shareNote),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to share note: ${res.body}');
+  }
+
+  // ---------- MEETINGS ----------
+  Future<Map<String, dynamic>> createMeeting(Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.post(
+      Uri.parse(ApiEndpoints.createMeeting),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 201) return json.decode(res.body);
+    throw Exception('Failed to create meeting: ${res.body}');
+  }
+
+  Future<List<Map<String, dynamic>>> getMeetings() async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.get(
+      Uri.parse(ApiEndpoints.getMeetings),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode == 200)
+      return List<Map<String, dynamic>>.from(json.decode(res.body));
+    throw Exception('Failed to fetch meetings: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> updateMeeting(
+      int meetingId, Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.put(
+      Uri.parse('${ApiEndpoints.updateMeeting}/$meetingId'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to update meeting: ${res.body}');
+  }
+
+  Future<void> deleteMeeting(int meetingId) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.delete(
+      Uri.parse('${ApiEndpoints.deleteMeeting}/$meetingId'),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode != 200)
+      throw Exception('Failed to delete meeting: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> inviteToMeeting(
+      Map<String, dynamic> data) async {
+    final token = await AuthService.getAccessToken();
+    final res = await http.post(
+      Uri.parse(ApiEndpoints.inviteToMeeting),
+      headers: {...headers, 'Authorization': 'Bearer $token'},
+      body: json.encode(data),
+    );
+    if (res.statusCode == 200) return json.decode(res.body);
+    throw Exception('Failed to invite participants: ${res.body}');
+  }
 }
