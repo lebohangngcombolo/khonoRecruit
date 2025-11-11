@@ -462,7 +462,7 @@ class _ProfilePageState extends State<ProfilePage>
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+              image: AssetImage('assets/images/Frame 1.jpg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -473,8 +473,7 @@ class _ProfilePageState extends State<ProfilePage>
                 borderRadius: BorderRadius.circular(0),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container
-                    (
+                  child: Container(
                     width: 250,
                     decoration: BoxDecoration(
                       color: const Color(0xFF2A2A2A),
@@ -491,7 +490,20 @@ class _ProfilePageState extends State<ProfilePage>
                     ),
                     child: Column(
                       children: [
-                        const SizedBox(height: 72),
+                        SizedBox(
+                          height: 72,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Image.asset(
+                                'assets/icons/khono.png',
+                                height: 40,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
                         _sidebarButton("Profile"),
                         _sidebarButton("Settings"),
                         _sidebarButton("2FA"),
@@ -523,8 +535,8 @@ class _ProfilePageState extends State<ProfilePage>
         leading: iconPath != null
             ? Image.asset(
                 iconPath,
-                width: 26,
-                height: 26,
+                width: 32,
+                height: 32,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   IconData fallback;
@@ -569,13 +581,13 @@ class _ProfilePageState extends State<ProfilePage>
   String? _iconForTitle(String title) {
     switch (title) {
       case "Profile":
-        return 'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png';
+        return 'assets/icons/Account_User Profile/red_user_profile.png';
       case "Settings":
-        return 'Khono_Assets2/Khono_Icon/RED_Settings icon badge.png';
+        return 'assets/icons/RED_Settings icon badge.png';
       case "2FA":
-        return 'Khono_Assets2/Khono_Icon/Login_Lock/Lock_Red Badge_White.png';
+        return 'assets/icons/Login_Lock/Lock_Red Badge_White.png';
       case "Reset Password":
-        return 'Khono_Assets2/Khono_Icon/Red_chnage password_badge.png';
+        return 'assets/icons/Red_chnage password_badge.png';
       default:
         return null;
     }
@@ -630,7 +642,7 @@ class _ProfilePageState extends State<ProfilePage>
               children: [
                 Center(
                   child: Image.asset(
-                    'Khono_Assets2/Khono_Icon/Account_User Profile/User Profile_White Badge_Red.png',
+                    'assets/icons/Account_User Profile/User Profile_White Badge_Red.png',
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,
@@ -732,7 +744,7 @@ class _ProfilePageState extends State<ProfilePage>
                 GestureDetector(
                   onTap: _pickProfileImage,
                   child: Image.asset(
-                    'Khono_Assets2/Khono_Icon/Account_User Profile/User Profile_White Badge_Red.png',
+                    'assets/icons/Account_User Profile/User Profile_White Badge_Red.png',
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,

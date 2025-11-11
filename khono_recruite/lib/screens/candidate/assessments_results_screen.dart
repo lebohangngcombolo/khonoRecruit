@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AssessmentResultsPage extends StatefulWidget {
   final int? applicationId;
@@ -16,8 +17,11 @@ class AssessmentResultsPage extends StatefulWidget {
 
 class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   bool loading = true;
+  bool hasError = false;
+  String errorMessage = '';
   List<dynamic> applications = [];
   late String token;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -27,7 +31,14 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   }
 
   Future<void> _fetchResults() async {
-    setState(() => loading = true);
+    if (!loading) {
+      setState(() {
+        loading = true;
+        hasError = false;
+        errorMessage = '';
+      });
+    }
+
     try {
       final res = await http.get(
         Uri.parse('http://127.0.0.1:5000/api/candidate/applications'),
@@ -38,21 +49,45 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
       );
 
       if (res.statusCode == 200) {
-        List<dynamic> data = json.decode(res.body);
-        if (widget.applicationId != null) {
-          data = data
-              .where((a) => a['application_id'] == widget.applicationId)
-              .toList();
+        final data = json.decode(res.body);
+        List<dynamic> filteredData = [];
+        
+        if (data is List) {
+          filteredData = widget.applicationId != null
+              ? data.where((a) => a['application_id'] == widget.applicationId).toList()
+              : List<dynamic>.from(data);
         }
-        setState(() => applications = data);
+
+        setState(() {
+          applications = filteredData;
+          hasError = false;
+        });
       } else {
-        throw Exception('Failed to load results');
+        throw Exception('Failed to load applications. Status code: ${res.statusCode}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      setState(() {
+        hasError = true;
+        errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     } finally {
-      setState(() => loading = false);
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 
@@ -60,77 +95,167 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
     return SizedBox(
       height: 100,
       width: 100,
-      child: SfCircularChart(
-        series: <CircularSeries>[
-          DoughnutSeries<_ChartData, String>(
-            dataSource: [
-              _ChartData('Score', score),
-              _ChartData('Remaining', 100 - score)
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SfCircularChart(
+            margin: EdgeInsets.zero,
+            annotations: <CircularChartAnnotation>[
+              CircularChartAnnotation(
+                widget: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${score.toInt()}%',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    Text(
+                      'Score',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-            xValueMapper: (_ChartData data, _) => data.label,
-            yValueMapper: (_ChartData data, _) => data.value,
-            pointColorMapper: (_ChartData data, _) =>
-                data.label == 'Score' ? color : Colors.grey[300],
-            dataLabelMapper: (_ChartData data, _) =>
-                data.label == 'Score' ? '${score.toInt()}%' : '',
-            dataLabelSettings: const DataLabelSettings(
-                isVisible: true,
-                textStyle: TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold)),
-            radius: '100%',
-            innerRadius: '60%',
-          )
+            series: <CircularSeries>[
+              DoughnutSeries<_ChartData, String>(
+                dataSource: [
+                  _ChartData('Score', score),
+                  _ChartData('Remaining', 100 - score)
+                ],
+                xValueMapper: (_ChartData data, _) => data.label,
+                yValueMapper: (_ChartData data, _) => data.value,
+                pointColorMapper: (_ChartData data, _) =>
+                    data.label == 'Score' 
+                        ? color 
+                        : Colors.grey[200],
+                dataLabelMapper: (_ChartData data, _) => '',
+                radius: '100%',
+                innerRadius: '75%',
+                cornerStyle: CornerStyle.bothCurve,
+                strokeColor: Colors.transparent,
+                strokeWidth: 0,
+                animationDuration: 1500,
+              ),
+            ],
+          ),
+          // Outer ring for better visual effect
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget chipsList(List<String> items, {Color color = Colors.red}) {
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
     return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: items
-          .map((item) => Chip(
-                label: Text(item),
-                backgroundColor: color.withAlpha((255 * 0.2).round()), // Use withAlpha
-                labelStyle:
-                    TextStyle(color: color, fontWeight: FontWeight.bold),
-              ))
-          .toList(),
+      spacing: 8,
+      runSpacing: 8,
+      children: items.map((item) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                color == Colors.blue ? Icons.lightbulb_outline : Icons.close,
+                size: 14,
+                color: color,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                item,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget sidebar() {
-    return Container(
-      width: 200,
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("Menu",
-              style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
-          SizedBox(height: 24),
-          Text("Dashboard", style: TextStyle(color: Colors.black87)),
-          SizedBox(height: 12),
-          Text("My Applications", style: TextStyle(color: Colors.black87)),
-        ],
-      ),
-    );
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      case 'shortlisted':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Helper method to format date
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
   }
 
   Widget applicationCard(dynamic app) {
     final assessmentScore = (app['assessment_score'] ?? 0).toDouble();
     final cvScore = (app['cv_score'] ?? 0).toDouble();
-    final status = app['status'] ?? "Applied";
+    final status = app['status']?.toString().toLowerCase() ?? "applied";
     final passFail = assessmentScore >= 60 ? "Pass" : "Fail";
-    final missingSkills =
-        List<String>.from(app['cv_parser_result']?['missing_skills'] ?? []);
-    final suggestions =
-        List<String>.from(app['cv_parser_result']?['suggestions'] ?? []);
+    final missingSkills = List<String>.from(
+      app['cv_parser_result']?['missing_skills']?.map((e) => e.toString()) ?? [],
+    );
+    final suggestions = List<String>.from(
+      app['cv_parser_result']?['suggestions']?.map((e) => e.toString()) ?? [],
+    );
+    
+    // Format status for display
+    final statusText = status.isNotEmpty 
+        ? '${status[0].toUpperCase()}${status.substring(1)}' 
+        : 'Applied';
+        
+    // Get status color
+    final statusColor = _getStatusColor(status);
 
     return Card(
       color: Colors.white,
@@ -150,8 +275,41 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                     fontWeight: FontWeight.bold,
                     color: Colors.red)),
             const SizedBox(height: 8),
-            Text("Application Status: $status",
-                style: const TextStyle(color: Colors.black87)),
+            Row(
+              children: [
+                const Text("Status: ", 
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500
+                  )
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Applied on: ${_formatDate(app['applied_date'] ?? DateTime.now().toString())}',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -207,47 +365,180 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Ensure Scaffold is transparent to show background
-      appBar: applications.isEmpty && !loading
-          ? AppBar(
-              title: Text("My Applications", style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white)),
-              backgroundColor: Colors.red,
-              elevation: 0,
-            )
-          : null, // Only show AppBar if no applications and not loading
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
-            fit: BoxFit.cover,
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: Text(
+          "My Applications",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
-        child: loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.red),
-              )
-            : applications.isEmpty
-                ? const Center(
-                    child: Text(
-                      "No applications found",
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                  )
-                : Row(
-                    children: [
-                      sidebar(),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: applications.length,
-                          itemBuilder: (context, index) {
-                            return applicationCard(applications[index]);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+        backgroundColor: Colors.red,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _fetchResults,
+          ),
+        ],
       ),
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: _fetchResults,
+        color: Colors.red,
+        child: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/Frame 1.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: _buildBody(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (loading && applications.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                strokeWidth: 3,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Loading your applications...',
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (hasError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Oops! Something went wrong',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                errorMessage.isNotEmpty 
+                    ? errorMessage 
+                    : 'Unable to load applications. Please try again.',
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _fetchResults,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (applications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.assignment_outlined,
+              size: 100,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Applications Yet',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40.0),
+              child: Text(
+                'You haven\'t applied to any jobs yet. Browse jobs and apply to see your applications here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to jobs list
+                Navigator.pushReplacementNamed(context, '/jobs');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+              child: const Text('Browse Jobs'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: applications.length,
+      itemBuilder: (context, index) {
+        return applicationCard(applications[index]);
+      },
     );
   }
 }

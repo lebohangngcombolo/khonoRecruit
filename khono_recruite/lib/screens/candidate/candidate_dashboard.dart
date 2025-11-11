@@ -188,7 +188,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            image: AssetImage('assets/images/Frame 1.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -229,12 +229,17 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                 children: [
                                   if (!sidebarCollapsed)
                                     Flexible(
-                                      child: Image.asset('assets/images/logo2.png',
-                                          height: 40, fit: BoxFit.contain),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 8.0),
+                                        child: Image.asset(
+                                          'assets/icons/khono.png',
+                                          height: 40,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
                                     )
                                   else
-                                    Image.asset('assets/images/icon.png',
-                                        height: 40, fit: BoxFit.contain),
+                                    const Icon(Icons.menu, color: Colors.white, size: 32),
                                   IconButton(
                                     constraints: const BoxConstraints(),
                                     padding: EdgeInsets.zero,
@@ -261,34 +266,38 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                 final isSelected = selectedIndex == index;
                                 String assetIconPath;
                                 switch (index) {
-                                  case 0:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Project Launch_Start/Project Launch_Start_Red Badge_White.png';
+                                  case 0: // Dashboard
+                                    assetIconPath = 'assets/icons/Project Launch_Start/Project Launch_Start_Red Badge_White.png';
                                     break;
-                                  case 1:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png';
+                                  case 1: // Jobs Applied
+                                    assetIconPath = 'assets/icons/Upload_Arrow/Upload Arrow_Red Badge_White.png';
                                     break;
-                                  case 2:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Business Growth_Development/Growth_Development_Red Badge_White.png';
+                                  case 2: // Assessment Results
+                                    assetIconPath = 'assets/icons/Data_Approval/Data Approval_Red Badge_White.png';
                                     break;
-                                  case 3:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png';
+                                  case 3: // Profile
+                                    assetIconPath = 'assets/icons/Account_User Profile/red_user_profile.png';
                                     break;
-                                  case 4:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Red_Notifications_bell.png';
+                                  case 4: // Notifications
+                                    assetIconPath = 'assets/icons/Red_Notifications_bell.png';
                                     break;
                                   default:
-                                    assetIconPath = 'Khono_Assets2/Khono_Icon/Information_Detail/Information_Red Badge_White.png';
+                                    assetIconPath = 'assets/icons/Information_Detail/Information_Red Badge_White.png';
                                 }
 
                                 return SizedBox(
                                   height: 48,
                                   child: ListTile(
-                                    leading: Image.asset(
-                                      assetIconPath,
-                                      width: 26,
-                                      height: 26,
-                                      fit: BoxFit.contain,
-                                    ),
+                                    leading: assetIconPath.isNotEmpty
+                                        ? Image.asset(
+                                            assetIconPath,
+                                            width: 32,
+                                            height: 32,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error, stackTrace) => 
+                                                const Icon(Icons.error_outline, color: Colors.white, size: 32),
+                                          )
+                                        : const Icon(Icons.error_outline, color: Colors.white, size: 32),
                                     title: sidebarCollapsed
                                         ? null
                                         : Text(
@@ -345,16 +354,16 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                   child: sidebarCollapsed
                                       ? Builder(builder: (context) {
                                           return Image.asset(
-                                            'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
-                                            width: 26,
-                                            height: 26,
+                                            'assets/icons/Account_User Profile/red_user_profile.png',
+                                            width: 32,
+                                            height: 32,
                                             fit: BoxFit.contain,
                                           );
                                         })
                                       : Row(
                                           children: [
                                             Image.asset(
-                                              'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
+                                              'assets/icons/Account_User Profile/red_user_profile.png',
                                               width: 24,
                                               height: 24,
                                               fit: BoxFit.contain,
@@ -381,7 +390,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                     ? IconButton(
                                         onPressed: () {},
                                         icon: Image.asset(
-                                          'Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png',
+                                          'assets/icons/Logout/Logout_Red Badge_White.png',
                                           width: 20,
                                           height: 20,
                                           fit: BoxFit.contain,
@@ -389,7 +398,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                     : ElevatedButton.icon(
                                         onPressed: () async {},
                                         icon: Image.asset(
-                                          'Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png',
+                                          'assets/icons/Logout/Logout_Red Badge_White.png',
                                           width: 24,
                                           height: 24,
                                           fit: BoxFit.contain,
@@ -488,9 +497,9 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                               clipBehavior: Clip.none,
                                               children: [
                                                 Image.asset(
-                                                  'Khono_Assets2/Khono_Icon/Red_Notifications_bell.png',
-                                                  width: 26,
-                                                  height: 26,
+                                                  'assets/icons/Red_Notifications_bell.png',
+                                                  width: 32,
+                                                  height: 32,
                                                   fit: BoxFit.contain,
                                                 ),
                                                 if (notifications.isNotEmpty)
@@ -526,9 +535,9 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                           const SizedBox(width: 12),
                                           Builder(builder: (context) {
                                             return Image.asset(
-                                              'Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png',
-                                              width: 26,
-                                              height: 26,
+                                              'assets/icons/Account_User Profile/red_user_profile.png',
+                                              width: 32,
+                                              height: 32,
                                               fit: BoxFit.contain,
                                             );
                                           }),
@@ -568,7 +577,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                     child: GestureDetector(
                       onTap: () => setState(() => chatbotOpen = !chatbotOpen),
                       child: Image.asset(
-                        'Khono_Assets2/Khono_Icon/AI Chatbot_Red Badge_White.png',
+                        'assets/icons/AI Chatbot_Red Badge_White.png',
                         width: 48,
                         height: 48,
                         fit: BoxFit.contain,
@@ -757,21 +766,21 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                 Icons.send_to_mobile,
                 Colors.redAccent,
                 assetPath:
-                    'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red.png'),
+                    'assets/icons/Upload_Arrow/Upload Arrow_Red.png'),
             buildStatCard(
                 "Interviews",
                 applications.where((a) => a['status'] == 'Interview').length,
                 Icons.mic,
                 Colors.redAccent.shade700,
                 assetPath:
-                    'Khono_Assets2/Khono_Icon/Calendar_Date Picker/Calendar_Date Picker_Red.png'),
+                    'assets/icons/Calendar_Date Picker/Calendar_Date Picker_Red.png'),
             buildStatCard(
                 "Offers",
                 applications.where((a) => a['status'] == 'Offered').length,
                 Icons.check_circle,
                 Colors.redAccent.shade400,
                 assetPath:
-                    'Khono_Assets2/Khono_Icon/Approved_Tick/Approved_Red.png'),
+                    'assets/icons/Approved_Tick/Approved_Red.png'),
           ],
         ),
       ],
@@ -988,7 +997,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                 IconButton(
                   onPressed: sendMessage,
                   icon: Image.asset(
-                    'Khono_Assets2/Khono_Icon/Send_Paper Plane/Send_Paper Plane_Red.png',
+                    'assets/icons/Send_Paper Plane/Send_Paper Plane_Red.png',
                     width: 45,
                     height: 45,
                     fit: BoxFit.contain,

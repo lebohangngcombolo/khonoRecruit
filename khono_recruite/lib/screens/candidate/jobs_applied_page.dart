@@ -44,7 +44,7 @@ class _JobsAppliedPageState extends State<JobsAppliedPage> {
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+              image: AssetImage('assets/images/Frame 1.jpg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -63,7 +63,7 @@ class _JobsAppliedPageState extends State<JobsAppliedPage> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            image: AssetImage('assets/images/Frame 1.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -107,7 +107,7 @@ class _JobsAppliedPageState extends State<JobsAppliedPage> {
                             Align(
                               alignment: Alignment.topRight,
                               child: Image.asset(
-                                'Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png',
+                                'assets/icons/Upload_Arrow/Upload Arrow_Red Badge_White.png',
                                 width: 24,
                                 height: 24,
                                 fit: BoxFit.contain,

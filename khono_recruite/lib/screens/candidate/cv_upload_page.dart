@@ -130,7 +130,7 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            image: AssetImage('assets/images/Frame 1.jpg'),
             fit: BoxFit.cover,
           ),
         ),

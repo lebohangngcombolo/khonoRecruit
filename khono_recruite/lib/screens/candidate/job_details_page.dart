@@ -95,7 +95,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('Khono_Assets2/images/frame_1.jpg'),
+            image: AssetImage('assets/images/Frame 1.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -104,7 +104,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
             children: [
               // ---------- Top Banner ----------
               Image.asset(
-                widget.job["banner"] ?? "assets/images/team1.jpg",
+                widget.job["banner"] ?? "assets/team1.jpg",
                 width: double.infinity,
                 height: 500,
                 fit: BoxFit.cover,
@@ -118,7 +118,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   children: [
                     // Job Image
                     Image.asset(
-                      widget.job["image"] ?? "assets/images/job_default.jpg",
+                      widget.job["image"] ?? "assets/placeholder.png",
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
@@ -381,7 +381,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/logo3.png',
+            'assets/logo3.png',
             width: 220,
             height: 120,
             fit: BoxFit.contain,

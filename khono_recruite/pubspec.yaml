@@ -36,6 +36,7 @@ dependencies:
   fl_chart: ^1.1.0
   vector_math: ^2.1.4
   file_picker: ^10.3.3
+  flutter_svg: ^2.0.10+1
   
 
 dev_dependencies:
@@ -45,13 +46,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-
   assets:
+    # Images
     - assets/images/bg1.jpg
     - assets/images/bg.jpg
     - assets/images/bg2.jpg
     - assets/images/bg3.jpeg
-    - assets/images/bg4.jpg
     - assets/images/bg4.jpg
     - assets/images/client0.png
     - assets/images/client1.png
@@ -69,6 +69,11 @@ flutter:
     - assets/images/team3.jpg
     - assets/images/team4.jpg
     - assets/images/team5.jpg
+    - assets/images/frame_1.jpg
+    - assets/images/Frame 1.jpg
+    - assets/images/placeholder.png
+
+    # Icons
     - assets/icons/Linkedin1.png
     - assets/icons/Linkedin.png
     - assets/icons/Instagram1.png
@@ -79,20 +84,25 @@ flutter:
     - assets/icons/YouTube1.png
     - assets/icons/YouTube.png
     - assets/icons/pbi.png
-    - assets/images/
-    - Khono_Assets2/images/
-    - Khono_Assets2/images/frame_1.jpg
-    - Khono_Assets2/Khono_Icon/
-    - Khono_Assets2/Khono_Icon/Project Launch_Start/Project Launch_Start_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Calendar_Date Picker/Calendar_Date Picker_Red.png
-    - Khono_Assets2/Khono_Icon/Approved_Tick/Approved_Red.png
-    - Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red.png
-    - Khono_Assets2/Khono_Icon/Upload_Arrow/Upload Arrow_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Business Growth_Development/Growth_Development_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Account_User Profile/red_user_profile.png
-    - Khono_Assets2/Khono_Icon/Account_User Profile/User Profile_White Badge_Red.png
-    - Khono_Assets2/Khono_Icon/Information_Detail/Information_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Login_Lock/Lock_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Logout/Logout_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/AI Chatbot_Red Badge_White.png
-    - Khono_Assets2/Khono_Icon/Send_Paper Plane/Send_Paper Plane_Red.png
+
+    # App Icons - Directories
+    - assets/icons/Account_User Profile/
+    - assets/icons/Upload_Arrow/
+    - assets/icons/Calendar_Date Picker/
+    - assets/icons/Approved_Tick/
+    - assets/icons/Project Launch_Start/
+    - assets/icons/Data_Approval/
+    - assets/icons/Business Growth_Development/
+    - assets/icons/Information_Detail/
+    - assets/icons/Login_Lock/
+    - assets/icons/Logout/
+    - assets/icons/Email_Notification/
+    - assets/icons/Send_Paper Plane/
+    - assets/icons/Deadline Notification_Reminder/
+    
+    # App Icons - Individual Files
+    - assets/icons/AI Chatbot_Red Badge_White.png
+    - assets/icons/RED_Settings icon badge.png
+    - assets/icons/Red_chnage password_badge.png
+    - assets/icons/Red_Notifications_bell.png
+    - assets/icons/khono.png
