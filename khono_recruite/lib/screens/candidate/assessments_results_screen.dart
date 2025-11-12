@@ -75,7 +75,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFC10D00),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(10),
             shape: RoundedRectangleBorder(
@@ -109,15 +109,16 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                       '${score.toInt()}%',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: color,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                     Text(
                       'Score',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -163,7 +164,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
     );
   }
 
-  Widget chipsList(List<String> items, {Color color = Colors.red}) {
+  Widget chipsList(List<String> items, {Color color = const Color(0xFFC10D00)}) {
     if (items.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -190,10 +191,10 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               const SizedBox(width: 4),
               Text(
                 item,
-                style: TextStyle(
-                  color: color,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -209,7 +210,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
       case 'accepted':
         return Colors.green;
       case 'rejected':
-        return Colors.red;
+        return const Color(0xFFC10D00);
       case 'pending':
         return Colors.orange;
       case 'shortlisted':
@@ -258,29 +259,29 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
     final statusColor = _getStatusColor(status);
 
     return Card(
-      color: Colors.white,
+      color: Colors.black.withOpacity(0.25),
       margin: const EdgeInsets.symmetric(vertical: 12),
       elevation: 3,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Colors.red, width: 1)),
+          side: const BorderSide(color: Color(0xFFC10D00), width: 1)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(app['job_title'] ?? "Unknown Job",
-                style: const TextStyle(
+                style: GoogleFonts.poppins(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red)),
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white)),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Text("Status: ", 
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500
+                Text("Status: ", 
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600
                   )
                 ),
                 Container(
@@ -292,8 +293,8 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(
-                      color: statusColor,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
@@ -303,9 +304,10 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                 const Spacer(),
                 Text(
                   'Applied on: ${_formatDate(app['applied_date'] ?? DateTime.now().toString())}',
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
                     fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -316,24 +318,23 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               children: [
                 Column(
                   children: [
-                    const Text("Assessment",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black)),
+                    Text("Assessment",
+                        style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600, color: Colors.white)),
                     const SizedBox(height: 8),
-                    scoreDonutChart(assessmentScore, Colors.red),
+                    scoreDonutChart(assessmentScore, const Color(0xFFC10D00)),
                     const SizedBox(height: 4),
                     Text(passFail,
-                        style: TextStyle(
-                            color:
-                                passFail == "Pass" ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.bold))
+                        style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600))
                   ],
                 ),
                 Column(
                   children: [
-                    const Text("Resume Score",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black)),
+                    Text("Resume Score",
+                        style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600, color: Colors.white)),
                     const SizedBox(height: 8),
                     scoreDonutChart(cvScore, Colors.blue),
                   ],
@@ -342,17 +343,17 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
             ),
             const SizedBox(height: 16),
             if (missingSkills.isNotEmpty) ...[
-              const Text("Missing Skills:",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.red)),
+              Text("Missing Skills:",
+                  style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 4),
-              chipsList(missingSkills, color: Colors.red),
+              chipsList(missingSkills, color: const Color(0xFFC10D00)),
               const SizedBox(height: 12),
             ],
             if (suggestions.isNotEmpty) ...[
-              const Text("Suggestions:",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black)),
+              Text("Suggestions:",
+                  style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 4),
               chipsList(suggestions, color: Colors.blue),
             ],
@@ -374,7 +375,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: const Color(0xFFC10D00),
         elevation: 0,
         actions: [
           IconButton(
@@ -386,7 +387,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _fetchResults,
-        color: Colors.red,
+        color: const Color(0xFFC10D00),
         child: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -402,7 +403,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
 
   Widget _buildBody() {
     if (loading && applications.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -410,16 +411,17 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               width: 40,
               height: 40,
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC10D00)),
                 strokeWidth: 3,
               ),
             ),
             SizedBox(height: 16),
             Text(
               'Loading your applications...',
-              style: TextStyle(
-                color: Colors.black54,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
                 fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -437,7 +439,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: Colors.red[400],
+                color: Color(0xFFC10D00),
               ),
               const SizedBox(height: 16),
               Text(
@@ -445,7 +447,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -454,9 +456,10 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                 errorMessage.isNotEmpty 
                     ? errorMessage 
                     : 'Unable to load applications. Please try again.',
-                style: const TextStyle(
-                  color: Colors.black54,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
                   fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -464,9 +467,9 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               ElevatedButton.icon(
                 onPressed: _fetchResults,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Try Again'),
+                label: Text('Try Again', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: const Color(0xFFC10D00),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -496,18 +499,19 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Text(
-                'You haven\'t applied to any jobs yet. Browse jobs and apply to see your applications here.',
+                "You haven't applied to any jobs yet. Browse jobs and apply to see your applications here.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.black54,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
                   fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -518,7 +522,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                 Navigator.pushReplacementNamed(context, '/jobs');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: const Color(0xFFC10D00),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -526,7 +530,7 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                 ),
                 elevation: 2,
               ),
-              child: const Text('Browse Jobs'),
+              child: Text('Browse Jobs', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

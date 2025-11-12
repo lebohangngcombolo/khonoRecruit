@@ -8,6 +8,7 @@ import 'job_details_page.dart';
 import 'assessments_results_screen.dart';
 import '../../screens/candidate/user_profile_page.dart';
 import 'dart:ui'; // Added for BackdropFilter
+import 'offline_drafts_page.dart';
 
 class CandidateDashboard extends StatefulWidget {
   final String token;
@@ -26,6 +27,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
     "Assessment Results",
     "Profile",
     "Notifications",
+    "Offline Drafts",
   ];
 
   List<Map<String, dynamic>> availableJobs = [];
@@ -281,6 +283,9 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                   case 4: // Notifications
                                     assetIconPath = 'assets/icons/Red_Notifications_bell.png';
                                     break;
+                                  case 5: // Offline Drafts
+                                    assetIconPath = 'assets/icons/Information_Detail/Information_Red Badge_White.png';
+                                    break;
                                   default:
                                     assetIconPath = 'assets/icons/Information_Detail/Information_Red Badge_White.png';
                                 }
@@ -329,6 +334,12 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                           MaterialPageRoute(
                                               builder: (_) =>
                                                   ProfilePage(token: widget.token)),
+                                        );
+                                      } else if (sidebarItems[index] == "Offline Drafts") {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => OfflineDraftsPage(token: widget.token)),
                                         );
                                       }
                                     },

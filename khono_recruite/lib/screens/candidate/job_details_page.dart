@@ -5,11 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
 import 'assessment_page.dart';
+import '../../services/drafts_service.dart';
 
 class JobDetailsPage extends StatefulWidget {
   final Map<String, dynamic> job;
+  final Map<String, dynamic>? draftForm;
 
-  const JobDetailsPage({super.key, required this.job});
+  const JobDetailsPage({super.key, required this.job, this.draftForm});
 
   @override
   State<JobDetailsPage> createState() => _JobDetailsPageState();
@@ -24,6 +26,18 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController portfolioController = TextEditingController();
   final TextEditingController coverLetterController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final df = widget.draftForm;
+    if (df != null) {
+      fullNameController.text = (df['full_name'] ?? '').toString();
+      phoneController.text = (df['phone'] ?? '').toString();
+      portfolioController.text = (df['portfolio'] ?? '').toString();
+      coverLetterController.text = (df['cover_letter'] ?? '').toString();
+    }
+  }
 
   Future<void> applyJob() async {
     if (!_formKey.currentState!.validate()) return;
@@ -66,6 +80,29 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
           .showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       setState(() => submitting = false);
+    }
+  }
+
+  Future<void> saveDraft() async {
+    final form = <String, dynamic>{
+      'full_name': fullNameController.text,
+      'phone': phoneController.text,
+      'portfolio': portfolioController.text,
+      'cover_letter': coverLetterController.text,
+    };
+    try {
+      await DraftsService.saveDraft(job: widget.job, form: form);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved draft offline')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save draft: $e')),
+        );
+      }
     }
   }
 
@@ -206,6 +243,20 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                                             label: "Cover Letter",
                                             maxLines: 5),
                                         const SizedBox(height: 16),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: OutlinedButton.icon(
+                                            onPressed: saveDraft,
+                                            icon: const Icon(Icons.save, color: Colors.red),
+                                            label: const Text('Save Draft', style: TextStyle(color: Colors.red)),
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(color: Colors.red.shade700),
+                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
                                         SizedBox(
                                           width: double.infinity,
                                           child: ElevatedButton(
