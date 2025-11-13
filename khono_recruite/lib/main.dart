@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart'; // ⚡ Web URL strategy
 
 import 'screens/auth/login_screen.dart';
 import 'screens/candidate/candidate_dashboard.dart';
@@ -11,12 +12,15 @@ import 'screens/landing_page/landing_page.dart';
 import 'screens/auth/reset_password.dart';
 import 'screens/admin/profile_page.dart';
 import 'screens/auth/oath_callback_screen.dart';
-import 'screens/auth/mfa_verification_screen.dart'; // 🆕 Import MFA screen
+import 'screens/auth/mfa_verification_screen.dart';
 
 import 'providers/theme_provider.dart';
 import 'utils/theme_utils.dart';
 
 void main() {
+  // ⚡ Fix Flutter Web initial route handling
+  setUrlStrategy(PathUrlStrategy());
+
   runApp(
     MultiProvider(
       providers: [
@@ -27,7 +31,7 @@ void main() {
   );
 }
 
-// ✅ Move router outside build so it doesn't rebuild every theme toggle
+// ✅ Persistent router
 final GoRouter _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -39,7 +43,6 @@ final GoRouter _router = GoRouter(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
-    // 🆕 MFA Verification Route
     GoRoute(
       path: '/mfa-verification',
       builder: (context, state) {
@@ -49,11 +52,7 @@ final GoRouter _router = GoRouter(
         return MfaVerificationScreen(
           mfaSessionToken: mfaSessionToken,
           userId: userId,
-          onVerify: (String token) {
-            // This will be handled by the MfaVerificationScreen logic
-            // You might want to use a different approach for navigation
-            // or handle this through a provider
-          },
+          onVerify: (String token) {},
           onBack: () {
             context.go('/login');
           },
@@ -100,6 +99,7 @@ final GoRouter _router = GoRouter(
         return ProfilePage(token: token);
       },
     ),
+    // ⚡ OAuth callback screen reads tokens directly from URL
     GoRoute(
       path: '/oauth-callback',
       builder: (context, state) => const OAuthCallbackScreen(),
@@ -120,7 +120,7 @@ class KhonoRecruiteApp extends StatelessWidget {
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeUtils.lightTheme,
       darkTheme: ThemeUtils.darkTheme,
-      routerConfig: _router, // ✅ Uses the persistent router
+      routerConfig: _router,
     );
   }
 }

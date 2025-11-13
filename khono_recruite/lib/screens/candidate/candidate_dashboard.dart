@@ -9,7 +9,6 @@ import 'job_details_page.dart';
 import 'assessments_results_screen.dart';
 import '../../screens/candidate/user_profile_page.dart';
 import 'saved_application_screen.dart'; // Add this import
-import '../../providers/theme_provider.dart';
 import '../../services/auth_service.dart';
 import '../../screens/auth/login_screen.dart';
 
