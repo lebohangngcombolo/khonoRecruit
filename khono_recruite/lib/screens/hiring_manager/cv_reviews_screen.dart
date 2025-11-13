@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/admin_service.dart';
+import '../../constants/app_colors.dart';
 
 class CVReviewsScreen extends StatefulWidget {
   const CVReviewsScreen({super.key});
@@ -36,9 +37,9 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
   }
 
   Color getScoreColor(double score) {
-    if (score >= 70) return Colors.greenAccent;
-    if (score >= 50) return Colors.orangeAccent;
-    return Colors.redAccent;
+    if (score >= 80) return AppColors.scoreHigh;
+    if (score >= 60) return AppColors.scoreMedium;
+    return AppColors.scoreLow;
   }
 
   @override
@@ -52,7 +53,7 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
 
     return loading
           ? const Center(
-              child: CircularProgressIndicator(color: Colors.redAccent))
+              child: CircularProgressIndicator(color: AppColors.primaryRed))
           : Padding(
               padding: const EdgeInsets.all(16),
               child: cvReviews.isEmpty
@@ -260,7 +261,7 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                             label: const Text("Download CV",
                                                 style: TextStyle(fontSize: 11)),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.redAccent,
+                                              backgroundColor: AppColors.primaryRed,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),

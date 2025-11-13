@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -9,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/khono_icons.dart';
+import '../../constants/app_colors.dart';
 import 'candidate_management_screen.dart';
 import 'cv_reviews_screen.dart';
 import 'interviews_screen.dart';
@@ -16,9 +16,10 @@ import 'notifications_screen.dart';
 import 'job_management.dart';
 import 'hm_analytics_page.dart';
 import 'hm_team_collaboration_page.dart';
+import 'hm_profile_page.dart';
 
-// Custom red color #C10D00
-const Color kPrimaryRed = Color(0xFFC10D00);
+// Use AppColors for consistency
+const Color kPrimaryRed = AppColors.primaryRed;
 
 class HMMainDashboard extends StatefulWidget {
   const HMMainDashboard({super.key});
@@ -31,7 +32,7 @@ class _HMMainDashboardState extends State<HMMainDashboard>
     with SingleTickerProviderStateMixin {
   String currentScreen = "dashboard";
   bool loadingStats = true;
-  String userName = "User";  // User name for personalized greeting
+  String userName = "User"; // User name for personalized greeting
 
   int jobsCount = 0;
   int candidatesCount = 0;
@@ -65,7 +66,7 @@ class _HMMainDashboardState extends State<HMMainDashboard>
   void initState() {
     super.initState();
     fetchStats();
-    _loadUserInfo();  // Load user info for greeting
+    _loadUserInfo(); // Load user info for greeting
 
     _sidebarAnimController = AnimationController(
       vsync: this,
@@ -91,9 +92,12 @@ class _HMMainDashboardState extends State<HMMainDashboard>
           final email = userInfo['email'] ?? '';
           userName = email.split('@')[0].replaceAll('.', ' ').toUpperCase();
           // Capitalize first letter of each word
-          userName = userName.split(' ').map((word) => 
-            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1).toLowerCase()
-          ).join(' ');
+          userName = userName
+              .split(' ')
+              .map((word) => word.isEmpty
+                  ? ''
+                  : word[0].toUpperCase() + word.substring(1).toLowerCase())
+              .join(' ');
         });
       }
     } catch (e) {
@@ -176,7 +180,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E1E1E).withOpacity(0.85),
                         border: Border(
-                          right: BorderSide(color: kPrimaryRed.withOpacity(0.3), width: 1),
+                          right: BorderSide(
+                              color: kPrimaryRed.withOpacity(0.3), width: 1),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -186,166 +191,191 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                           ),
                         ],
                       ),
-                  child: Column(
-                    children: [
-                      // Sidebar header
-                      SizedBox(
-                        height: 72,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Center(
-                                  child: sidebarCollapsed
-                                      ? Image.asset(
-                                          'assets/images/logo.png',
-                                          width: 50,
-                                          height: 40,
-                                          fit: BoxFit.contain,
-                                        )
-                                      : Text(
-                                          'KHONOLOGY',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: kPrimaryRed,
-                                            letterSpacing: 3,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              if (!sidebarCollapsed)
-                                IconButton(
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
-                                  icon: Icon(
-                                    sidebarCollapsed
-                                        ? Icons.arrow_forward_ios
-                                        : Icons.arrow_back_ios,
-                                    size: 16,
-                                    color: kPrimaryRed,
-                                  ),
-                                  onPressed: toggleSidebar,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Divider(height: 1, color: kPrimaryRed.withOpacity(0.2)),
-                      Expanded(
-                        child: ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            _sidebarEntry(
-                                Icons.home_outlined, 'Home', 'dashboard'),
-                            _sidebarEntry(Icons.work_outline, 'Jobs', 'jobs'),
-                            _sidebarEntry(Icons.people_alt_outlined,
-                                'Candidates', 'candidates'),
-                            _sidebarEntry(
-                                Icons.event_note, 'Interviews', 'interviews'),
-                            _sidebarEntry(Icons.assignment_outlined,
-                                'CV Reviews', 'cv_reviews'),
-                            _sidebarEntry(Icons.analytics_outlined, 'Analytics',
-                                'analytics'),
-                            _sidebarEntry(Icons.people_outline,
-                                'Team Collaboration', 'team_collaboration'),
-                            _sidebarEntry(Icons.notifications_outlined,
-                                'Notifications', 'notifications'),
-                          ],
-                        ),
-                      ),
-                      Divider(height: 1, color: kPrimaryRed.withOpacity(0.2)),
-                      if (sidebarCollapsed)
-                        Center(
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                            color: kPrimaryRed,
-                            onPressed: toggleSidebar,
-                            tooltip: 'Expand Sidebar',
-                          ),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12.0, horizontal: 8),
-                        child: Column(
-                          children: [
-                            if (!sidebarCollapsed)
-                              Row(
+                      child: Column(
+                        children: [
+                          // Sidebar header
+                          SizedBox(
+                            height: 72,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: kPrimaryRed, width: 2),
-                                      color: Colors.grey.shade900,
-                                    ),
-                                    child: const Icon(Icons.person,
-                                        color: kPrimaryRed, size: 16),
-                                  ),
-                                  const SizedBox(width: 12),
                                   Expanded(
-                                    child: Text(
-                                      "Hiring Manager",
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                                    child: Center(
+                                      child: sidebarCollapsed
+                                          ? Image.asset(
+                                              'assets/images/logo.png',
+                                              width: 50,
+                                              height: 40,
+                                              fit: BoxFit.contain,
+                                            )
+                                          : Text(
+                                              'KHONOLOGY',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: kPrimaryRed,
+                                                letterSpacing: 3,
+                                              ),
+                                            ),
                                     ),
                                   ),
+                                  if (!sidebarCollapsed)
+                                    IconButton(
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                      icon: Icon(
+                                        sidebarCollapsed
+                                            ? Icons.arrow_forward_ios
+                                            : Icons.arrow_back_ios,
+                                        size: 16,
+                                        color: kPrimaryRed,
+                                      ),
+                                      onPressed: toggleSidebar,
+                                    ),
                                 ],
-                              )
-                            else
-                              Center(
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.redAccent,
-                                  radius: 16,
-                                  child: const Icon(Icons.person,
-                                      color: Colors.white, size: 16),
-                                ),
                               ),
-                            const SizedBox(height: 12),
-                            if (!sidebarCollapsed)
-                              ElevatedButton.icon(
-                                onPressed: () {},
-                                icon: Image.asset(
-                                  KhonoIcons.logoutIcon,
-                                  width: 16,
-                                  height: 16,
-                                  color: Colors.white,
-                                ),
-                                label: Text("Logout", style: GoogleFonts.poppins()),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kPrimaryRed,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size.fromHeight(40),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          Divider(
+                              height: 1, color: kPrimaryRed.withOpacity(0.2)),
+                          Expanded(
+                            child: ListView(
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _sidebarEntry(
+                                    Icons.home_outlined, 'Home', 'dashboard'),
+                                _sidebarEntry(
+                                    Icons.work_outline, 'Jobs', 'jobs'),
+                                _sidebarEntry(Icons.people_alt_outlined,
+                                    'Candidates', 'candidates'),
+                                _sidebarEntry(Icons.event_note, 'Interviews',
+                                    'interviews'),
+                                _sidebarEntry(Icons.assignment_outlined,
+                                    'CV Reviews', 'cv_reviews'),
+                                _sidebarEntry(Icons.analytics_outlined,
+                                    'Analytics', 'analytics'),
+                                _sidebarEntry(Icons.people_outline,
+                                    'Team Collaboration', 'team_collaboration'),
+                                _sidebarEntry(Icons.notifications_outlined,
+                                    'Notifications', 'notifications'),
+                              ],
+                            ),
+                          ),
+                          Divider(
+                              height: 1, color: kPrimaryRed.withOpacity(0.2)),
+                          if (sidebarCollapsed)
+                            Center(
+                              child: IconButton(
+                                icon: const Icon(Icons.arrow_forward_ios,
+                                    size: 16),
+                                color: kPrimaryRed,
+                                onPressed: toggleSidebar,
+                                tooltip: 'Expand Sidebar',
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 8),
+                            child: Column(
+                              children: [
+                                InkWell(
+                                  onTap: () =>
+                                      setState(() => currentScreen = "profile"),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: currentScreen == "profile"
+                                          ? kPrimaryRed.withOpacity(0.2)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: !sidebarCollapsed
+                                        ? Row(
+                                            children: [
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                      color: kPrimaryRed,
+                                                      width: 2),
+                                                  color: Colors.grey.shade900,
+                                                ),
+                                                child: const Icon(Icons.person,
+                                                    color: kPrimaryRed,
+                                                    size: 16),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  userName,
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 13,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Center(
+                                            child: CircleAvatar(
+                                              backgroundColor: kPrimaryRed,
+                                              radius: 16,
+                                              child: const Icon(Icons.person,
+                                                  color: Colors.white,
+                                                  size: 16),
+                                            ),
+                                          ),
                                   ),
                                 ),
-                              )
-                            else
-                              IconButton(
-                                onPressed: () {},
-                                icon: Image.asset(
-                                  KhonoIcons.logoutIcon,
-                                  width: 20,
-                                  height: 20,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                          ],
-                        ),
+                                const SizedBox(height: 12),
+                                if (!sidebarCollapsed)
+                                  ElevatedButton.icon(
+                                    onPressed: () {},
+                                    icon: Image.asset(
+                                      KhonoIcons.logoutIcon,
+                                      width: 16,
+                                      height: 16,
+                                      color: Colors.white,
+                                    ),
+                                    label: Text("Logout",
+                                        style: GoogleFonts.poppins()),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: kPrimaryRed,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size.fromHeight(40),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  IconButton(
+                                    onPressed: () {},
+                                    icon: Image.asset(
+                                      KhonoIcons.logoutIcon,
+                                      width: 20,
+                                      height: 20,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
                 // ---------- Main content ----------
                 Expanded(
                   child: Column(
@@ -355,7 +385,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E1E1E).withOpacity(0.75),
                           border: Border(
-                            bottom: BorderSide(color: kPrimaryRed.withOpacity(0.3), width: 1),
+                            bottom: BorderSide(
+                                color: kPrimaryRed.withOpacity(0.3), width: 1),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -393,7 +424,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                                     onPressed: () =>
                                         setState(() => currentScreen = "jobs"),
                                     icon: const Icon(Icons.add, size: 18),
-                                    label: Text("Create", style: GoogleFonts.poppins()),
+                                    label: Text("Create",
+                                        style: GoogleFonts.poppins()),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: kPrimaryRed,
                                       foregroundColor: Colors.white,
@@ -408,7 +440,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                                   IconButton(
                                     onPressed: () => setState(
                                         () => currentScreen = "notifications"),
-                                    icon: const Icon(Icons.notifications_outlined,
+                                    icon: const Icon(
+                                        Icons.notifications_outlined,
                                         color: Colors.white),
                                   ),
                                   const SizedBox(width: 12),
@@ -417,7 +450,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                                     height: 36,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: kPrimaryRed, width: 2),
+                                      border: Border.all(
+                                          color: kPrimaryRed, width: 2),
                                       color: Colors.grey.shade900,
                                     ),
                                     child: const Icon(Icons.person,
@@ -476,13 +510,15 @@ class _HMMainDashboardState extends State<HMMainDashboard>
               decoration: BoxDecoration(
                 color: kPrimaryRed,
                 shape: BoxShape.circle,
-                boxShadow: selected ? [
-                  BoxShadow(
-                    color: kPrimaryRed.withOpacity(0.4),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ] : null,
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: kPrimaryRed.withOpacity(0.4),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
               ),
               child: Icon(
                 icon,
@@ -539,6 +575,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
         return HMTeamCollaborationPage();
       case "notifications":
         return NotificationsScreen();
+      case "profile":
+        return const HmProfilePage();
       default:
         return dashboardOverview();
     }
@@ -599,7 +637,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E).withOpacity(0.4),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: kPrimaryRed.withOpacity(0.5), width: 2),
+                border:
+                    Border.all(color: kPrimaryRed.withOpacity(0.5), width: 2),
               ),
               child: Row(
                 children: [
@@ -648,7 +687,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: kPrimaryRed.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -661,7 +701,10 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                         const SizedBox(width: 4),
                         Text(
                           "Level 1",
-                          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12),
                         ),
                       ],
                     ),
@@ -827,7 +870,11 @@ class _HMMainDashboardState extends State<HMMainDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
+          Text(title,
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: SfCartesianChart(
@@ -858,7 +905,11 @@ class _HMMainDashboardState extends State<HMMainDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
+          Text(title,
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: SfCartesianChart(
@@ -891,7 +942,11 @@ class _HMMainDashboardState extends State<HMMainDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
+          Text(title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: Row(
@@ -943,7 +998,11 @@ class _HMMainDashboardState extends State<HMMainDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis, maxLines: 1),
+          Text(title,
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -959,7 +1018,9 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                         backgroundColor: Colors.blueAccent,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(messages[index], style: TextStyle(color: Colors.grey.shade300))),
+                      Expanded(
+                          child: Text(messages[index],
+                              style: TextStyle(color: Colors.grey.shade300))),
                     ],
                   ),
                 );
@@ -979,9 +1040,19 @@ class _HMMainDashboardState extends State<HMMainDashboard>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kPrimaryRed.withOpacity(0.4), width: 1),
       ),
-      child: ClipRect(
-        child: SingleChildScrollView(
-          child: TableCalendar(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Calendar',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: focusedDay,
@@ -992,10 +1063,11 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                 focusedDay = focusedDayValue;
               });
             },
-            calendarFormat: CalendarFormat.week, // Show only week view by default
+            calendarFormat:
+                CalendarFormat.month, // Changed to month view by default
             availableCalendarFormats: const {
-              CalendarFormat.week: 'Week',
               CalendarFormat.month: 'Month',
+              CalendarFormat.week: 'Week',
             },
             headerStyle: HeaderStyle(
               formatButtonVisible: true,
@@ -1009,10 +1081,25 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                 color: Colors.white,
                 fontSize: 12,
               ),
+              titleTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              leftChevronIcon:
+                  const Icon(Icons.chevron_left, color: Colors.white, size: 20),
+              rightChevronIcon: const Icon(Icons.chevron_right,
+                  color: Colors.white, size: 20),
             ),
             daysOfWeekStyle: const DaysOfWeekStyle(
-              weekdayStyle: TextStyle(color: Colors.white70, fontSize: 12),
-              weekendStyle: TextStyle(color: Colors.white70, fontSize: 12),
+              weekdayStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600),
+              weekendStyle: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600),
             ),
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
@@ -1023,12 +1110,19 @@ class _HMMainDashboardState extends State<HMMainDashboard>
                 color: kPrimaryRed.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
-              defaultTextStyle: const TextStyle(color: Colors.white, fontSize: 12),
-              weekendTextStyle: const TextStyle(color: Colors.white70, fontSize: 12),
-              outsideTextStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+              defaultTextStyle:
+                  const TextStyle(color: Colors.white, fontSize: 12),
+              weekendTextStyle:
+                  const TextStyle(color: Colors.white70, fontSize: 12),
+              outsideTextStyle:
+                  const TextStyle(color: Colors.white38, fontSize: 12),
+              selectedTextStyle: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold),
+              todayTextStyle: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1045,7 +1139,8 @@ class _HMMainDashboardState extends State<HMMainDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Recent Activities",
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(

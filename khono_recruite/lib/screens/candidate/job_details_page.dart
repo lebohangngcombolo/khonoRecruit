@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
@@ -192,9 +191,9 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.6),
+                        Colors.black.withValues(alpha: 0.6),
                         Colors.transparent,
-                        Colors.black.withOpacity(0.3),
+                        Colors.black.withValues(alpha: 0.3),
                       ],
                     ),
                   ),
@@ -204,11 +203,11 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   left: 16,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -239,7 +238,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                       Text(
                         "${widget.job["company"] ?? ""} • ${widget.job["location"] ?? ""}",
                         style: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 18,
                         ),
                       ),
@@ -592,12 +591,12 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 25,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -614,7 +613,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -709,29 +708,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     );
   }
 
-  Widget _socialIcon(String assetPath, String url) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      child: InkWell(
-        onTap: () async {
-          final Uri uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            assetPath,
-            width: 20,
-            height: 20,
-            fit: BoxFit.contain,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
+  
 
   Widget _buildEnhancedFooter() {
     return Container(

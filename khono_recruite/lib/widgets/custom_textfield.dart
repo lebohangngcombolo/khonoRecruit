@@ -33,10 +33,10 @@ class CustomTextField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor ??
-            const Color.fromARGB(255, 147, 146, 146).withOpacity(0.1),
+            const Color.fromARGB(255, 147, 146, 146).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color.fromARGB(255, 236, 0, 0).withOpacity(0.3),
+          color: const Color.fromARGB(255, 236, 0, 0).withValues(alpha: 0.3),
         ),
       ),
       child: TextFormField(
@@ -53,12 +53,12 @@ class CustomTextField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: textColor?.withOpacity(0.7) ??
+            color: textColor?.withValues(alpha: 0.7) ??
                 const Color.fromARGB(179, 255, 3, 3),
           ),
           hintText: hintText.isNotEmpty ? hintText : null,
           hintStyle: TextStyle(
-            color: textColor?.withOpacity(0.5) ??
+            color: textColor?.withValues(alpha: 0.5) ??
                 const Color.fromARGB(137, 98, 98, 98),
           ),
           border: OutlineInputBorder(

@@ -241,24 +241,32 @@ class _AssessmentPageState extends State<AssessmentPage> {
                           color: Colors.red),
                     ),
                     const SizedBox(height: 12),
-                    Column(
-                      children: List.generate(options.length, (i) {
+                    SegmentedButton<String>(
+                      segments: List.generate(options.length, (i) {
                         final optionLabel = ["A", "B", "C", "D"][i];
                         final optionText = options[i];
-                        return RadioListTile<String>(
-                          title: Text(
+                        return ButtonSegment<String>(
+                          value: optionLabel,
+                          label: Text(
                             "$optionLabel. $optionText",
                             style: const TextStyle(color: Colors.black),
                           ),
-                          value: optionLabel,
-                          groupValue: answers[index],
-                          onChanged: (val) {
-                            setState(() {
-                              answers[index] = val!;
-                            });
-                          },
                         );
                       }),
+                      selected: {
+                        if (answers[index] != null) answers[index]!
+                      },
+                      onSelectionChanged: (Set<String> newSelection) {
+                        setState(() {
+                          if (newSelection.isEmpty) {
+                            answers.remove(index);
+                          } else {
+                            answers[index] = newSelection.first;
+                          }
+                        });
+                      },
+                      multiSelectionEnabled: false,
+                      emptySelectionAllowed: true,
                     ),
                   ],
                 ),

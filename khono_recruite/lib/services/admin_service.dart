@@ -53,46 +53,75 @@ class AdminService {
     final token = await AuthService.getAccessToken();
     final authHeaders = {...headers, 'Authorization': 'Bearer $token'};
 
-    // Fetch multiple analytics endpoints in sequence
-    final dashboardRes = await http.get(
-      Uri.parse('${ApiEndpoints.adminBase}/analytics/dashboard'),
-      headers: authHeaders,
-    );
-    final usersGrowthRes = await http.get(
-      Uri.parse('${ApiEndpoints.adminBase}/analytics/users-growth'),
-      headers: authHeaders,
-    );
-    final appsAnalysisRes = await http.get(
-      Uri.parse('${ApiEndpoints.adminBase}/analytics/applications-analysis'),
-      headers: authHeaders,
-    );
-    final interviewsAnalysisRes = await http.get(
-      Uri.parse('${ApiEndpoints.adminBase}/analytics/interviews-analysis'),
-      headers: authHeaders,
-    );
-    final assessmentsAnalysisRes = await http.get(
-      Uri.parse('${ApiEndpoints.adminBase}/analytics/assessments-analysis'),
-      headers: authHeaders,
-    );
-
-    if ([dashboardRes, usersGrowthRes, appsAnalysisRes, interviewsAnalysisRes, assessmentsAnalysisRes]
-        .any((r) => r.statusCode != 200)) {
-      throw Exception('Failed to fetch analytics data');
+    // Map time range to days for users-growth endpoint
+    int days = 30;
+    switch (timeRange) {
+      case '1m':
+        days = 30;
+        break;
+      case '3m':
+        days = 90;
+        break;
+      case '6m':
+        days = 180;
+        break;
+      case '1y':
+        days = 365;
+        break;
+      default:
+        days = 30;
     }
 
-    final dashboard = json.decode(dashboardRes.body) as Map<String, dynamic>;
-    final usersGrowth = json.decode(usersGrowthRes.body) as Map<String, dynamic>;
-    final appsAnalysis = json.decode(appsAnalysisRes.body) as Map<String, dynamic>;
-    final interviewsAnalysis = json.decode(interviewsAnalysisRes.body) as Map<String, dynamic>;
-    final assessmentsAnalysis = json.decode(assessmentsAnalysisRes.body) as Map<String, dynamic>;
+    // Fetch multiple analytics endpoints in parallel
+    final responses = await Future.wait([
+      http.get(
+        Uri.parse('${ApiEndpoints.adminBase}/analytics/dashboard'),
+        headers: authHeaders,
+      ),
+      http.get(
+        Uri.parse('${ApiEndpoints.adminBase}/analytics/users-growth?days=$days'),
+        headers: authHeaders,
+      ),
+      http.get(
+        Uri.parse('${ApiEndpoints.adminBase}/analytics/applications-analysis'),
+        headers: authHeaders,
+      ),
+      http.get(
+        Uri.parse('${ApiEndpoints.adminBase}/analytics/interviews-analysis'),
+        headers: authHeaders,
+      ),
+      http.get(
+        Uri.parse('${ApiEndpoints.adminBase}/analytics/assessments-analysis'),
+        headers: authHeaders,
+      ),
+    ]);
+
+    // Check for errors
+    if (responses.any((r) => r.statusCode != 200)) {
+      final failedIndex = responses.indexWhere((r) => r.statusCode != 200);
+      throw Exception('Failed to fetch analytics data from endpoint $failedIndex: ${responses[failedIndex].body}');
+    }
+
+    // Parse responses
+    final dashboard = json.decode(responses[0].body) as Map<String, dynamic>;
+    final usersGrowth = json.decode(responses[1].body) as Map<String, dynamic>;
+    final appsAnalysis = json.decode(responses[2].body) as Map<String, dynamic>;
+    final interviewsAnalysis = json.decode(responses[3].body) as Map<String, dynamic>;
+    final assessmentsAnalysis = json.decode(responses[4].body) as Map<String, dynamic>;
+
+    // Calculate interviewed count from monthly interviews
+    final interviewedCount = (interviewsAnalysis['monthly_interviews'] is List)
+        ? (interviewsAnalysis['monthly_interviews'] as List)
+            .fold<int>(0, (sum, e) => sum + ((e['count'] ?? 0) as int))
+        : 0;
 
     // Map to HMAnalyticsPage expected structure
     final summary = {
-      'total_hires': (dashboard['application_status_breakdown'] ?? const {})['hired'] ?? 0,
-      'avg_time_to_fill': 0, // not available from API
-      'cost_per_hire': 0, // not available
-      'quality_score': ((dashboard['average_scores'] ?? const {})['assessment_score'] ?? 0).toString(),
       'total_applications': dashboard['total_applications'] ?? 0,
+      'total_hires': (dashboard['application_status_breakdown'] ?? const {})['hired'] ?? 0,
+      'avg_time_to_fill': 0, // Placeholder until backend supports
+      'cost_per_hire': 0, // Placeholder until backend supports
+      'quality_score': (dashboard['average_scores']?['assessment_score'] ?? 0).toStringAsFixed(1),
     };
 
     final statusBreakdown = Map<String, dynamic>.from(
@@ -100,21 +129,58 @@ class AdminService {
     );
 
     final timeline = List<Map<String, dynamic>>.from(
-      (usersGrowth['user_growth'] ?? const []),
+      usersGrowth['user_growth'] ?? const [],
     );
 
     final topJobs = List<Map<String, dynamic>>.from(
-      (appsAnalysis['applications_by_requisition'] ?? const []),
+      appsAnalysis['applications_by_requisition'] ?? const [],
     );
 
     final conversionFunnel = {
       'applied': dashboard['total_applications'] ?? 0,
-      'shortlisted': 0, // not available directly
-      'interviewed': (interviewsAnalysis['monthly_interviews'] is List)
-          ? (interviewsAnalysis['monthly_interviews'] as List).fold<int>(0, (sum, e) => sum + ((e['count'] ?? 0) as int))
-          : 0,
+      'shortlisted': 0, // Placeholder until backend supports
+      'interviewed': interviewedCount,
       'hired': summary['total_hires'] ?? 0,
     };
+
+    // New data mappings for additional charts
+    final monthlyApplications = List<Map<String, dynamic>>.from(
+      appsAnalysis['monthly_applications'] ?? const [],
+    );
+
+    final cvScoreDistribution = List<Map<String, dynamic>>.from(
+      appsAnalysis['cv_score_distribution'] ?? const [],
+    );
+
+    // Convert interview status breakdown from list to map
+    final interviewStatusList = interviewsAnalysis['interview_status_breakdown'] ?? [];
+    final interviewStatusBreakdown = <String, dynamic>{};
+    if (interviewStatusList is List) {
+      for (var item in interviewStatusList) {
+        if (item is Map && item.containsKey('status') && item.containsKey('count')) {
+          interviewStatusBreakdown[item['status'].toString()] = item['count'];
+        }
+      }
+    }
+
+    // Convert interviews by type from list to map
+    final interviewsByTypeList = interviewsAnalysis['interviews_by_type'] ?? [];
+    final interviewsByType = <String, dynamic>{};
+    if (interviewsByTypeList is List) {
+      for (var item in interviewsByTypeList) {
+        if (item is Map && item.containsKey('type') && item.containsKey('count')) {
+          interviewsByType[item['type'].toString()] = item['count'];
+        }
+      }
+    }
+
+    final assessmentScoreDistribution = List<Map<String, dynamic>>.from(
+      assessmentsAnalysis['assessment_score_distribution'] ?? const [],
+    );
+
+    final averageScoresByRequisition = List<Map<String, dynamic>>.from(
+      assessmentsAnalysis['average_scores_by_requisition'] ?? const [],
+    );
 
     return {
       'summary': summary,
@@ -122,7 +188,12 @@ class AdminService {
       'timeline': timeline,
       'top_jobs': topJobs,
       'conversion_funnel': conversionFunnel,
-      'assessments': assessmentsAnalysis,
+      'monthly_applications': monthlyApplications,
+      'cv_score_distribution': cvScoreDistribution,
+      'interview_status_breakdown': interviewStatusBreakdown,
+      'interviews_by_type': interviewsByType,
+      'assessment_score_distribution': assessmentScoreDistribution,
+      'average_scores_by_requisition': averageScoresByRequisition,
     };
   }
 

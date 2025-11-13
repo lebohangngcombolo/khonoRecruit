@@ -83,19 +83,7 @@ class _SixDigitCodeFieldState extends State<SixDigitCodeField> {
     }
   }
 
-  void _handlePaste(String pastedText) {
-    final digits = pastedText.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length >= 6) {
-      for (int i = 0; i < 6; i++) {
-        _controllers[i].text = digits[i];
-        _code[i] = digits[i];
-      }
-      final code = digits.substring(0, 6);
-      widget.onCodeChanged(code);
-      widget.onCodeCompleted(code);
-      _focusNodes[5].requestFocus();
-    }
-  }
+  
 
   Widget _buildDigitBox(int index) {
     return Container(
@@ -107,14 +95,14 @@ class _SixDigitCodeFieldState extends State<SixDigitCodeField> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _focusNodes[index].hasFocus
-              ? Colors.white.withOpacity(0.8)
-              : Colors.white.withOpacity(0.3),
+              ? Colors.white.withValues(alpha: 0.8)
+              : Colors.white.withValues(alpha: 0.3),
           width: _focusNodes[index].hasFocus ? 2 : 1,
         ),
         boxShadow: [
           if (_focusNodes[index].hasFocus)
             BoxShadow(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               blurRadius: 8,
               spreadRadius: 1,
             ),

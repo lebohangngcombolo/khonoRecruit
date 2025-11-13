@@ -169,7 +169,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
             backgroundColor: (themeProvider.isDarkMode
                     ? const Color(0xFF14131E)
                     : Colors.white)
-                .withOpacity(0.9),
+                .withValues(alpha: 0.9),
             elevation: 0,
             foregroundColor:
                 themeProvider.isDarkMode ? Colors.white : Colors.black87,
@@ -245,11 +245,11 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                             color: (themeProvider.isDarkMode
                                     ? const Color(0xFF14131E)
                                     : Colors.white)
-                                .withOpacity(0.9),
+                                .withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -260,7 +260,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: redColor.withOpacity(0.1),
+                                  color: redColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -336,11 +336,11 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                     color: (themeProvider.isDarkMode
                                             ? const Color(0xFF14131E)
                                             : Colors.white)
-                                        .withOpacity(0.9),
+                                        .withValues(alpha: 0.9),
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
+                                        color: Colors.black.withValues(alpha: 0.08),
                                         blurRadius: 15,
                                         offset: const Offset(0, 6),
                                       ),
@@ -348,7 +348,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                     border: Border.all(
                                       color: themeProvider.isDarkMode
                                           ? Colors.grey.shade800
-                                          : Colors.grey.withOpacity(0.1),
+                                          : Colors.grey.withValues(alpha: 0.1),
                                     ),
                                   ),
                                   child: Column(
@@ -359,7 +359,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(20),
                                         decoration: BoxDecoration(
-                                          color: statusColor.withOpacity(0.1),
+                                          color: statusColor.withValues(alpha: 0.1),
                                           borderRadius: const BorderRadius.only(
                                             topLeft: Radius.circular(20),
                                             topRight: Radius.circular(20),
@@ -374,7 +374,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                       vertical: 6),
                                               decoration: BoxDecoration(
                                                 color: statusColor
-                                                    .withOpacity(0.2),
+                                                    .withValues(alpha: 0.2),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                               ),
@@ -422,11 +422,11 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                   height: 60,
                                                   decoration: BoxDecoration(
                                                     color: redColor
-                                                        .withOpacity(0.1),
+                                                        .withValues(alpha: 0.1),
                                                     shape: BoxShape.circle,
                                                     border: Border.all(
                                                       color: redColor
-                                                          .withOpacity(0.2),
+                                                          .withValues(alpha: 0.2),
                                                       width: 2,
                                                     ),
                                                   ),
@@ -447,8 +447,8 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                               Icons.person,
                                                               size: 30,
                                                               color: redColor
-                                                                  .withOpacity(
-                                                                      0.6),
+                                                                  .withValues(
+                                                                      alpha: 0.6),
                                                             ),
                                                 ),
                                                 Positioned(
@@ -524,8 +524,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                               BoxShadow(
                                                                 color: Colors
                                                                     .red
-                                                                    .withOpacity(
-                                                                        0.3),
+                                                                    .withValues(alpha: 0.3),
                                                                 blurRadius: 8,
                                                                 offset:
                                                                     const Offset(
@@ -587,8 +586,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                                                             boxShadow: [
                                                               BoxShadow(
                                                                 color: redColor
-                                                                    .withOpacity(
-                                                                        0.3),
+                                                                    .withValues(alpha: 0.3),
                                                                 blurRadius: 8,
                                                                 offset:
                                                                     const Offset(

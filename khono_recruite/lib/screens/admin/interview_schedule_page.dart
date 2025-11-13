@@ -144,7 +144,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
             backgroundColor: (themeProvider.isDarkMode
                     ? const Color(0xFF14131E)
                     : Colors.white)
-                .withOpacity(0.9),
+                .withValues(alpha: 0.9),
             elevation: 0,
             foregroundColor:
                 themeProvider.isDarkMode ? Colors.white : Colors.black87,
@@ -167,11 +167,11 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                       color: (themeProvider.isDarkMode
                               ? const Color(0xFF14131E)
                               : Colors.white)
-                          .withOpacity(0.9),
+                          .withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -182,7 +182,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: primaryRed.withOpacity(0.1),
+                            color: primaryRed.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -233,7 +233,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                         color: (message.startsWith("Error")
                                 ? Colors.red.shade50
                                 : Colors.green.shade50)
-                            .withOpacity(0.9),
+                            .withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: message.startsWith("Error")
@@ -279,11 +279,11 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                               color: (themeProvider.isDarkMode
                                       ? const Color(0xFF14131E)
                                       : Colors.white)
-                                  .withOpacity(0.9),
+                                  .withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 15,
                                   offset: const Offset(0, 6),
                                 ),
@@ -314,7 +314,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 DropdownButtonFormField<String>(
-                                  value: selectedApplication,
+                                  initialValue: selectedApplication,
                                   decoration: InputDecoration(
                                     labelText: "Select Job Application",
                                     border: OutlineInputBorder(
@@ -340,7 +340,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                     fillColor: (themeProvider.isDarkMode
                                             ? const Color(0xFF14131E)
                                             : Colors.grey.shade50)
-                                        .withOpacity(0.9),
+                                        .withValues(alpha: 0.9),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -379,7 +379,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                   dropdownColor: (themeProvider.isDarkMode
                                           ? const Color(0xFF14131E)
                                           : Colors.white)
-                                      .withOpacity(0.95),
+                                      .withValues(alpha: 0.95),
                                 ),
                               ],
                             ),
@@ -393,11 +393,11 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                               color: (themeProvider.isDarkMode
                                       ? const Color(0xFF14131E)
                                       : Colors.white)
-                                  .withOpacity(0.9),
+                                  .withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 15,
                                   offset: const Offset(0, 6),
                                 ),
@@ -439,7 +439,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                         color: (themeProvider.isDarkMode
                                                 ? const Color(0xFF14131E)
                                                 : Colors.grey.shade50)
-                                            .withOpacity(0.9),
+                                            .withValues(alpha: 0.9),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: themeProvider.isDarkMode
@@ -494,11 +494,11 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                               color: (themeProvider.isDarkMode
                                       ? const Color(0xFF14131E)
                                       : Colors.white)
-                                  .withOpacity(0.9),
+                                  .withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 15,
                                   offset: const Offset(0, 6),
                                 ),
@@ -529,7 +529,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                 ),
                                 const SizedBox(height: 16),
                                 DropdownButtonFormField<String>(
-                                  value: interviewType,
+                                  initialValue: interviewType,
                                   decoration: InputDecoration(
                                     labelText: "Interview Type",
                                     border: OutlineInputBorder(
@@ -555,7 +555,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                     fillColor: (themeProvider.isDarkMode
                                             ? const Color(0xFF14131E)
                                             : Colors.grey.shade50)
-                                        .withOpacity(0.9),
+                                        .withValues(alpha: 0.9),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -589,7 +589,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                   dropdownColor: (themeProvider.isDarkMode
                                           ? const Color(0xFF14131E)
                                           : Colors.white)
-                                      .withOpacity(0.95),
+                                      .withValues(alpha: 0.95),
                                 ),
                                 const SizedBox(height: 16),
                                 if (interviewType == "Online")
@@ -620,7 +620,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                                       fillColor: (themeProvider.isDarkMode
                                               ? const Color(0xFF14131E)
                                               : Colors.grey.shade50)
-                                          .withOpacity(0.9),
+                                          .withValues(alpha: 0.9),
                                       contentPadding:
                                           const EdgeInsets.symmetric(
                                         horizontal: 16,
@@ -649,7 +649,7 @@ class _ScheduleInterviewPageState extends State<ScheduleInterviewPage> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: primaryRed.withOpacity(0.3),
+                                  color: primaryRed.withValues(alpha: 0.3),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
                                 ),

@@ -9,7 +9,6 @@ class OAuthCallbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = Uri.base;
     final accessToken = uri.queryParameters['access_token'];
-    final refreshToken = uri.queryParameters['refresh_token'];
     final role = uri.queryParameters['role'];
     final dashboard = uri.queryParameters['dashboard'] ?? '';
 

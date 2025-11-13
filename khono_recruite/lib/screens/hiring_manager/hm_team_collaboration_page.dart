@@ -253,25 +253,43 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Team Members',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: Colors.black54,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 240,
-              child: ListView.builder(
-                itemCount: _teamMembers.length,
-                itemBuilder: (context, index) {
-                  final member = _teamMembers[index];
-                  return _buildTeamMemberCard(member);
-                },
-              ),
+              height: 200,
+              child: _teamMembers.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No team members found',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _teamMembers.length,
+                      itemBuilder: (context, index) {
+                        final member = _teamMembers[index];
+                        return _buildTeamMemberCard(member);
+                      },
+                    ),
             ),
           ],
         ),
@@ -314,13 +332,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   member.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: Colors.white,
                   ),
                 ),
                 Text(
                   member.role,
                   style: const TextStyle(
-                    color: AppColors.textGrey,
+                    color: Colors.white70,
                     fontSize: 12,
                   ),
                 ),
@@ -351,12 +369,19 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           children: [
             Row(
               children: [
-                const Text(
+                Text(
                   'Shared Notes',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
@@ -372,7 +397,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   ? const Center(
                       child: Text(
                         'No shared notes yet',
-                        style: TextStyle(color: AppColors.textGrey),
+                        style: TextStyle(color: Colors.white70),
                       ),
                     )
                   : ListView.builder(
@@ -410,14 +435,14 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 note.title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 note.content,
                 style: const TextStyle(
-                  color: AppColors.textGrey,
+                  color: Colors.white70,
                   fontSize: 12,
                 ),
                 maxLines: 2,
@@ -429,7 +454,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   Text(
                     'By ${note.author}',
                     style: const TextStyle(
-                      color: AppColors.textGrey,
+                      color: Colors.white60,
                       fontSize: 10,
                     ),
                   ),
@@ -437,7 +462,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   Text(
                     _formatTimeAgo(note.lastModified),
                     style: const TextStyle(
-                      color: AppColors.textGrey,
+                      color: Colors.white60,
                       fontSize: 10,
                     ),
                   ),
@@ -461,12 +486,19 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
             // Chat Header
             Row(
               children: [
-                const Text(
+                Text(
                   'Team Chat',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
@@ -576,7 +608,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                       message.author,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
+                        color: Colors.white,
                         fontSize: 12,
                       ),
                     ),
@@ -585,7 +617,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   Text(
                     _formatTimeAgo(message.timestamp),
                     style: const TextStyle(
-                      color: AppColors.textGrey,
+                      color: Colors.white60,
                       fontSize: 10,
                     ),
                   ),
@@ -824,7 +856,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     if (matches.isEmpty) {
       return Text(
         content,
-        style: const TextStyle(color: AppColors.textDark),
+        style: const TextStyle(color: Colors.white),
       );
     }
     
@@ -836,7 +868,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       if (match.start > currentIndex) {
         spans.add(TextSpan(
           text: content.substring(currentIndex, match.start),
-          style: const TextStyle(color: AppColors.textDark),
+          style: const TextStyle(color: Colors.white),
         ));
       }
       
@@ -857,7 +889,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     if (currentIndex < content.length) {
       spans.add(TextSpan(
         text: content.substring(currentIndex),
-        style: const TextStyle(color: AppColors.textDark),
+        style: const TextStyle(color: Colors.white),
       ));
     }
     

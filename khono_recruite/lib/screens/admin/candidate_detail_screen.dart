@@ -1,4 +1,3 @@
-import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -6,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'interview_schedule_page.dart';
@@ -130,12 +130,10 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
       }
 
       if (kIsWeb) {
-        final anchor = html.AnchorElement(href: cvUrl)
-          ..setAttribute("download", "cv_$fullName.pdf")
-          ..click();
-
+        final uri = Uri.parse(cvUrl);
+        final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Download started")),
+          SnackBar(content: Text(ok ? "Opened CV in a new tab" : "Failed to open CV")),
         );
       } else {
         final dir = await getApplicationDocumentsDirectory();
@@ -178,7 +176,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(candidateData?['full_name'] ?? "Candidate Details"),
-            backgroundColor: Colors.black87.withOpacity(0.8),
+            backgroundColor: Colors.black87.withValues(alpha: 0.8),
             elevation: 0,
           ),
           body: loading
@@ -377,7 +375,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
             color: (themeProvider.isDarkMode
                     ? const Color(0xFF14131E)
                     : Colors.white)
-                .withOpacity(0.9),
+                .withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
                 color: themeProvider.isDarkMode ? Colors.white24 : Colors.white,
@@ -474,7 +472,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
     return Drawer(
       backgroundColor:
           (themeProvider.isDarkMode ? const Color(0xFF14131E) : Colors.white)
-              .withOpacity(0.9),
+              .withValues(alpha: 0.9),
       child: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,

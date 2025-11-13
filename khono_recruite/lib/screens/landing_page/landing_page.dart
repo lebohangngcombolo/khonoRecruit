@@ -45,22 +45,31 @@ class LandingPage extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Image.asset(
-                            'assets/images/logo2.png',
-                            width: 320,
-                            height: 120,
-                            fit: BoxFit.contain,
+                          Flexible(
+                            child: Image.asset(
+                              'assets/images/logo2.png',
+                              width: 320,
+                              height: 120,
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                          Row(
-                            children: [
-                              _navItem("Khonology"),
-                              _navItem("Interview Mock up"),
-                              _navItem("Resume Generator"),
-                              _navItem("IPQ"),
-                              _navItem("Join Us"),
-                              _navItem("About Us"),
-                              _navItem("Contact"),
-                            ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  _navItem("Khonology"),
+                                  _navItem("Interview Mock up"),
+                                  _navItem("Resume Generator"),
+                                  _navItem("IPQ"),
+                                  _navItem("Join Us"),
+                                  _navItem("About Us"),
+                                  _navItem("Contact"),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -215,6 +224,14 @@ class LandingPage extends StatelessWidget {
                             width: photoWidth,
                             height: photoWidth,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: photoWidth,
+                                height: photoWidth,
+                                color: Colors.grey.shade800,
+                                child: Icon(Icons.person, color: Colors.grey.shade600, size: 40),
+                              );
+                            },
                           ),
                         );
                       }),
@@ -471,11 +488,17 @@ class LandingPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 80),
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(backgroundImage),
-          fit: BoxFit.cover,
-          opacity: 0.1,
-        ),
+        image: backgroundImage.isNotEmpty
+            ? DecorationImage(
+                image: AssetImage(backgroundImage),
+                fit: BoxFit.cover,
+                opacity: 0.1,
+                onError: (error, stackTrace) {
+                  // Log error but don't crash
+                  debugPrint('Failed to load background image: $error');
+                },
+              )
+            : null,
         gradient: const LinearGradient(
           colors: [Color(0xFF111111), Color(0xFF0D0D0D)],
           begin: Alignment.topCenter,

@@ -4,6 +4,8 @@ import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import '../../utils/api_endpoints.dart';
+import '../../constants/app_colors.dart';
+import '../../widgets/widgets1/glass_card.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -221,36 +223,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             },
                             child: Container(
                               margin: const EdgeInsets.symmetric(vertical: 8),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.grey[300]!),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    n['title'] ?? "Notification",
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                              child: GlassCard(
+                                blur: 8,
+                                opacity: 0.1,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primaryRed.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.notifications_active,
+                                            color: AppColors.primaryRed,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            n['title'] ?? "Notification",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    n['message'] ?? "",
-                                    style: const TextStyle(
-                                        color: Colors.black87, fontSize: 14),
-                                  ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      n['message'] ?? "",
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 14),
+                                    ),
                                   const SizedBox(height: 8),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -259,13 +270,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         Text(
                                           "${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')} "
                                           "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}",
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                          style: const TextStyle(fontSize: 12, color: Colors.white60),
                                         ),
                                       Row(
                                         children: [
                                           if (!(n['is_read'] == true))
                                             TextButton(
                                               onPressed: () => _markAsRead(n['id'] as int),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: AppColors.primaryRed,
+                                              ),
                                               child: const Text('Mark as read'),
                                             ),
                                           Container(
@@ -274,15 +288,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: (n['is_read'] == true)
-                                                  ? Colors.green
-                                                  : Colors.red,
+                                                  ? AppColors.statusSuccess
+                                                  : AppColors.primaryRed,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ],
                                   ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'screens/auth/login_screen.dart';
 import 'screens/candidate/candidate_dashboard.dart';
@@ -14,8 +16,14 @@ import 'screens/auth/oath_callback_screen.dart';
 
 import 'providers/theme_provider.dart';
 import 'utils/theme_utils.dart';
+import 'services/auth_service.dart';
 
 void main() {
+  // Configure URL strategy for Flutter web to use path-based URLs (no #)
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+  
   runApp(
     MultiProvider(
       providers: [
@@ -26,9 +34,47 @@ void main() {
   );
 }
 
-// ✅ Move router outside build so it doesn’t rebuild every theme toggle
+// ✅ Move router outside build so it doesn't rebuild every theme toggle
 final GoRouter _router = GoRouter(
   initialLocation: '/',
+  redirect: (context, state) async {
+    // Check if user is authenticated by checking for stored token
+    final token = await AuthService.getAccessToken();
+    final isAuthenticated = token != null && token.isNotEmpty;
+    
+    // List of public routes that don't require authentication
+    final publicRoutes = ['/', '/login', '/reset-password', '/oauth-callback'];
+    final isPublicRoute = publicRoutes.contains(state.matchedLocation);
+    
+    // If user is authenticated and trying to access public routes, 
+    // redirect to their dashboard based on stored user info
+    if (isAuthenticated && isPublicRoute) {
+      final userInfo = await AuthService.getUserInfo();
+      if (userInfo != null) {
+        final role = userInfo['role'];
+        if (role == 'admin') {
+          return '/admin-dashboard';
+        } else if (role == 'hiring_manager') {
+          return '/hiring-manager-dashboard';
+        } else if (role == 'candidate') {
+          final enrollmentCompleted = userInfo['enrollment_completed'] ?? false;
+          if (!enrollmentCompleted) {
+            return '/enrollment';
+          }
+          return '/candidate-dashboard';
+        }
+      }
+    }
+    
+    // If user is not authenticated and trying to access protected routes,
+    // redirect to login
+    if (!isAuthenticated && !isPublicRoute) {
+      return '/login';
+    }
+    
+    // Allow navigation to the requested route
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',
@@ -48,6 +94,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/candidate-dashboard',
       builder: (context, state) {
+        // Get token from query params, widget will fetch stored token if needed
         final token = state.uri.queryParameters['token'] ?? '';
         return CandidateDashboard(token: token);
       },
@@ -55,6 +102,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/enrollment',
       builder: (context, state) {
+        // Get token from query params, widget will fetch stored token if needed
         final token = state.uri.queryParameters['token'] ?? '';
         return EnrollmentScreen(token: token);
       },
@@ -62,6 +110,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/admin-dashboard',
       builder: (context, state) {
+        // Get token from query params, widget will fetch stored token if needed
         final token = state.uri.queryParameters['token'] ?? '';
         return AdminDAshboard(token: token);
       },
@@ -73,6 +122,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/profile',
       builder: (context, state) {
+        // Get token from query params, widget will fetch stored token if needed
         final token = state.uri.queryParameters['token'] ?? '';
         return ProfilePage(token: token);
       },

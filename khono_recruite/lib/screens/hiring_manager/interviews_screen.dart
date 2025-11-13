@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/admin_service.dart';
-import '../../widgets/custom_button.dart';
+import '../../constants/app_colors.dart';
+import '../../widgets/widgets1/glass_card.dart';
 import 'interview_schedule_page.dart';
 
 class InterviewsScreen extends StatefulWidget {
@@ -36,7 +37,8 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
         interviewType: filterType,
       );
       setState(() {
-        interviews = List<Map<String, dynamic>>.from(response['interviews'] ?? []);
+        interviews =
+            List<Map<String, dynamic>>.from(response['interviews'] ?? []);
         currentPage = response['page'] ?? 1;
         totalPages = response['pages'] ?? 1;
         totalInterviews = response['total'] ?? 0;
@@ -82,11 +84,11 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
   Color _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'scheduled':
-        return Colors.blue;
+        return AppColors.statusInfo;
       case 'completed':
-        return Colors.green;
+        return AppColors.statusSuccess;
       case 'cancelled':
-        return Colors.red;
+        return AppColors.statusError;
       default:
         return Colors.grey;
     }
@@ -123,7 +125,8 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
               itemCount: candidates.length,
               itemBuilder: (context, index) {
                 final candidate = candidates[index];
-                final name = candidate['full_name'] ?? candidate['name'] ?? 'Unknown';
+                final name =
+                    candidate['full_name'] ?? candidate['name'] ?? 'Unknown';
                 final email = candidate['email'] ?? '';
                 return ListTile(
                   leading: CircleAvatar(
@@ -169,35 +172,82 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
     final candidateName = interview['candidate_name'] ?? 'Unknown Candidate';
     final jobTitle = interview['job_title'] ?? 'N/A';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getStatusColor(status).withOpacity(0.2),
-          child: Icon(_getStatusIcon(status), color: _getStatusColor(status)),
-        ),
-        title: Text(
-          candidateName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Job: $jobTitle"),
-            Text("Date: ${_formatDateTime(scheduledTime)}"),
-            Text(
-              "Status: ${_capitalize(status)}",
-              style: TextStyle(
-                color: _getStatusColor(status),
-                fontWeight: FontWeight.w600,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+      child: GlassCard(
+        blur: 8,
+        opacity: 0.1,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getStatusIcon(status),
+                  color: _getStatusColor(status),
+                  size: 28,
+                ),
               ),
-            ),
-          ],
-        ),
-        isThreeLine: true,
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          onPressed: () => _confirmCancelInterview(interview['id']),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      candidateName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Job: $jobTitle",
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Date: ${_formatDateTime(scheduledTime)}",
+                      style:
+                          const TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(status).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getStatusColor(status).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Text(
+                        _capitalize(status),
+                        style: TextStyle(
+                          color: _getStatusColor(status),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline, color: AppColors.statusError),
+                onPressed: () => _confirmCancelInterview(interview['id']),
+                tooltip: 'Cancel Interview',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -219,7 +269,8 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
               Navigator.pop(context);
               cancelInterview(interviewId);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.statusError),
             child: const Text('Yes, Cancel'),
           ),
         ],
@@ -283,7 +334,7 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
             icon: const Icon(Icons.add),
             label: const Text('Schedule Interview'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: AppColors.primaryRed,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -322,7 +373,7 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
                 icon: const Icon(Icons.add_circle_outline),
                 label: const Text("Schedule Interview"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: AppColors.primaryRed,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: _showCandidateSelection,
@@ -333,12 +384,14 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
           Expanded(
             child: loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Colors.redAccent))
+                    child:
+                        CircularProgressIndicator(color: AppColors.primaryRed))
                 : interviews.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
                         itemCount: interviews.length,
-                        itemBuilder: (_, index) => _buildInterviewItem(interviews[index]),
+                        itemBuilder: (_, index) =>
+                            _buildInterviewItem(interviews[index]),
                       ),
           ),
           _buildPaginationControls(),

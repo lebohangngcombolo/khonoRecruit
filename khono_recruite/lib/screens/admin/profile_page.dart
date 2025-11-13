@@ -331,7 +331,7 @@ class _ProfilePageState extends State<ProfilePage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -344,7 +344,7 @@ class _ProfilePageState extends State<ProfilePage>
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: headerColor ?? Colors.redAccent.withOpacity(0.1),
+              color: headerColor ?? Colors.redAccent.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -419,7 +419,7 @@ class _ProfilePageState extends State<ProfilePage>
                     : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(2, 0),
                   ),
@@ -519,7 +519,7 @@ class _ProfilePageState extends State<ProfilePage>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
         color:
-            isSelected ? Colors.redAccent.withOpacity(0.1) : Colors.transparent,
+            isSelected ? Colors.redAccent.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () {
@@ -594,17 +594,6 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildProfileSummary() {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    Future<void> _launchUrl(String url) async {
-      final uri = Uri.tryParse(url) ?? Uri();
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not launch URL")),
-        );
-      }
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -624,7 +613,7 @@ class _ProfilePageState extends State<ProfilePage>
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                       ),
                     ],
@@ -648,7 +637,7 @@ class _ProfilePageState extends State<ProfilePage>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color: Colors.redAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -710,7 +699,7 @@ class _ProfilePageState extends State<ProfilePage>
                 ],
               ],
             ),
-            headerColor: Colors.blue.withOpacity(0.1),
+            headerColor: Colors.blue.withValues(alpha: 0.1),
           ),
 
           // Education & Skills Card
@@ -748,7 +737,7 @@ class _ProfilePageState extends State<ProfilePage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withOpacity(0.1),
+                          color: Colors.redAccent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
@@ -765,7 +754,7 @@ class _ProfilePageState extends State<ProfilePage>
                 ],
               ],
             ),
-            headerColor: Colors.green.withOpacity(0.1),
+            headerColor: Colors.green.withValues(alpha: 0.1),
           ),
 
           // Online Profiles Card
@@ -787,7 +776,7 @@ class _ProfilePageState extends State<ProfilePage>
                         "Portfolio", portfolioController.text, Icons.public),
                 ],
               ),
-              headerColor: Colors.purple.withOpacity(0.1),
+              headerColor: Colors.purple.withValues(alpha: 0.1),
             ),
         ],
       ),
@@ -1176,7 +1165,7 @@ class _ProfilePageState extends State<ProfilePage>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.1),
+              color: Colors.redAccent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: Colors.redAccent, size: 20),
@@ -1211,7 +1200,7 @@ class _ProfilePageState extends State<ProfilePage>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.redAccent,
+            activeThumbColor: Colors.redAccent,
           ),
         ],
       ),
@@ -1247,7 +1236,7 @@ class _ProfilePageState extends State<ProfilePage>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.security, color: Colors.orange),
