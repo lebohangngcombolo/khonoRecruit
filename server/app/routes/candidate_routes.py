@@ -574,3 +574,24 @@ def get_settings():
         "success": True,
         "data": user.settings or {}
     }), 200
+
+# ----------------- GET NOTIFICATIONS -----------------
+@candidate_bp.route("/notifications", methods=["GET"])
+@role_required(["candidate"])
+def get_notifications():
+    try:
+        user_id = get_jwt_identity()
+        notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+        result = []
+        for n in notifs:
+            item = {
+                "id": getattr(n, "id", None),
+                "message": getattr(n, "message", ""),
+                "read": getattr(n, "read", False),
+                "created_at": getattr(n, "created_at", None).isoformat() if getattr(n, "created_at", None) else None,
+            }
+            result.append(item)
+        return jsonify(result), 200
+    except Exception as e:
+        current_app.logger.error(f"Get notifications error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
