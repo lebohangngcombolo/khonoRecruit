@@ -12,6 +12,7 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Color? backgroundColor; // new
   final Color? textColor; // new
+  final Color? borderColor;
   final bool obscureText;
 
   const CustomTextField({
@@ -26,6 +27,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.backgroundColor,
     this.textColor,
+    this.borderColor,
     this.obscureText = false,
   });
 
@@ -37,7 +39,7 @@ class CustomTextField extends StatelessWidget {
             const Color.fromARGB(255, 147, 146, 146).withAlpha((255 * 0.1).round()), // Use withAlpha
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color.fromARGB(255, 236, 0, 0).withAlpha((255 * 0.3).round()), // Use withAlpha
+          color: borderColor ?? const Color.fromARGB(255, 236, 0, 0).withAlpha((255 * 0.3).round()), // Use withAlpha
         ),
       ),
       child: TextFormField(
@@ -61,6 +63,9 @@ class CustomTextField extends StatelessWidget {
           hintStyle: GoogleFonts.poppins(
             color: textColor?.withAlpha((255 * 0.5).round()) ?? Colors.white54, // Use withAlpha
           ),
+          filled: true,
+          fillColor: backgroundColor ??
+              const Color.fromARGB(255, 147, 146, 146).withAlpha((255 * 0.1).round()),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

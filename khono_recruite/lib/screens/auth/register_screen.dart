@@ -1,9 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
 import '../../providers/theme_provider.dart';
 import 'verification_screen.dart';
@@ -94,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/bg1.jpg"),
+                image: AssetImage("assets/images/Frame 1.jpg"),
                 fit: BoxFit.cover,
               ),
             ),
@@ -132,107 +131,102 @@ class _RegisterScreenState extends State<RegisterScreen>
                   scale: _scaleAnimation,
                   child: Container(
                     width: size.width > 800 ? 400 : size.width * 0.9,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 32),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
-                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 "GET STARTED",
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   fontSize: 32,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                        offset: Offset(2, 2))
-                                  ],
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              const Text(
+                              Text(
                                 "Register Account",
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(height: 24),
                               CustomTextField(
                                 label: "First Name",
                                 controller: firstNameController,
-                                textColor: const Color.fromARGB(255, 173, 0, 0),
-                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                borderColor: const Color(0xFFC10D00),
+                                textColor: Colors.white,
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
                                 label: "Last Name",
                                 controller: lastNameController,
-                                textColor: const Color.fromARGB(255, 168, 0, 0),
-                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                borderColor: const Color(0xFFC10D00),
+                                textColor: Colors.white,
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
                                 label: "Email",
                                 controller: emailController,
                                 inputType: TextInputType.emailAddress,
-                                textColor: const Color.fromARGB(255, 157, 0, 0),
-                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                borderColor: const Color(0xFFC10D00),
+                                textColor: Colors.white,
                               ),
                               const SizedBox(height: 12),
                               CustomTextField(
                                 label: "Password",
                                 controller: passwordController,
                                 inputType: TextInputType.visiblePassword,
-                                textColor: const Color.fromARGB(255, 154, 0, 0),
-                                backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                borderColor: const Color(0xFFC10D00),
+                                textColor: Colors.white,
                               ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: CustomButton(
-                                  text: "Register",
-                                  onPressed: register,
+                              const SizedBox(height: 14),
+                              FractionallySizedBox(
+                                widthFactor: 0.5,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: 35,
+                                  child: ElevatedButton(
+                                    onPressed: register,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFC10D00),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: const BorderSide(color: Color(0xFFC10D00), width: 2),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: Text(
+                                      "Register",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 24),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text("Already have an account? ",
-                                      style: TextStyle(color: Colors.white70)),
+                                  Text(
+                                    "Already have an account? ",
+                                    style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600),
+                                  ),
                                   GestureDetector(
                                     onTap: () {
                                       Navigator.pushReplacement(
@@ -242,9 +236,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                                                 const LoginScreen()),
                                       );
                                     },
-                                    child: const Text(
+                                    child: Text(
                                       "Login",
-                                      style: TextStyle(color: Colors.redAccent),
+                                      style: GoogleFonts.poppins(
+                                          color: Color(0xFFC10D00),
+                                          fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                 ],
@@ -264,12 +260,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                         ),
                       ),
-                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
           if (loading)
             const Center(child: CircularProgressIndicator(color: Colors.white)),

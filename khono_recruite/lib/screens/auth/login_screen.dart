@@ -1,9 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../hiring_manager/hiring_manager_dashboard.dart';
 
 import '../../services/auth_service.dart';
@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen>
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/bg1.jpg"),
+                image: AssetImage("assets/images/Frame 1.jpg"),
                 fit: BoxFit.cover,
               ),
             ),
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // Centered Glass Card
+          // Centered content (no glass card)
           Center(
             child: SingleChildScrollView(
               child: MouseRegion(
@@ -209,193 +209,155 @@ class _LoginScreenState extends State<LoginScreen>
                   scale: _scaleAnimation,
                   child: Container(
                     width: size.width > 800 ? 400 : size.width * 0.9,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 32),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
-                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          color: Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(height: 16),
-                              const Text(
-                                "WELCOME BACK",
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                        offset: Offset(2, 2))
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              const Text(
-                                "Login",
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                              ),
-                              const SizedBox(height: 24),
-                              CustomTextField(
-                                label: "Email",
-                                controller: emailController,
-                                inputType: TextInputType.emailAddress,
-                                backgroundColor:
-                                    const Color.fromARGB(0, 129, 128, 128)
-                                        .withAlpha((255 * 0.1).round()), // Use withAlpha
-                                textColor: const Color.fromARGB(255, 172, 0, 0),
-                              ),
-                              const SizedBox(height: 12),
-                              CustomTextField(
-                                label: "Password",
-                                controller: passwordController,
-                                obscureText: true,
-                                backgroundColor:
-                                    const Color.fromARGB(0, 123, 123, 123)
-                                        .withAlpha((255 * 0.1).round()), // Use withAlpha
-                                textColor: const Color.fromARGB(255, 201, 0, 0),
-                              ),
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const ForgotPasswordScreen()),
-                                  ),
-                                  child: const Text(
-                                    "Forgot Password?",
-                                    style: TextStyle(
-                                        color: Colors.blueAccent, fontSize: 14),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: _login,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Colors.white.withAlpha((255 * 0.8).round()), // Use withAlpha
-                                    foregroundColor: Colors.red,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20)),
-                                    elevation: 5,
-                                  ),
-                                  child: const Text(
-                                    "LOGIN",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: Divider(
-                                          color:
-                                              Colors.white.withAlpha((255 * 0.4).round()))), // Use withAlpha
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 16),
-                                    child: Text("Or login with",
-                                        style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 14)),
-                                  ),
-                                  Expanded(
-                                      child: Divider(
-                                          color:
-                                              Colors.white.withAlpha((255 * 0.4).round()))), // Use withAlpha
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                    icon: const FaIcon(FontAwesomeIcons.google,
-                                        color: Colors.white, size: 32),
-                                    onPressed: () => _socialLogin("Google"),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  IconButton(
-                                    icon: const FaIcon(FontAwesomeIcons.github,
-                                        color: Colors.white, size: 32),
-                                    onPressed: () => _socialLogin("GitHub"),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text("Don't have an account? ",
-                                      style: TextStyle(color: Colors.white70)),
-                                  GestureDetector(
-                                    onTap: () => Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const RegisterScreen()),
-                                    ),
-                                    child: const Text("Register",
-                                        style:
-                                            TextStyle(color: Colors.redAccent)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              IconButton(
-                                icon: Icon(
-                                    themeProvider.isDarkMode
-                                        ? Icons.light_mode
-                                        : Icons.dark_mode,
-                                    color: Colors.white),
-                                onPressed: () => themeProvider.toggleTheme(),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 16),
+                        Text(
+                          "WELCOME BACK",
+                          style: GoogleFonts.poppins(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                        Text(
+                          "Login",
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        CustomTextField(
+                          label: "Email",
+                          controller: emailController,
+                          inputType: TextInputType.emailAddress,
+                          backgroundColor: const Color(0xFF2A2A2A),
+                          borderColor: const Color(0xFFC10D00),
+                          textColor: Colors.white,
+                        ),
+                        const SizedBox(height: 12),
+                        CustomTextField(
+                          label: "Password",
+                          controller: passwordController,
+                          obscureText: true,
+                          backgroundColor: const Color(0xFF2A2A2A),
+                          borderColor: const Color(0xFFC10D00),
+                          textColor: Colors.white,
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordScreen()),
+                            ),
+                            child: Text(
+                              "Forgot Password?",
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        FractionallySizedBox(
+                          widthFactor: 0.5,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 35,
+                            child: ElevatedButton(
+                              onPressed: _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFC10D00),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(color: Color(0xFFC10D00), width: 2),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                "LOGIN",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: Colors.white)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                "Or login with",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider(color: Colors.white)),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const FaIcon(FontAwesomeIcons.google, color: Colors.white, size: 32),
+                              onPressed: () => _socialLogin("Google"),
+                            ),
+                            const SizedBox(width: 24),
+                            IconButton(
+                              icon: const FaIcon(FontAwesomeIcons.github, color: Colors.white, size: 32),
+                              onPressed: () => _socialLogin("GitHub"),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Don't have an account? ",
+                              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                              ),
+                              child: Text(
+                                "Register",
+                                style: GoogleFonts.poppins(color: Color(0xFFC10D00), fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        IconButton(
+                          icon: Icon(
+                              themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                              color: Colors.white),
+                          onPressed: () => themeProvider.toggleTheme(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
                 ),
