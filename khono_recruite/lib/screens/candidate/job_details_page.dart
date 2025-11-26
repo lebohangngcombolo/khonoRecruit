@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
 import 'assessment_page.dart';
@@ -19,6 +20,7 @@ class JobDetailsPage extends StatefulWidget {
 class _JobDetailsPageState extends State<JobDetailsPage> {
   int? applicationId;
   bool submitting = false;
+  bool loadingProfile = true;
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController fullNameController = TextEditingController();
@@ -29,12 +31,205 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
   @override
   void initState() {
     super.initState();
-    final df = widget.draftForm;
-    if (df != null) {
-      fullNameController.text = (df['full_name'] ?? '').toString();
-      phoneController.text = (df['phone'] ?? '').toString();
-      portfolioController.text = (df['portfolio'] ?? '').toString();
-      coverLetterController.text = (df['cover_letter'] ?? '').toString();
+    _loadCandidateProfile();
+
+    if (widget.draftData != null) {
+      final draft = widget.draftData!;
+      fullNameController.text = draft["full_name"] ?? "";
+      phoneController.text = draft["phone"] ?? "";
+      portfolioController.text = draft["portfolio"] ?? "";
+      coverLetterController.text = draft["cover_letter"] ?? "";
+      applicationId = draft["application_id"];
+    }
+  }
+
+  Future<void> _loadCandidateProfile() async {
+    try {
+      debugPrint("Loading candidate profile...");
+
+      final token = await AuthService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        debugPrint("No token found");
+        setState(() => loadingProfile = false);
+        return;
+      }
+
+      debugPrint("Token found, fetching user data...");
+      Map<String, dynamic> profileData = {};
+
+      try {
+        final response = await AuthService.getCurrentUser(token: token);
+        debugPrint("Full response from getCurrentUser: $response");
+
+        // Handle the nested response structure from backend
+        if (response.containsKey('user')) {
+          final userData = response['user'];
+
+          // If there's nested candidate_profile data, merge it with user data
+          if (response.containsKey('candidate_profile')) {
+            profileData = {...userData, ...response['candidate_profile']};
+            debugPrint("Merged user + candidate profile data");
+          } else {
+            // Use user data directly (might contain candidate fields if backend uses flat structure)
+            profileData = userData;
+            debugPrint("Using user data only");
+          }
+        } else {
+          // Fallback: use response directly if no 'user' key
+          profileData = response;
+          debugPrint("Using response data directly");
+        }
+
+        debugPrint("Final profile data for population: $profileData");
+      } catch (e) {
+        debugPrint("Error from getCurrentUser: $e");
+      }
+
+      setState(() {
+        // Only populate if fields are empty (don't override draft data)
+        if (fullNameController.text.isEmpty) {
+          final name = _extractName(profileData);
+          if (name.isNotEmpty) {
+            fullNameController.text = name;
+            debugPrint("Auto-populated name: $name");
+          } else {
+            debugPrint("No name found in profile");
+          }
+        }
+
+        if (phoneController.text.isEmpty) {
+          final phone = _extractPhone(profileData);
+          if (phone.isNotEmpty) {
+            phoneController.text = phone;
+            debugPrint("Auto-populated phone: $phone");
+          } else {
+            debugPrint("No phone found in profile");
+          }
+        }
+
+        if (portfolioController.text.isEmpty) {
+          final portfolio = _extractPortfolio(profileData);
+          if (portfolio.isNotEmpty) {
+            portfolioController.text = portfolio;
+            debugPrint("Auto-populated portfolio: $portfolio");
+          } else {
+            debugPrint("No portfolio found in profile");
+          }
+        }
+
+        loadingProfile = false;
+      });
+    } catch (e) {
+      debugPrint("Error loading candidate profile: $e");
+      setState(() {
+        loadingProfile = false;
+      });
+    }
+  }
+
+  String _extractName(Map<String, dynamic> profile) {
+    // Try various name fields from both user and candidate data
+    return profile['full_name'] ??
+        profile['name'] ??
+        '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'.trim() ??
+        profile['email']?.split('@').first ??
+        '';
+  }
+
+  String _extractPhone(Map<String, dynamic> profile) {
+    // Try various phone field names
+    return profile['phone']?.toString() ??
+        profile['phone_number']?.toString() ??
+        profile['mobile']?.toString() ??
+        '';
+  }
+
+  String _extractPortfolio(Map<String, dynamic> profile) {
+    // Try various portfolio/link fields
+    return profile['linkedin'] ??
+        profile['portfolio'] ??
+        profile['github'] ??
+        profile['website'] ??
+        profile['cv_url'] ??
+        '';
+  }
+
+  Future<void> loadDraft() async {
+    if (applicationId == null) return;
+
+    final token = await AuthService.getAccessToken();
+    try {
+      final res = await http.get(
+        Uri.parse(
+            "http://127.0.0.1:5000/api/candidate/applications/$applicationId/draft"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        setState(() {
+          fullNameController.text =
+              data["full_name"] ?? fullNameController.text;
+          phoneController.text = data["phone"] ?? phoneController.text;
+          portfolioController.text =
+              data["portfolio"] ?? portfolioController.text;
+          coverLetterController.text =
+              data["cover_letter"] ?? coverLetterController.text;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error loading draft: $e")));
+    }
+  }
+
+  Future<void> saveDraftAndExit() async {
+    if (applicationId == null) return;
+
+    final token = await AuthService.getAccessToken();
+    try {
+      final payload = {
+        "draft_data": {
+          "job_details": {
+            "application_id": applicationId,
+            "full_name": fullNameController.text,
+            "phone": phoneController.text,
+            "portfolio": portfolioController.text,
+            "cover_letter": coverLetterController.text,
+          }
+        },
+        "last_saved_screen": "job_details"
+      };
+
+      final res = await http.post(
+        Uri.parse(
+            "http://127.0.0.1:5000/api/candidate/applications/$applicationId/draft"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: json.encode(payload),
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Draft saved successfully")),
+        );
+
+        GoRouter.of(context).go('/candidate-dashboard');
+      } else {
+        final data = json.decode(res.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data["error"] ?? "Failed to save draft")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
 
@@ -127,241 +322,494 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
         : ["Qualification 1", "Qualification 2", "Qualification 3"];
 
     return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Set to transparent to show the background image
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/Frame 1.jpg'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // ---------- Top Banner ----------
-              Image.asset(
-                widget.job["banner"] ?? "assets/team1.jpg",
-                width: double.infinity,
-                height: 500,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Background Image
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/dark.png"),
                 fit: BoxFit.cover,
               ),
-              const SizedBox(height: 16),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // Banner (unchanged)
+                Stack(
                   children: [
-                    // Job Image
                     Image.asset(
-                      widget.job["image"] ?? "assets/placeholder.png",
+                      widget.job["banner"] ?? "assets/images/team1.jpg",
                       width: double.infinity,
-                      height: 200,
+                      height: 400,
                       fit: BoxFit.cover,
                     ),
-                    const SizedBox(height: 16),
-
-                    // Job Title & Company
-                    Text(widget.job["title"] ?? "",
-                        style: const TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(
-                        "${widget.job["company"] ?? ""} • ${widget.job["location"] ?? ""}",
-                        style: const TextStyle(
-                            fontSize: 16, color: Colors.black54)),
-                    const SizedBox(height: 16),
-
-                    // ---------- Two Column Layout ----------
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Column (Job Description, Responsibilities, etc.)
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildCard("Job Description", [
-                                Text(widget.job["description"] ??
-                                    "No description available.")
-                              ]),
-                              _buildCard(
-                                  "Responsibilities",
-                                  responsibilitiesList
-                                      .map((r) => Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text("• ",
-                                                  style:
-                                                      TextStyle(fontSize: 14)),
-                                              Expanded(
-                                                  child: Text(r,
-                                                      style: const TextStyle(
-                                                          fontSize: 14))),
-                                            ],
-                                          ))
-                                      .toList()),
-                              _buildCard(
-                                  "Qualifications",
-                                  qualificationsList
-                                      .map((q) => Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text("✔ ",
-                                                  style:
-                                                      TextStyle(fontSize: 14)),
-                                              Expanded(
-                                                  child: Text(q,
-                                                      style: const TextStyle(
-                                                          fontSize: 14))),
-                                            ],
-                                          ))
-                                      .toList()),
-                              _buildCard(
-                                "Apply For This Job",
-                                [
-                                  Form(
-                                    key: _formKey,
-                                    child: Column(
-                                      children: [
-                                        buildTextField(
-                                            controller: fullNameController,
-                                            label: "Full Name"),
-                                        const SizedBox(height: 12),
-                                        buildTextField(
-                                            controller: phoneController,
-                                            label: "Phone Number"),
-                                        const SizedBox(height: 12),
-                                        buildTextField(
-                                            controller: portfolioController,
-                                            label: "Portfolio Link"),
-                                        const SizedBox(height: 12),
-                                        buildTextField(
-                                            controller: coverLetterController,
-                                            label: "Cover Letter",
-                                            maxLines: 5),
-                                        const SizedBox(height: 16),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: OutlinedButton.icon(
-                                            onPressed: saveDraft,
-                                            icon: const Icon(Icons.save,
-                                                color: Colors.red),
-                                            label: const Text('Save Draft',
-                                                style: TextStyle(
-                                                    color: Colors.red)),
-                                            style: OutlinedButton.styleFrom(
-                                              side: BorderSide(
-                                                  color: Colors.red.shade700),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 14),
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          12)),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: ElevatedButton(
-                                            onPressed:
-                                                submitting ? null : applyJob,
-                                            style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    Colors.red.shade700,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 16)),
-                                            child: submitting
-                                                ? const CircularProgressIndicator(
-                                                    color: Colors.white)
-                                                : const Text(
-                                                    "Submit Application"),
-                                          ),
-                                        ),
-                                        if (applicationId != null)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 12.0),
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        AssessmentPage(
-                                                            applicationId:
-                                                                applicationId!),
-                                                  ),
-                                                );
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Colors.red.shade900,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(vertical: 16)),
-                                              child:
-                                                  const Text("Take Assessment"),
-                                            ),
-                                          )
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ],
-                          ),
+                    Container(
+                      height: 400,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.6),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.3),
+                          ],
                         ),
-
-                        const SizedBox(width: 24),
-
-                        // Right Column (Job Summary & Company Details)
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildCard("Job Summary", [
-                                summaryRow(
-                                    "Published On",
-                                    widget.job["published_on"] ??
-                                        "01 Jan, 2045"),
-                                summaryRow("Vacancy",
-                                    widget.job["vacancy"]?.toString() ?? "1"),
-                                summaryRow("Job Nature",
-                                    widget.job["type"] ?? "Full Time"),
-                                summaryRow("Salary",
-                                    widget.job["salary"] ?? "\$123 - \$456"),
-                                summaryRow("Location",
-                                    widget.job["location"] ?? "New York"),
-                              ]),
-                              _buildCard("Company Details", [
-                                Text(widget.job["company_details"] ??
-                                    "No details available.")
-                              ]),
-                            ],
-                          ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 40,
+                      left: 16,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back,
+                              color: Colors.black87),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: 24,
+                      right: 24,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.job["title"] ?? "",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "${widget.job["company"] ?? ""} • ${widget.job["location"] ?? ""}",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // ---------- FOOTER ----------
-              _buildFooter(),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Main Column
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildEnhancedCard(
+                                  Icons.description_outlined,
+                                  "Job Description",
+                                  Colors.blue,
+                                  [
+                                    Text(
+                                      widget.job["description"] ??
+                                          "No description available.",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        height: 1.6,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                _buildEnhancedCard(
+                                  Icons.checklist_outlined,
+                                  "Responsibilities",
+                                  Colors.green,
+                                  responsibilitiesList
+                                      .map((r) => Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(Icons.circle,
+                                                    size: 8,
+                                                    color: Colors.green),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Text(
+                                                    r,
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 14,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                                _buildEnhancedCard(
+                                  Icons.school_outlined,
+                                  "Qualifications",
+                                  Colors.orange,
+                                  qualificationsList
+                                      .map((q) => Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(Icons.verified,
+                                                    size: 16,
+                                                    color: Colors.orange),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Text(
+                                                    q,
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 14,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                                _buildEnhancedCard(
+                                  Icons.work_outline,
+                                  "Apply For This Job",
+                                  Colors.red,
+                                  [
+                                    if (loadingProfile)
+                                      const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(20.0),
+                                          child: CircularProgressIndicator(
+                                              color: Colors.white),
+                                        ),
+                                      )
+                                    else
+                                      Form(
+                                        key: _formKey,
+                                        child: Column(
+                                          children: [
+                                            _buildEnhancedTextField(
+                                              controller: fullNameController,
+                                              label: "Full Name",
+                                              icon: Icons.person_outline,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            _buildEnhancedTextField(
+                                              controller: phoneController,
+                                              label: "Phone Number",
+                                              icon: Icons.phone_outlined,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            _buildEnhancedTextField(
+                                              controller: portfolioController,
+                                              label: "Portfolio Link",
+                                              icon: Icons.link_outlined,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            _buildEnhancedTextField(
+                                              controller: coverLetterController,
+                                              label: "Cover Letter",
+                                              icon: Icons.article_outlined,
+                                              maxLines: 5,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            // Submit Application Button
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: ElevatedButton(
+                                                onPressed: submitting
+                                                    ? null
+                                                    : applyJob,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.redAccent,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 16),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
+                                                  elevation: 2,
+                                                ),
+                                                child: submitting
+                                                    ? const SizedBox(
+                                                        height: 20,
+                                                        width: 20,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Colors.white,
+                                                        ),
+                                                      )
+                                                    : Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Icon(
+                                                              Icons
+                                                                  .send_outlined,
+                                                              size: 20),
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          Text(
+                                                            "Submit Application",
+                                                            style: GoogleFonts
+                                                                .poppins(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 16,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                              ),
+                                            ),
+                                            // Take Assessment Button
+                                            if (applicationId != null) ...[
+                                              const SizedBox(height: 16),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            AssessmentPage(
+                                                          applicationId:
+                                                              applicationId!,
+                                                          draftData:
+                                                              widget.draftData,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.deepPurpleAccent,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 16),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    elevation: 2,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(Icons.quiz_outlined,
+                                                          size: 20),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        "Take Assessment",
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                            // Save & Exit Button
+                                            if (applicationId != null ||
+                                                widget.draftData != null) ...[
+                                              const SizedBox(height: 16),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed: saveDraftAndExit,
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.grey.shade600,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 16),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    elevation: 2,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      const Icon(
+                                                          Icons.save_outlined,
+                                                          size: 20),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        "Save & Exit",
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                            // Debug button to manually reload profile data
+                                            if (!loadingProfile) ...[
+                                              const SizedBox(height: 16),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton(
+                                                  onPressed:
+                                                      _loadCandidateProfile,
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.blue.shade600,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 12),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                      "Reload Profile Data"),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Right Column
+                          const SizedBox(width: 24),
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildEnhancedCard(
+                                  Icons.assignment_outlined,
+                                  "Job Summary",
+                                  Colors.purple,
+                                  [
+                                    _buildSummaryRow(
+                                        Icons.calendar_today_outlined,
+                                        "Published On",
+                                        widget.job["published_on"] ??
+                                            "01 Jan, 2045"),
+                                    _buildSummaryRow(
+                                        Icons.people_outlined,
+                                        "Vacancy",
+                                        widget.job["vacancy"]?.toString() ??
+                                            "1"),
+                                    _buildSummaryRow(
+                                        Icons.schedule_outlined,
+                                        "Job Nature",
+                                        widget.job["type"] ?? "Full Time"),
+                                    _buildSummaryRow(
+                                        Icons.attach_money_outlined,
+                                        "Salary",
+                                        widget.job["salary"] ??
+                                            "\$123 - \$456"),
+                                    _buildSummaryRow(
+                                        Icons.location_on_outlined,
+                                        "Location",
+                                        widget.job["location"] ?? "New York"),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                _buildEnhancedCard(
+                                  Icons.business_outlined,
+                                  "Company Details",
+                                  Colors.teal,
+                                  [
+                                    Text(
+                                      widget.job["company_details"] ??
+                                          "No details available.",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        height: 1.6,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _buildEnhancedFooter(),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -372,21 +820,21 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.1), // Translucent white
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 25,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100, width: 1),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -398,7 +846,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -409,7 +857,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -428,7 +876,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
+          Icon(icon, size: 20, color: Colors.white.withOpacity(0.8)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -439,7 +887,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -447,7 +895,7 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
                   value,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: Colors.white.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -467,25 +915,25 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      style: GoogleFonts.poppins(fontSize: 14),
+      style: GoogleFonts.poppins(fontSize: 14, color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: Colors.grey.shade500),
+        labelStyle: GoogleFonts.poppins(color: Colors.white.withOpacity(0.8)),
+        prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.7)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.redAccent, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: Colors.white.withOpacity(0.1),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),

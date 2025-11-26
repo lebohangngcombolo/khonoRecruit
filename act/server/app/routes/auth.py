@@ -8,7 +8,7 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from app.extensions import db, oauth  
-from app.models import User, VerificationCode, OAuthConnection
+from app.models import User, VerificationCode, OAuthConnection, Candidate
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.services.audit2 import AuditService
@@ -101,10 +101,14 @@ def init_auth_routes(app):
         try:
             oauth.google.authorize_access_token()
             user_info = oauth.google.get(OAUTH_PROVIDERS["google"]["userinfo"]["url"]).json()
+        
+            # ⚡ handle_oauth_callback() already returns redirect()
             return handle_oauth_callback("google", user_info)
+
         except Exception as e:
             current_app.logger.error(f"Google OAuth callback error: {str(e)}", exc_info=True)
             return jsonify({"error": "Authentication failed"}), 400
+
 
     # ------------------- GITHUB LOGIN -------------------
     @app.route("/api/auth/github")
@@ -173,19 +177,32 @@ def init_auth_routes(app):
             access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
             refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
 
-            # Determine dashboard route
-            dashboard_path = "/enrollment" if user.role == "candidate" and not getattr(user, "enrollment_completed", False) \
+            # ✅ Determine dashboard route safely (fixed)
+            dashboard_path = (
+                "/enrollment"
+                if user.role == "candidate" and not getattr(user, "enrollment_completed", False)
                 else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
+            )
 
-            # ⚡ Redirect to Flutter frontend with tokens
-            frontend_redirect = f"{current_app.config['FRONTEND_URL']}{dashboard_path}?access_token={access_token}&refresh_token={refresh_token}&role={user.role}"
+            # ✅ Ensure no accidental /api/ prefix (this is your issue)
+            if dashboard_path.startswith("/api/"):
+                dashboard_path = dashboard_path.replace("/api", "", 1)
 
+            # ✅ Redirect to frontend cleanly
+            frontend_redirect = (
+                f"{current_app.config['FRONTEND_URL']}/oauth-callback"
+                f"?access_token={access_token}&refresh_token={refresh_token}&role={user.role}"
+            )
+
+            current_app.logger.info(f"Redirecting {user.email} ({user.role}) → {frontend_redirect}")
             return redirect(frontend_redirect)
+
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"OAuth callback handler error: {str(e)}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
+
 
     # ------------------- REGISTER -------------------
     @app.route('/api/auth/register', methods=['POST'])
@@ -281,34 +298,69 @@ def init_auth_routes(app):
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
+
+            # ---- Basic validation ----
             if not all([email, password]):
                 return jsonify({'error': 'Email and password are required'}), 400
 
             email = email.strip().lower()
             user = User.query.filter(db.func.lower(User.email) == email).first()
+
+            # ---- Invalid credentials ----
             if not user or not AuthService.verify_password(password, user.password):
                 return jsonify({'error': 'Invalid credentials'}), 401
-            if not user.is_verified:
-                return jsonify({'error': 'Please verify your email first'}), 403
 
+            # ---- Handle unverified user ----
+            if not user.is_verified:
+                AuditService.log(user_id=user.id, action="login_attempt_unverified")
+                return jsonify({
+                    'message': 'Please verify your email before continuing.',
+                    'redirect': '/verify-email',
+                    'verified': False
+                }), 403
+
+            # 🆕 MFA CHECK - If MFA enabled, return MFA session token instead of final tokens
+            if user.mfa_enabled:
+                # Create temporary MFA session token (5 minutes)
+                mfa_session_token = create_access_token(
+                    identity=str(user.id),
+                    expires_delta=timedelta(minutes=5),
+                    additional_claims={"mfa_pending": True, "role": user.role}
+                )
+            
+                AuditService.log(user_id=user.id, action="login_mfa_required")
+            
+                return jsonify({
+                    'message': 'MFA verification required',
+                    'mfa_required': True,
+                    'mfa_session_token': mfa_session_token,
+                    'user_id': user.id
+                }), 200
+
+            # ---- Create JWT tokens (for non-MFA users) ----
             additional_claims = {"role": user.role}
             access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
             refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
+
+            # ---- Determine dashboard URL ----
             dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
                 else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
-            AuditService.log(user_id=user.id, action="login")
+            # ---- Log successful login ----
+            AuditService.log(user_id=user.id, action="login_success")
 
+            # ---- Return successful response ----
             return jsonify({
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'user': user.to_dict(),
+                'verified': True,
                 'dashboard': dashboard_url
             }), 200
 
         except Exception as e:
             current_app.logger.error(f'Login error: {str(e)}', exc_info=True)
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify({'error': 'Internal server error'}), 500  # 🆕 Changed from 200 to 500
 
     # ------------------- REFRESH TOKEN -------------------
     @app.route('/api/auth/refresh', methods=['POST'])
@@ -398,21 +450,39 @@ def init_auth_routes(app):
             if not user:
                 return jsonify({"error": "User not found"}), 404
 
+            # Get candidate profile if user is a candidate
+            candidate_profile = Candidate.query.filter_by(user_id=user.id).first()
+            if candidate_profile:
+                candidate_profile = candidate_profile.to_dict()
+
             dashboard_url = "/enrollment" if user.role == "candidate" and not user.enrollment_completed \
                 else ROLE_DASHBOARD_MAP.get(user.role, "/dashboard")
 
             AuditService.log(user_id=user.id, action="get_current_user")
 
-            return jsonify({
-                "user": user.to_dict(),
+
+            response_data = {
+                "user": {
+                    # User table fields only
+                    "id": user.id,
+                    "email": user.email,
+                    "role": user.role,
+                    "enrollment_completed": user.enrollment_completed,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                },
                 "role": user.role,
                 "dashboard": dashboard_url
-            }), 200
+            }
+        
+            # Add full candidate profile data if available
+            if candidate_profile:
+                response_data["candidate_profile"] = candidate_profile
+
+            return jsonify(response_data), 200
 
         except Exception as e:
             current_app.logger.error(f"Get current user error: {str(e)}", exc_info=True)
             return jsonify({"error": "Internal server error"}), 500
-
     # ------------------- DASHBOARDS -------------------
     @app.route("/api/dashboard/admin", methods=["GET"])
     @role_required("admin")

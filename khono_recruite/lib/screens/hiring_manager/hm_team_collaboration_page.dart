@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 import '../../../constants/app_colors.dart';
 import '../../widgets/widgets1/glass_card.dart';
 import '../../services/team_service.dart';
@@ -15,19 +16,22 @@ class HMTeamCollaborationPage extends StatefulWidget {
 class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<CollaborationMessage> _messages = [];
-  final List<TeamMember> _teamMembers = [];
   final List<SharedNote> _sharedNotes = [];
+  final List<Meeting> _meetings = [];
 
-  WebSocketChannel? _channel;
-  bool _isConnected = false;
+  bool _isLoadingNotes = true;
+  bool _isLoadingMeetings = true;
   String _selectedEntity = 'general';
   String _currentUser = 'Hiring Manager';
+
+  final String baseUrl =
+      "http://127.0.0.1:5000/api/admin"; // replace with actual
 
   @override
   void initState() {
     super.initState();
-    _initializeWebSocket();
-    _loadTeamData();
+    _loadNotes();
+    _loadMeetings();
   }
 
   void _initializeWebSocket() {
@@ -124,12 +128,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left Panel - Team & Notes
+                // Left Panel - Notes & Meetings
                 Expanded(
                   flex: 1,
                   child: Column(
                     children: [
-                      _buildTeamMembersPanel(),
+                      _buildSharedNotesPanel(),
                       const SizedBox(height: 16),
                       Expanded(
                         child: Column(
@@ -151,11 +155,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 ),
                 const SizedBox(width: 16),
 
-                // Right Panel - Chat & Comments
-                Expanded(
-                  flex: 2,
-                  child: _buildChatPanel(),
-                ),
+                // Right Panel - Chat (in-memory)
+                Expanded(flex: 2, child: _buildChatPanel()),
               ],
             ),
           ),
@@ -217,27 +218,15 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         Row(
           children: [
             ElevatedButton.icon(
-              onPressed: _createSharedNote,
+              onPressed: () => _showCreateNoteDialog(),
               icon: const Icon(Icons.note_add),
               label: const Text('New Note'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
             ),
             const SizedBox(width: 8),
             ElevatedButton.icon(
-              onPressed: _scheduleMeeting,
+              onPressed: () => _showScheduleMeetingDialog(),
               icon: const Icon(Icons.video_call),
               label: const Text('Schedule Meeting'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryRed,
-                foregroundColor: AppColors.primaryWhite,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
             ),
           ],
         ),
@@ -245,7 +234,75 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildTeamMembersPanel() {
+  // ---------------- Dialogs ----------------
+  void _showCreateNoteDialog() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Create Note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: contentController,
+                      decoration: const InputDecoration(labelText: 'Content')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _createNote(titleController.text, contentController.text);
+                    },
+                    child: const Text('Create')),
+              ],
+            ));
+  }
+
+  void _showScheduleMeetingDialog() {
+    final titleController = TextEditingController();
+    final datetimeController = TextEditingController();
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Schedule Meeting'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: datetimeController,
+                      decoration:
+                          const InputDecoration(labelText: 'Date & Time')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _createMeeting(
+                          titleController.text, datetimeController.text);
+                    },
+                    child: const Text('Schedule')),
+              ],
+            ));
+  }
+
+  // ---------------- Notes & Meetings Panels ----------------
+  Widget _buildSharedNotesPanel() {
     return GlassCard(
       blur: 8,
       opacity: 0.1,
@@ -297,25 +354,19 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildTeamMemberCard(TeamMember member) {
+  Widget _buildSharedNoteCard(SharedNote note) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.lightGrey.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.primaryRed.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.1)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor:
-                member.isOnline ? Colors.green : AppColors.textGrey,
-            child: Text(
-              member.name.substring(0, 2).toUpperCase(),
+          Text(note.title,
               style: const TextStyle(
                 color: AppColors.primaryWhite,
                 fontSize: 12,
@@ -358,7 +409,40 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildSharedNotesPanel() {
+  void _showUpdateNoteDialog(SharedNote note) {
+    final titleController = TextEditingController(text: note.title);
+    final contentController = TextEditingController(text: note.content);
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Update Note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: contentController,
+                      decoration: const InputDecoration(labelText: 'Content')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _updateNote(note.id, titleController.text,
+                          contentController.text);
+                    },
+                    child: const Text('Update')),
+              ],
+            ));
+  }
+
+  Widget _buildMeetingsPanel() {
     return GlassCard(
       blur: 8,
       opacity: 0.1,
@@ -414,7 +498,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildSharedNoteCard(SharedNote note) {
+  Widget _buildMeetingCard(Meeting meeting) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -475,6 +559,41 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
+  void _showUpdateMeetingDialog(Meeting meeting) {
+    final titleController = TextEditingController(text: meeting.title);
+    final datetimeController = TextEditingController(text: meeting.datetime);
+    showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+              title: const Text('Update Meeting'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title')),
+                  TextField(
+                      controller: datetimeController,
+                      decoration:
+                          const InputDecoration(labelText: 'Date & Time')),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _updateMeeting(meeting.id, titleController.text,
+                          datetimeController.text);
+                    },
+                    child: const Text('Update')),
+              ],
+            ));
+  }
+
+  // ---------------- Chat Panel ----------------
   Widget _buildChatPanel() {
     return GlassCard(
       blur: 8,
@@ -483,7 +602,6 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Chat Header
             Row(
               children: [
                 Text(
@@ -519,41 +637,27 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Messages
             Expanded(
               child: _messages.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            size: 48,
-                            color: AppColors.textGrey.withValues(alpha: 0.5),
-                          ),
+                          Icon(Icons.chat_bubble_outline,
+                              size: 48,
+                              color: AppColors.textGrey.withValues(alpha: 0.5)),
                           const SizedBox(height: 8),
-                          Text(
-                            'No messages yet',
-                            style: TextStyle(
-                              color: AppColors.textGrey,
-                              fontSize: 16,
-                            ),
-                          ),
+                          const Text('No messages yet'),
                         ],
                       ),
                     )
                   : ListView.builder(
                       reverse: true,
                       itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        return _buildMessageCard(message);
-                      },
+                      itemBuilder: (context, index) =>
+                          _buildMessageCard(_messages[index]),
                     ),
             ),
-
-            // Message Input
             const SizedBox(height: 16),
             _buildMessageInput(),
           ],
@@ -564,28 +668,12 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
 
   Widget _buildMessageCard(CollaborationMessage message) {
     final isCurrentUser = message.author == _currentUser;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment:
             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isCurrentUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryRed.withValues(alpha: 0.1),
-              child: Text(
-                message.author.substring(0, 2).toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.primaryRed,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -1243,62 +1331,66 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   @override
   void dispose() {
     _messageController.dispose();
-    _channel?.sink.close();
     super.dispose();
   }
 }
 
-// Data Models
+// ---------------- Models ----------------
 class CollaborationMessage {
   final String author;
   final String content;
   final DateTime timestamp;
   final String entity;
-
-  CollaborationMessage({
-    required this.author,
-    required this.content,
-    required this.timestamp,
-    required this.entity,
-  });
-
-  factory CollaborationMessage.fromJson(String json) {
-    // Parse JSON string to create message
-    return CollaborationMessage(
-      author: 'User',
-      content: json,
-      timestamp: DateTime.now(),
-      entity: 'general',
-    );
-  }
-
-  String toJson() {
-    return content; // Simplified for WebSocket
-  }
-}
-
-class TeamMember {
-  final String name;
-  final String role;
-  final bool isOnline;
-
-  TeamMember({
-    required this.name,
-    required this.role,
-    required this.isOnline,
-  });
+  CollaborationMessage(
+      {required this.author,
+      required this.content,
+      required this.timestamp,
+      required this.entity});
 }
 
 class SharedNote {
+  final String id;
   final String title;
   final String content;
   final String author;
   final DateTime lastModified;
 
-  SharedNote({
-    required this.title,
-    required this.content,
-    required this.author,
-    required this.lastModified,
-  });
+  SharedNote(
+      {required this.id,
+      required this.title,
+      required this.content,
+      required this.author,
+      required this.lastModified});
+
+  factory SharedNote.fromJson(Map<String, dynamic> json) {
+    return SharedNote(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      author: json['author'] ?? 'Unknown',
+      lastModified: DateTime.parse(json['last_modified']),
+    );
+  }
+}
+
+class Meeting {
+  final String id;
+  final String title;
+  final String datetime;
+  final String organizer;
+
+  Meeting(
+      {required this.id,
+      required this.title,
+      required this.datetime,
+      required this.organizer});
+
+  factory Meeting.fromJson(Map<String, dynamic> json) {
+    return Meeting(
+      id: json['id'],
+      title: json['title'],
+      datetime: json['datetime'],
+      organizer: json['organizer'] ?? 'Unknown',
+    );
+  }
 }

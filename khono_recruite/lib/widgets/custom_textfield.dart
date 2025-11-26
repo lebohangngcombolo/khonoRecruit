@@ -8,12 +8,14 @@ class CustomTextField extends StatelessWidget {
   final String hintText;
   final TextInputType inputType;
   final int maxLines;
+  final int? maxLength;
   final Function(String)? onChanged;
   final String? Function(String?)? validator;
-  final Color? backgroundColor; // new
-  final Color? textColor; // new
-  final Color? borderColor;
+  final Color? backgroundColor;
+  final Color? textColor;
   final bool obscureText;
+  final TextAlign? textAlign; // <-- added
+  final TextStyle? style; // <-- added
 
   const CustomTextField({
     super.key,
@@ -23,12 +25,15 @@ class CustomTextField extends StatelessWidget {
     this.hintText = '',
     this.inputType = TextInputType.text,
     this.maxLines = 1,
+    this.maxLength,
     this.onChanged,
     this.validator,
     this.backgroundColor,
     this.textColor,
     this.borderColor,
     this.obscureText = false,
+    this.textAlign, // <-- added
+    this.style, // <-- added
   });
 
   @override
@@ -47,12 +52,13 @@ class CustomTextField extends StatelessWidget {
         initialValue: initialValue,
         keyboardType: inputType,
         maxLines: maxLines,
+        maxLength: maxLength,
         onChanged: onChanged,
         validator: validator,
         obscureText: obscureText,
-        style: GoogleFonts.poppins(
-          color: textColor ?? const Color.fromARGB(255, 199, 0, 0),
-        ),
+        textAlign: textAlign ?? TextAlign.start,
+        style: style ??
+            TextStyle(color: textColor ?? const Color.fromARGB(255, 199, 0, 0)),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(

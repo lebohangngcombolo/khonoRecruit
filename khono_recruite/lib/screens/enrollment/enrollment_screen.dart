@@ -15,6 +15,12 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
   late TabController _tabController;
   int currentStep = 0;
   bool loading = false;
+  bool profileLoading = true;
+  String? userName;
+
+  // Scroll controller for detecting scroll position
+  final ScrollController _scrollController = ScrollController();
+  bool _isProgressCollapsed = false;
 
   // ------------------- Personal Details -------------------
   final TextEditingController nameController = TextEditingController();
@@ -45,6 +51,54 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _fetchUserProfile();
+
+    // Listen to scroll events
+    _scrollController.addListener(_handleScroll);
+  }
+
+  void _handleScroll() {
+    final scrollOffset = _scrollController.offset;
+    final shouldCollapse = scrollOffset > 50; // Collapse when scrolled 50px
+
+    if (shouldCollapse != _isProgressCollapsed) {
+      setState(() {
+        _isProgressCollapsed = shouldCollapse;
+      });
+    }
+  }
+
+  void _fetchUserProfile() async {
+    try {
+      final profile = await AuthService.getCurrentUser(token: widget.token);
+      setState(() {
+        userName = profile['full_name'] ??
+            profile['name'] ??
+            profile['email']?.split('@').first;
+        if (userName != null && userName!.isNotEmpty) {
+          nameController.text = userName!;
+        }
+        profileLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching user profile: $e");
+      try {
+        final localUser = await AuthService.getUserInfo();
+        if (localUser != null) {
+          setState(() {
+            userName = localUser['full_name'] ??
+                localUser['name'] ??
+                localUser['email']?.split('@').first;
+            if (userName != null && userName!.isNotEmpty) {
+              nameController.text = userName!;
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint("Error fetching local user info: $e");
+      }
+      setState(() => profileLoading = false);
+    }
   }
 
   void nextStep() {
@@ -107,88 +161,131 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: _isProgressCollapsed ? 28 : 36,
+            height: _isProgressCollapsed ? 28 : 36,
             decoration: BoxDecoration(
               color: isActive
-                  ? Colors.redAccent
+                  ? const Color(0xFFDC2626).withOpacity(0.9)
                   : isCompleted
-                      ? Colors.green
-                      : Colors.grey.shade300,
+                      ? const Color(0xFF16A34A).withOpacity(0.9)
+                      : Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
-              boxShadow: [
-                if (isActive || isCompleted)
-                  BoxShadow(
-                    color: (isActive ? Colors.redAccent : Colors.green)
-                        .withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-              ],
+              border: Border.all(
+                color: isActive
+                    ? Colors.white.withOpacity(0.8)
+                    : isCompleted
+                        ? const Color(0xFF16A34A).withOpacity(0.8)
+                        : Colors.white.withOpacity(0.4),
+                width: 1.5,
+              ),
             ),
             child: Icon(
               icon,
-              color: Colors.white,
-              size: 24,
+              color: isActive || isCompleted
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7),
+              size: _isProgressCollapsed ? 14 : 16,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? Colors.redAccent : Colors.grey.shade600,
+          if (!_isProgressCollapsed) ...[
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withOpacity(0.9),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Container(
-            height: 3,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: isCompleted ? Colors.green : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
+            const SizedBox(height: 4),
+          ],
+          if (index < 3)
+            Container(
+              height: 2,
+              color: isCompleted
+                  ? const Color(0xFF16A34A).withOpacity(0.8)
+                  : Colors.white.withOpacity(0.3),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildEnhancedCard(Widget child, {IconData? icon}) {
+  Widget _buildGlassCard(Widget child, {String? title, String? subtitle}) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFDC2626).withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (icon != null) ...[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.redAccent, size: 20),
-              ),
-              const SizedBox(width: 16),
-            ],
-            Expanded(child: child),
-          ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: const ColorFilter.matrix([
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            -7,
+          ]),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 1,
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                child,
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -197,31 +294,162 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
   Widget _buildTextField(TextEditingController controller, String label,
       {TextInputType keyboardType = TextInputType.text,
       int maxLines = 1,
-      IconData? icon}) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      style: const TextStyle(fontSize: 16),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.grey.shade600),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+      IconData? prefixIcon,
+      bool readOnly = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withOpacity(0.9),
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            readOnly: readOnly,
+            style: const TextStyle(fontSize: 15, color: Colors.white),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white, width: 1.5),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon,
+                      color: Colors.white.withOpacity(0.7), size: 20)
+                  : null,
+            ),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildProgressHeader() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: _isProgressCollapsed ? 80 : 160,
+      padding: _isProgressCollapsed
+          ? const EdgeInsets.symmetric(vertical: 16, horizontal: 24)
+          : const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFDC2626).withOpacity(0.15),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(25),
         ),
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(25),
+        ),
+        child: BackdropFilter(
+          filter: const ColorFilter.matrix([
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            -7,
+          ]),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (!_isProgressCollapsed) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Step ${currentStep + 1} of 4",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _getStepTitle(currentStep),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _getStepSubtitle(currentStep),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
+              // Step Indicators - Adjusted spacing for collapsed state
+              Row(
+                children: [
+                  _buildStepIndicator(
+                      "Personal", 0, Icons.person_outline_rounded),
+                  _buildStepIndicator("Education", 1, Icons.school_rounded),
+                  _buildStepIndicator(
+                      "Skills", 2, Icons.workspace_premium_rounded),
+                  _buildStepIndicator(
+                      "Experience", 3, Icons.work_history_rounded),
+                ],
+              ),
+              // Add some bottom spacing when collapsed
+              if (_isProgressCollapsed) const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -229,260 +457,381 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text(
-          "Complete Your Profile",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/dark.png'),
+            fit: BoxFit.cover,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text(
+              "Complete Your Profile",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: const Color(0xFFDC2626).withOpacity(0.2),
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white.withOpacity(0.9), size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
+          body: loading || profileLoading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDC2626).withOpacity(0.3),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: const CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Preparing Your Profile",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Please wait while we set up your account",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    // Progress Header - Now animated
+                    _buildProgressHeader(),
+
+                    // Form Content
+                    Expanded(
+                      child: Container(
+                        color: Colors.transparent,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: TabBarView(
+                            controller: _tabController,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              // Step 1: Personal Details
+                              _buildScrollableStep([
+                                if (userName != null)
+                                  _buildGlassCard(
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF16A34A),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                              Icons.check_circle_rounded,
+                                              color: Colors.white,
+                                              size: 16),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            "Welcome, $userName! Your profile has been detected.",
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF16A34A),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    title: "Profile Detected",
+                                    subtitle:
+                                        "We found your existing information",
+                                  ),
+                                _buildGlassCard(
+                                  _buildTextField(
+                                    nameController,
+                                    "Full Name",
+                                    prefixIcon: Icons.person_rounded,
+                                    readOnly: userName != null &&
+                                        userName!.isNotEmpty,
+                                  ),
+                                  title: "Personal Information",
+                                  subtitle: "Your basic identification details",
+                                ),
+                                _buildGlassCard(
+                                  Column(
+                                    children: [
+                                      _buildTextField(
+                                          phoneController, "Phone Number",
+                                          keyboardType: TextInputType.phone,
+                                          prefixIcon: Icons.phone_rounded),
+                                      _buildTextField(
+                                          addressController, "Address",
+                                          maxLines: 2,
+                                          prefixIcon:
+                                              Icons.location_on_rounded),
+                                      _buildTextField(
+                                          dobController, "Date of Birth",
+                                          prefixIcon:
+                                              Icons.calendar_today_rounded),
+                                      _buildTextField(linkedinController,
+                                          "LinkedIn Profile",
+                                          keyboardType: TextInputType.url,
+                                          prefixIcon: Icons.link_rounded),
+                                    ],
+                                  ),
+                                  title: "Contact Details",
+                                  subtitle: "How we can reach you",
+                                ),
+                              ]),
+                              // Step 2: Education
+                              _buildScrollableStep([
+                                _buildGlassCard(
+                                  Column(
+                                    children: [
+                                      _buildTextField(educationController,
+                                          "Highest Education",
+                                          prefixIcon: Icons.school_rounded),
+                                      _buildTextField(universityController,
+                                          "University / Institution",
+                                          prefixIcon:
+                                              Icons.account_balance_rounded),
+                                      _buildTextField(graduationYearController,
+                                          "Graduation Year",
+                                          keyboardType: TextInputType.number,
+                                          prefixIcon: Icons.date_range_rounded),
+                                    ],
+                                  ),
+                                  title: "Educational Background",
+                                  subtitle: "Your academic qualifications",
+                                ),
+                              ]),
+                              // Step 3: Skills
+                              _buildScrollableStep([
+                                _buildGlassCard(
+                                  Column(
+                                    children: [
+                                      _buildTextField(skillsController,
+                                          "Skills (comma separated)",
+                                          maxLines: 3,
+                                          prefixIcon: Icons.code_rounded),
+                                      _buildTextField(certificationsController,
+                                          "Certifications (comma separated)",
+                                          maxLines: 3,
+                                          prefixIcon: Icons.verified_rounded),
+                                      _buildTextField(languagesController,
+                                          "Languages Known (comma separated)",
+                                          maxLines: 2,
+                                          prefixIcon: Icons.language_rounded),
+                                    ],
+                                  ),
+                                  title: "Skills & Certifications",
+                                  subtitle: "Your professional capabilities",
+                                ),
+                              ]),
+                              // Step 4: Experience
+                              _buildScrollableStep([
+                                _buildGlassCard(
+                                  Column(
+                                    children: [
+                                      _buildTextField(experienceController,
+                                          "Work Experience Description",
+                                          maxLines: 5,
+                                          prefixIcon:
+                                              Icons.description_rounded),
+                                      _buildTextField(
+                                          previousCompaniesController,
+                                          "Previous Companies (comma separated)",
+                                          maxLines: 3,
+                                          prefixIcon: Icons.business_rounded),
+                                      _buildTextField(
+                                          positionController, "Positions Held",
+                                          prefixIcon: Icons.work_rounded),
+                                    ],
+                                  ),
+                                  title: "Professional Experience",
+                                  subtitle: "Your career journey",
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Navigation Buttons
+                    Container(
+                      height: 80,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626).withOpacity(0.15),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(25),
+                        ),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(25),
+                        ),
+                        child: BackdropFilter(
+                          filter: const ColorFilter.matrix([
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            18,
+                            -7,
+                          ]),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (currentStep > 0)
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: previousStep,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.2),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: BorderSide(
+                                            color:
+                                                Colors.white.withOpacity(0.3)),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    icon: const Icon(Icons.arrow_back_rounded,
+                                        size: 16),
+                                    label: const Text(
+                                      "Back",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white.withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: nextStep,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.9),
+                                    foregroundColor: const Color(0xFFDC2626),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  icon: Icon(
+                                    currentStep == 3
+                                        ? Icons.check_circle_rounded
+                                        : Icons.arrow_forward_rounded,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    currentStep == 3
+                                        ? "Complete Profile"
+                                        : "Continue",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
-      body: loading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.redAccent),
-                  SizedBox(height: 16),
-                  Text(
-                    "Setting up your profile...",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-          : Column(
-              children: [
-                // Progress Header
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(20),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        "Step ${currentStep + 1} of 4",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _getStepTitle(currentStep),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Step Indicators
-                      Row(
-                        children: [
-                          _buildStepIndicator(
-                              "Personal", 0, Icons.person_outline),
-                          _buildStepIndicator(
-                              "Education", 1, Icons.school_outlined),
-                          _buildStepIndicator(
-                              "Skills", 2, Icons.workspace_premium_outlined),
-                          _buildStepIndicator(
-                              "Experience", 3, Icons.work_outline),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+    );
+  }
 
-                // Form Content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: TabBarView(
-                      controller: _tabController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        // Step 1: Personal Details
-                        ListView(
-                          children: [
-                            _buildEnhancedCard(
-                              _buildTextField(nameController, "Full Name",
-                                  icon: Icons.person),
-                              icon: Icons.person,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(phoneController, "Phone Number",
-                                  keyboardType: TextInputType.phone),
-                              icon: Icons.phone,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(addressController, "Address",
-                                  maxLines: 2),
-                              icon: Icons.location_on,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(dobController, "Date of Birth"),
-                              icon: Icons.calendar_today,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(
-                                  linkedinController, "LinkedIn Profile",
-                                  keyboardType: TextInputType.url),
-                              icon: Icons.link,
-                            ),
-                          ],
-                        ),
-                        // Step 2: Education
-                        ListView(
-                          children: [
-                            _buildEnhancedCard(
-                              _buildTextField(
-                                  educationController, "Highest Education"),
-                              icon: Icons.school,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(universityController,
-                                  "University / Institution"),
-                              icon: Icons.account_balance,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(
-                                  graduationYearController, "Graduation Year",
-                                  keyboardType: TextInputType.number),
-                              icon: Icons.date_range,
-                            ),
-                          ],
-                        ),
-                        // Step 3: Skills
-                        ListView(
-                          children: [
-                            _buildEnhancedCard(
-                              _buildTextField(
-                                  skillsController, "Skills (comma separated)",
-                                  maxLines: 3),
-                              icon: Icons.code,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(certificationsController,
-                                  "Certifications (comma separated)",
-                                  maxLines: 3),
-                              icon: Icons.verified,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(languagesController,
-                                  "Languages Known (comma separated)",
-                                  maxLines: 2),
-                              icon: Icons.language,
-                            ),
-                          ],
-                        ),
-                        // Step 4: Experience
-                        ListView(
-                          children: [
-                            _buildEnhancedCard(
-                              _buildTextField(experienceController,
-                                  "Work Experience Description",
-                                  maxLines: 5),
-                              icon: Icons.description,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(previousCompaniesController,
-                                  "Previous Companies (comma separated)",
-                                  maxLines: 3),
-                              icon: Icons.business,
-                            ),
-                            _buildEnhancedCard(
-                              _buildTextField(
-                                  positionController, "Positions Held"),
-                              icon: Icons.work,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Navigation Buttons
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (currentStep > 0)
-                        ElevatedButton.icon(
-                          onPressed: previousStep,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey.shade100,
-                            foregroundColor: Colors.grey.shade700,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          icon: const Icon(Icons.arrow_back, size: 18),
-                          label: const Text("Back"),
-                        ),
-                      ElevatedButton.icon(
-                        onPressed: nextStep,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                          shadowColor: Colors.redAccent.withOpacity(0.3),
-                        ),
-                        icon: Icon(
-                          currentStep == 3 ? Icons.check : Icons.arrow_forward,
-                          size: 18,
-                        ),
-                        label: Text(
-                            currentStep == 3 ? "Complete Profile" : "Continue"),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildScrollableStep(List<Widget> children) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          ...children,
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
@@ -501,9 +850,25 @@ class _EnrollmentScreenState extends State<EnrollmentScreen>
     }
   }
 
+  String _getStepSubtitle(int step) {
+    switch (step) {
+      case 0:
+        return "Tell us about yourself and how to reach you";
+      case 1:
+        return "Share your educational qualifications and achievements";
+      case 2:
+        return "Highlight your skills, certifications, and languages";
+      case 3:
+        return "Describe your professional journey and experience";
+      default:
+        return "Complete your professional profile";
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     nameController.dispose();
     phoneController.dispose();
     addressController.dispose();

@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 class AssessmentResultsPage extends StatefulWidget {
   final int? applicationId;
@@ -386,33 +387,35 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
                             color: Colors.white, fontWeight: FontWeight.w600))
                   ],
                 ),
-                Column(
-                  children: [
-                    Text("Resume Score",
-                        style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600, color: Colors.white)),
-                    const SizedBox(height: 8),
-                    scoreDonutChart(cvScore, Colors.blue),
-                  ],
-                ),
+                const SizedBox(height: 16),
               ],
+            ],
+
+            // Application Date
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today,
+                      color: Colors.green.shade600, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Applied on: ${app['applied_on'] ?? 'Unknown date'}",
+                      style: GoogleFonts.inter(
+                        color: Colors.green.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            if (missingSkills.isNotEmpty) ...[
-              Text("Missing Skills:",
-                  style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 4),
-              chipsList(missingSkills, color: const Color(0xFFC10D00)),
-              const SizedBox(height: 12),
-            ],
-            if (suggestions.isNotEmpty) ...[
-              Text("Suggestions:",
-                  style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 4),
-              chipsList(suggestions, color: Colors.blue),
-            ],
           ],
         ),
       ),
@@ -422,187 +425,128 @@ class _AssessmentResultsPageState extends State<AssessmentResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          "My Applications",
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/dark.png"),
+            fit: BoxFit.cover,
           ),
         ),
-        backgroundColor: const Color(0xFFC10D00),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _fetchResults,
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: _fetchResults,
-        color: const Color(0xFFC10D00),
-        child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/Frame 1.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: _buildBody(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (loading && applications.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC10D00)),
-                strokeWidth: 3,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Loading your applications...',
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              "Assessment Results",
               style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (hasError) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Color(0xFFC10D00),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Oops! Something went wrong',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                errorMessage.isNotEmpty
-                    ? errorMessage
-                    : 'Unable to load applications. Please try again.',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _fetchResults,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text('Try Again',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC10D00),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (applications.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.assignment_outlined,
-              size: 100,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No Applications Yet',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40.0),
-              child: Text(
-                "You haven't applied to any jobs yet. Browse jobs and apply to see your applications here.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
-                // Navigate to jobs list
-                Navigator.pushReplacementNamed(context, '/jobs');
+                // Redirect to dashboard using GoRouter
+                GoRouter.of(context).go('/candidate-dashboard');
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC10D00),
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 2,
-              ),
-              child: Text('Browse Jobs',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
-          ],
-        ),
-      );
-    }
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: loading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Loading Assessment Results...",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : applications.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.assessment_outlined,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "No Assessment Results Found",
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Your assessment results will appear here",
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        // Summary Card
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDC2626).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Performance Overview",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Track your assessment scores and improvement areas",
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: applications.length,
-      itemBuilder: (context, index) {
-        return applicationCard(applications[index]);
-      },
+                        // Applications List
+                        ...applications
+                            .map((app) => applicationCard(app))
+                            .toList(),
+                      ],
+                    ),
+        ),
+      ),
     );
   }
 }

@@ -601,24 +601,140 @@ def get_settings():
         "success": True,
         "data": user.settings or {}
     }), 200
+    
+@candidate_bp.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_candidate_notifications():
+    """
+    Get all notifications for the current candidate
+    Returns: List of notification objects (matching your Flutter service expectation)
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Get all notifications for the user, ordered by most recent first
+        notifications = Notification.query.filter_by(
+            user_id=current_user_id
+        ).order_by(Notification.created_at.desc()).all()
+        
+        # Convert to list of dictionaries using your existing to_dict method
+        notifications_data = [notification.to_dict() for notification in notifications]
+        
+        # Return the list directly (matching your Flutter service expectation)
+        return jsonify(notifications_data), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Get notifications error: {str(e)}")
+        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
 
-# ----------------- GET NOTIFICATIONS -----------------
-@candidate_bp.route("/notifications", methods=["GET"])
+# ----------------- SAVE APPLICATION DRAFT -----------------
+@candidate_bp.route("/applications/<int:application_id>/draft", methods=["POST"])
 @role_required(["candidate"])
-def get_notifications():
+def save_application_draft(application_id):
+    """
+    Save or update a draft for an existing application.
+    Supports multiple screens (job_details, assessment, etc.) with merged draft data.
+    """
     try:
         user_id = get_jwt_identity()
-        notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
-        result = []
-        for n in notifs:
-            item = {
-                "id": getattr(n, "id", None),
-                "message": getattr(n, "message", ""),
-                "read": getattr(n, "read", False),
-                "created_at": getattr(n, "created_at", None).isoformat() if getattr(n, "created_at", None) else None,
-            }
-            result.append(item)
-        return jsonify(result), 200
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if not candidate:
+            return jsonify({"error": "Candidate profile not found"}), 404
+
+        data = request.get_json() or {}
+        draft_data = data.get("draft_data", {})  # The actual form/answers
+        last_saved_screen = data.get("last_saved_screen", "job_details")
+
+        application = Application.query.filter_by(
+            id=application_id, candidate_id=candidate.id
+        ).first()
+        if not application:
+            return jsonify({"error": "Application not found"}), 404
+
+        # Merge per-screen draft data
+        existing_draft = application.draft_data or {}
+        existing_draft[last_saved_screen] = draft_data
+
+        # Update application
+        application.draft_data = existing_draft
+        application.is_draft = True
+        application.status = "draft"
+        application.last_saved_screen = last_saved_screen
+        application.saved_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Draft saved successfully",
+            "application_id": application.id,
+            "draft_data": application.draft_data,  # structured per page
+            "last_saved_screen": last_saved_screen,
+            "saved_at": application.saved_at.isoformat() if application.saved_at else None
+        }), 200
+
     except Exception as e:
-        current_app.logger.error(f"Get notifications error: {e}", exc_info=True)
+        current_app.logger.error(f"Save draft error: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ----------------- GET ALL DRAFT APPLICATIONS -----------------
+@candidate_bp.route("/applications/drafts", methods=["GET"])
+@role_required(["candidate"])
+def get_application_drafts():
+    """
+    Retrieve all saved (draft) applications for the current candidate.
+    Each draft includes per-screen saved data for resuming the application.
+    """
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if not candidate:
+            return jsonify([]), 200
+
+        drafts = Application.query.filter_by(candidate_id=candidate.id, is_draft=True).all()
+
+        draft_list = []
+        for d in drafts:
+            draft_dict = d.to_dict()
+            # Ensure draft_data is structured per screen
+            draft_dict["draft_data"] = d.draft_data or {}
+            draft_list.append(draft_dict)
+
+        return jsonify(draft_list), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Get application drafts error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+
+# ----------------- SUBMIT SAVED DRAFT -----------------
+@candidate_bp.route("/applications/submit_draft/<int:draft_id>", methods=["PUT"])
+@role_required(["candidate"])
+def submit_draft(draft_id):
+    """
+    Converts a saved draft application into a real (applied) application.
+    """
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first_or_404()
+
+        draft = Application.query.filter_by(
+            id=draft_id, candidate_id=candidate.id, is_draft=True
+        ).first_or_404()
+
+        draft.is_draft = False
+        draft.status = "applied"
+        draft.created_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            "message": "Draft submitted successfully",
+            "application": draft.to_dict()
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Submit draft error: {e}", exc_info=True)
+        db.session.rollback()
         return jsonify({"error": "Internal server error"}), 500
