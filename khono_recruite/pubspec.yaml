@@ -14,7 +14,7 @@ dependencies:
   provider: ^6.0.5
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
-  syncfusion_flutter_charts: 31.1.19
+  syncfusion_flutter_charts: ^31.2.4
   flutter_web_auth: ^0.6.0
   percent_indicator: ^4.2.5
   dio: ^5.9.0
@@ -46,15 +46,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-
   assets:
+    # Images
     - assets/images/bg1.jpg
     - assets/images/dark.png
     - assets/images/bg.jpg
     - assets/images/wallpaper.jpeg
     - assets/images/bg2.jpg
     - assets/images/bg3.jpeg
-    - assets/images/bg4.jpg
     - assets/images/bg4.jpg
     - assets/images/client0.png
     - assets/images/client1.png

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -11,6 +12,7 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Color? backgroundColor; // new
   final Color? textColor; // new
+  final Color? borderColor;
   final bool obscureText;
 
   const CustomTextField({
@@ -25,6 +27,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.backgroundColor,
     this.textColor,
+    this.borderColor,
     this.obscureText = false,
   });
 
@@ -47,7 +50,7 @@ class CustomTextField extends StatelessWidget {
         onChanged: onChanged,
         validator: validator,
         obscureText: obscureText,
-        style: TextStyle(
+        style: GoogleFonts.poppins(
           color: textColor ?? const Color.fromARGB(255, 199, 0, 0),
         ),
         decoration: InputDecoration(
@@ -61,6 +64,10 @@ class CustomTextField extends StatelessWidget {
             color: textColor?.withValues(alpha: 0.5) ??
                 const Color.fromARGB(137, 98, 98, 98),
           ),
+          filled: true,
+          fillColor: backgroundColor ??
+              const Color.fromARGB(255, 147, 146, 146)
+                  .withAlpha((255 * 0.1).round()),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

@@ -7,8 +7,8 @@ import '../../services/candidate_service.dart';
 import 'job_details_page.dart';
 import 'assessments_results_screen.dart';
 import '../../screens/candidate/user_profile_page.dart';
-import '../../screens/candidate/saved_application_screen.dart';
 import 'dart:ui'; // Added for BackdropFilter
+import 'offline_drafts_page.dart';
 
 class CandidateDashboard extends StatefulWidget {
   final String token;
@@ -27,6 +27,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
     "Assessment Results",
     "Profile",
     "Notifications",
+    "Offline Drafts",
   ];
 
   List<Map<String, dynamic>> availableJobs = [];
@@ -189,7 +190,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/dark.png'),
+            image: AssetImage('assets/images/Frame 1.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -239,14 +240,19 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                 children: [
                                   if (!sidebarCollapsed)
                                     Flexible(
-                                      child: Image.asset(
-                                          'assets/images/logo2.png',
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 8.0),
+                                        child: Image.asset(
+                                          'assets/icons/khono.png',
                                           height: 40,
-                                          fit: BoxFit.contain),
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
                                     )
                                   else
-                                    Image.asset('assets/images/icon.png',
-                                        height: 40, fit: BoxFit.contain),
+                                    const Icon(Icons.menu,
+                                        color: Colors.white, size: 32),
                                   IconButton(
                                     constraints: const BoxConstraints(),
                                     padding: EdgeInsets.zero,
@@ -273,36 +279,52 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                 final isSelected = selectedIndex == index;
                                 String assetIconPath;
                                 switch (index) {
-                                  case 0:
+                                  case 0: // Dashboard
                                     assetIconPath =
-                                        'assets/icons/Project Launch_Start_Red Badge_White.png';
+                                        'assets/icons/Project Launch_Start/Project Launch_Start_Red Badge_White.png';
                                     break;
-                                  case 1:
+                                  case 1: // Jobs Applied
                                     assetIconPath =
-                                        'assets/icons/Upload Arrow_Red Badge_White.png';
+                                        'assets/icons/Upload_Arrow/Upload Arrow_Red Badge_White.png';
                                     break;
-                                  case 2:
+                                  case 2: // Assessment Results
                                     assetIconPath =
-                                        'assets/icons/Growth_Development_Red Badge_White.png';
+                                        'assets/icons/Data_Approval/Data Approval_Red Badge_White.png';
                                     break;
-                                  case 3:
+                                  case 3: // Profile
                                     assetIconPath =
-                                        'assets/icons/red_user_profile.png';
+                                        'assets/icons/Account_User Profile/red_user_profile.png';
+                                    break;
+                                  case 4: // Notifications
+                                    assetIconPath =
+                                        'assets/icons/Red_Notifications_bell.png';
+                                    break;
+                                  case 5: // Offline Drafts
+                                    assetIconPath =
+                                        'assets/icons/Information_Detail/Information_Red Badge_White.png';
                                     break;
                                   default:
                                     assetIconPath =
-                                        'assets/icons/Information_Red Badge_White.png';
+                                        'assets/icons/Information_Detail/Information_Red Badge_White.png';
                                 }
 
                                 return SizedBox(
                                   height: 48,
                                   child: ListTile(
-                                    leading: Image.asset(
-                                      assetIconPath,
-                                      width: 26,
-                                      height: 26,
-                                      fit: BoxFit.contain,
-                                    ),
+                                    leading: assetIconPath.isNotEmpty
+                                        ? Image.asset(
+                                            assetIconPath,
+                                            width: 32,
+                                            height: 32,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error,
+                                                    stackTrace) =>
+                                                const Icon(Icons.error_outline,
+                                                    color: Colors.white,
+                                                    size: 32),
+                                          )
+                                        : const Icon(Icons.error_outline,
+                                            color: Colors.white, size: 32),
                                     title: sidebarCollapsed
                                         ? null
                                         : Text(
@@ -340,6 +362,14 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                               builder: (_) => ProfilePage(
                                                   token: widget.token)),
                                         );
+                                      } else if (sidebarItems[index] ==
+                                          "Offline Drafts") {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => OfflineDraftsPage(
+                                                  token: widget.token)),
+                                        );
                                       }
                                     },
                                   ),
@@ -364,16 +394,16 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                   child: sidebarCollapsed
                                       ? Builder(builder: (context) {
                                           return Image.asset(
-                                            'assets/icons/red_user_profile.png',
-                                            width: 26,
-                                            height: 26,
+                                            'assets/icons/Account_User Profile/red_user_profile.png',
+                                            width: 32,
+                                            height: 32,
                                             fit: BoxFit.contain,
                                           );
                                         })
                                       : Row(
                                           children: [
                                             Image.asset(
-                                              'assets/icons/red_user_profile.png',
+                                              'assets/icons/Account_User Profile/red_user_profile.png',
                                               width: 24,
                                               height: 24,
                                               fit: BoxFit.contain,
@@ -396,49 +426,12 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                           ],
                                         ),
                                 ),
-                                // NEW: Saved Jobs Button
-                                if (!sidebarCollapsed) ...[
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                SavedApplicationsScreen(
-                                                    token: widget.token),
-                                          ),
-                                        );
-                                      },
-                                      icon: Icon(Icons.bookmark_outline,
-                                          size: 16),
-                                      label: Text("Saved Jobs",
-                                          style:
-                                              GoogleFonts.inter(fontSize: 13)),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: Colors.blueAccent,
-                                        side: BorderSide(
-                                            color: Colors.grey.shade300),
-                                        minimumSize: const Size.fromHeight(42),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-
-                                const SizedBox(height: 12),
                                 const SizedBox(height: 12),
                                 sidebarCollapsed
                                     ? IconButton(
                                         onPressed: () {},
                                         icon: Image.asset(
-                                          'assets/icons/Logout_Red Badge_White.png',
+                                          'assets/icons/Logout/Logout_Red Badge_White.png',
                                           width: 20,
                                           height: 20,
                                           fit: BoxFit.contain,
@@ -446,7 +439,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                     : ElevatedButton.icon(
                                         onPressed: () async {},
                                         icon: Image.asset(
-                                          'assets/icons/Logout_Red Badge_White.png',
+                                          'assets/icons/Logout/Logout_Red Badge_White.png',
                                           width: 24,
                                           height: 24,
                                           fit: BoxFit.contain,
@@ -545,22 +538,28 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                             onPressed: () => setState(
                                                 () => selectedIndex = 4),
                                             icon: Stack(
+                                              clipBehavior: Clip.none,
                                               children: [
-                                                Icon(Icons.notifications_none,
-                                                    color: Colors.white),
+                                                Image.asset(
+                                                  'assets/icons/Red_Notifications_bell.png',
+                                                  width: 32,
+                                                  height: 32,
+                                                  fit: BoxFit.contain,
+                                                ),
                                                 if (notifications.isNotEmpty)
                                                   Positioned(
-                                                    right: 0,
-                                                    top: 0,
+                                                    right: -2,
+                                                    top: -2,
                                                     child: Container(
                                                       padding:
                                                           const EdgeInsets.all(
                                                               2),
-                                                      decoration: BoxDecoration(
-                                                          color:
-                                                              Colors.redAccent,
-                                                          shape:
-                                                              BoxShape.circle),
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                              color: Colors
+                                                                  .redAccent,
+                                                              shape: BoxShape
+                                                                  .circle),
                                                       constraints:
                                                           const BoxConstraints(
                                                               minWidth: 12,
@@ -585,9 +584,9 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                                           const SizedBox(width: 12),
                                           Builder(builder: (context) {
                                             return Image.asset(
-                                              'assets/icons/red_user_profile.png',
-                                              width: 28,
-                                              height: 28,
+                                              'assets/icons/Account_User Profile/red_user_profile.png',
+                                              width: 32,
+                                              height: 32,
                                               fit: BoxFit.contain,
                                             );
                                           }),
@@ -627,7 +626,7 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
                     child: GestureDetector(
                       onTap: () => setState(() => chatbotOpen = !chatbotOpen),
                       child: Image.asset(
-                        'assets/icons/Chatbot_Red.png',
+                        'assets/icons/AI Chatbot_Red Badge_White.png',
                         width: 48,
                         height: 48,
                         fit: BoxFit.contain,
@@ -815,19 +814,20 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
           children: [
             buildStatCard("Applied", applications.length, Icons.send_to_mobile,
                 Colors.redAccent,
-                assetPath: 'assets/icons/Upload Arrow_Red.png'),
+                assetPath: 'assets/icons/Upload_Arrow/Upload Arrow_Red.png'),
             buildStatCard(
                 "Interviews",
                 applications.where((a) => a['status'] == 'Interview').length,
                 Icons.mic,
                 Colors.redAccent.shade700,
-                assetPath: 'assets/icons/Calendar_Date Picker_Red.png'),
+                assetPath:
+                    'assets/icons/Calendar_Date Picker/Calendar_Date Picker_Red.png'),
             buildStatCard(
                 "Offers",
                 applications.where((a) => a['status'] == 'Offered').length,
                 Icons.check_circle,
                 Colors.redAccent.shade400,
-                assetPath: 'assets/icons/Approved_Red.png'),
+                assetPath: 'assets/icons/Approved_Tick/Approved_Red.png'),
           ],
         ),
       ],
@@ -936,94 +936,162 @@ class _CandidateDashboardState extends State<CandidateDashboard> {
         height: 550,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text(cvParserMode ? "CV Parser" : "AI Chatbot",
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                IconButton(
-                    onPressed: () =>
-                        setState(() => cvParserMode = !cvParserMode),
-                    icon: const Icon(Icons.swap_horiz))
-              ],
-            ),
-            const Divider(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    if (cvParserMode)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextField(
-                            controller: jobDescController,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                                hintText: "Paste Job Description here"),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: cvController,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                                hintText: "Paste CV here"),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                              onPressed: _isLoading ? null : analyzeCV,
-                              child: _isLoading
-                                  ? const CircularProgressIndicator()
-                                  : const Text("Analyze CV")),
-                          const SizedBox(height: 12),
-                          if (cvAnalysisResult != null)
-                            Text("Result: ${cvAnalysisResult!['result']}"),
-                        ],
-                      )
-                    else
-                      Column(
-                        children: messages
-                            .map((msg) => Align(
-                                  alignment: msg['type'] == "chat"
-                                      ? Alignment.centerLeft
-                                      : Alignment.centerRight,
-                                  child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 4),
-                                      decoration: BoxDecoration(
-                                          color: msg['type'] == "chat"
-                                              ? Colors.grey.shade200
-                                              : Colors.redAccent,
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
-                                      child: Text(msg['text'] ?? "")),
-                                ))
-                            .toList(),
-                      )
-                  ],
-                ),
+            color: const Color(0xFF2A2A2A),
+            borderRadius: BorderRadius.circular(12)),
+        child: DefaultTextStyle.merge(
+          style: GoogleFonts.poppins(
+              color: Colors.white, fontWeight: FontWeight.w600),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(cvParserMode ? "CV Parser" : "AI Chatbot",
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
+                  const Spacer(),
+                  IconButton(
+                      onPressed: () =>
+                          setState(() => cvParserMode = !cvParserMode),
+                      icon: const Icon(Icons.swap_horiz, color: Colors.white))
+                ],
               ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: messageController,
-                    decoration: const InputDecoration(
-                        hintText: "Type a message...",
-                        border: OutlineInputBorder()),
+              const Divider(color: Colors.white24),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      if (cvParserMode)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: jobDescController,
+                              maxLines: 4,
+                              style: GoogleFonts.poppins(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600),
+                              decoration: InputDecoration(
+                                  hintText: "Paste Job Description here",
+                                  hintStyle: GoogleFonts.poppins(
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.w500),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black26)),
+                                  enabledBorder: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black26)),
+                                  focusedBorder: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black45))),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: cvController,
+                              maxLines: 4,
+                              style: GoogleFonts.poppins(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600),
+                              decoration: InputDecoration(
+                                  hintText: "Paste CV here",
+                                  hintStyle: GoogleFonts.poppins(
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.w500),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black26)),
+                                  enabledBorder: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black26)),
+                                  focusedBorder: const OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Colors.black45))),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                                onPressed: _isLoading ? null : analyzeCV,
+                                child: _isLoading
+                                    ? const CircularProgressIndicator()
+                                    : const Text("Analyze CV")),
+                            const SizedBox(height: 12),
+                            if (cvAnalysisResult != null)
+                              Text("Result: ${cvAnalysisResult!['result']}",
+                                  style: const TextStyle(color: Colors.white))
+                          ],
+                        )
+                      else
+                        Column(
+                          children: messages
+                              .map((msg) => Align(
+                                    alignment: msg['type'] == "chat"
+                                        ? Alignment.centerLeft
+                                        : Alignment.centerRight,
+                                    child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 4),
+                                        decoration: BoxDecoration(
+                                            color: msg['type'] == "chat"
+                                                ? Colors.grey.shade200
+                                                : Colors.redAccent,
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
+                                        child: Text(
+                                          msg['text'] ?? "",
+                                          style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w600,
+                                              color: msg['type'] == "chat"
+                                                  ? Colors.black
+                                                  : Colors.white),
+                                        )),
+                                  ))
+                              .toList(),
+                        )
+                    ],
                   ),
                 ),
-                IconButton(
-                    onPressed: sendMessage, icon: const Icon(Icons.send)),
-              ],
-            ),
-          ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: messageController,
+                      style: GoogleFonts.poppins(
+                          color: Colors.black, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                          hintText: "Type a message...",
+                          hintStyle: GoogleFonts.poppins(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black26)),
+                          enabledBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black26)),
+                          focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black45))),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: sendMessage,
+                    icon: Image.asset(
+                      'assets/icons/Send_Paper Plane/Send_Paper Plane_Red.png',
+                      width: 45,
+                      height: 45,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

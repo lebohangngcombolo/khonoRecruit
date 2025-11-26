@@ -601,122 +601,24 @@ def get_settings():
         "success": True,
         "data": user.settings or {}
     }), 200
-    
-@candidate_bp.route('/notifications', methods=['GET'])
-@jwt_required()
-def get_candidate_notifications():
-    """
-    Get all notifications for the current candidate
-    Returns: List of notification objects (matching your Flutter service expectation)
-    """
-    try:
-        current_user_id = get_jwt_identity()
-        
-        # Get all notifications for the user, ordered by most recent first
-        notifications = Notification.query.filter_by(
-            user_id=current_user_id
-        ).order_by(Notification.created_at.desc()).all()
-        
-        # Convert to list of dictionaries using your existing to_dict method
-        notifications_data = [notification.to_dict() for notification in notifications]
-        
-        # Return the list directly (matching your Flutter service expectation)
-        return jsonify(notifications_data), 200
-        
-    except Exception as e:
-        current_app.logger.error(f"Get notifications error: {str(e)}")
-        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
 
-# ----------------- SAVE APPLICATION DRAFT -----------------
-@candidate_bp.route("/apply/save_draft/<int:application_id>", methods=["POST"])
+# ----------------- GET NOTIFICATIONS -----------------
+@candidate_bp.route("/notifications", methods=["GET"])
 @role_required(["candidate"])
-def save_application_draft(application_id):
-    """
-    Allows a candidate to save an existing application as a draft (by application ID).
-    """
+def get_notifications():
     try:
         user_id = get_jwt_identity()
-        user = User.query.get_or_404(user_id)
-
-        candidate = Candidate.query.filter_by(user_id=user.id).first()
-        if not candidate:
-            return jsonify({"error": "Candidate profile not found"}), 404
-
-        data = request.get_json() or {}
-        draft_data = data.get("draft_data", {})
-
-        # Look up the application by ID and candidate
-        application = Application.query.filter_by(
-            id=application_id, candidate_id=candidate.id
-        ).first()
-
-        if not application:
-            return jsonify({"error": f"Application with id {application_id} not found"}), 404
-
-        # Update the draft
-        application.draft_data = draft_data
-        application.is_draft = True
-        db.session.commit()
-
-        return jsonify({
-            "message": "Draft updated",
-            "application_id": application.id
-        }), 200
-
+        notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+        result = []
+        for n in notifs:
+            item = {
+                "id": getattr(n, "id", None),
+                "message": getattr(n, "message", ""),
+                "read": getattr(n, "read", False),
+                "created_at": getattr(n, "created_at", None).isoformat() if getattr(n, "created_at", None) else None,
+            }
+            result.append(item)
+        return jsonify(result), 200
     except Exception as e:
-        current_app.logger.error(f"Update draft error: {e}", exc_info=True)
-        db.session.rollback()
-        return jsonify({"error": "Internal server error"}), 500
-
-
-
-# ----------------- GET ALL DRAFT APPLICATIONS -----------------
-@candidate_bp.route("/applications/drafts", methods=["GET"])
-@role_required(["candidate"])
-def get_application_drafts():
-    """
-    Retrieve all saved (draft) applications for the current candidate.
-    """
-    try:
-        user_id = get_jwt_identity()
-        candidate = Candidate.query.filter_by(user_id=user_id).first()
-        if not candidate:
-            return jsonify([]), 200
-
-        drafts = Application.query.filter_by(candidate_id=candidate.id, is_draft=True).all()
-        return jsonify([d.to_dict() for d in drafts]), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Get application drafts error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
-
-# ----------------- SUBMIT SAVED DRAFT -----------------
-@candidate_bp.route("/applications/submit_draft/<int:draft_id>", methods=["PUT"])
-@role_required(["candidate"])
-def submit_draft(draft_id):
-    """
-    Converts a saved draft application into a real (applied) application.
-    """
-    try:
-        user_id = get_jwt_identity()
-        candidate = Candidate.query.filter_by(user_id=user_id).first_or_404()
-
-        draft = Application.query.filter_by(
-            id=draft_id, candidate_id=candidate.id, is_draft=True
-        ).first_or_404()
-
-        draft.is_draft = False
-        draft.status = "applied"
-        draft.created_at = datetime.utcnow()
-        db.session.commit()
-
-        return jsonify({
-            "message": "Draft submitted successfully",
-            "application": draft.to_dict()
-        }), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Submit draft error: {e}", exc_info=True)
-        db.session.rollback()
+        current_app.logger.error(f"Get notifications error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500

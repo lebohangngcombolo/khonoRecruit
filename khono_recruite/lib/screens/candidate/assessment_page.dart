@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../services/auth_service.dart';
@@ -154,125 +155,128 @@ class _AssessmentPageState extends State<AssessmentPage> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Colors.red)),
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/Frame 1.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child:
+              const Center(child: CircularProgressIndicator(color: Colors.red)),
+        ),
       );
     }
 
     if (questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-            title: const Text("Assessment"), backgroundColor: Colors.red),
-        body: const Center(child: Text("No assessment available")),
+            title: Text("Assessment",
+                style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600, color: Colors.white)),
+            backgroundColor: Colors.red),
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/Frame 1.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: const Center(child: Text("No assessment available")),
+        ),
       );
     }
 
     return Scaffold(
-      appBar:
-          AppBar(title: const Text("Assessment"), backgroundColor: Colors.red),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView.builder(
-          itemCount: questions.length + 2, // ✅ Added 1 more for Save & Exit
-          itemBuilder: (context, index) {
-            if (index == questions.length) {
-              // Submit button
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: submitting ? null : submitAssessment,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+      appBar: AppBar(
+          title: Text("Assessment",
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600, color: Colors.white)),
+          backgroundColor: Colors.red),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/Frame 1.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView.builder(
+            itemCount: questions.length + 1,
+            itemBuilder: (context, index) {
+              if (index == questions.length) {
+                // Submit button at the end
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: submitting ? null : submitAssessment,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: submitting
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text("Submit Assessment"),
                     ),
-                    child: submitting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Submit Assessment"),
+                  ),
+                );
+              }
+
+              final q = questions[index];
+              final String questionText =
+                  q['question'] ?? "Question not available";
+              final List options = q['options'] ?? [];
+
+              return Card(
+                color: Colors.white,
+                elevation: 3,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Colors.red, width: 1),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Q${index + 1}: $questionText",
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: List.generate(options.length, (i) {
+                          final optionLabel = ["A", "B", "C", "D"][i];
+                          final optionText = options[i];
+                          return RadioListTile<String>(
+                            title: Text(
+                              "$optionLabel. $optionText",
+                              style: const TextStyle(color: Colors.black),
+                            ),
+                            value: optionLabel,
+                            groupValue: answers[index],
+                            onChanged: (val) {
+                              setState(() {
+                                answers[index] = val!;
+                              });
+                            },
+                          );
+                        }),
+                      ),
+                    ],
                   ),
                 ),
               );
-            } else if (index == questions.length + 1) {
-              // ✅ New Save & Exit button
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: saveDraftAndExit,
-                    icon: const Icon(Icons.save, color: Colors.red),
-                    label: const Text(
-                      "Save & Exit",
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red, width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            final q = questions[index];
-            final String questionText =
-                q['question'] ?? "Question not available";
-            final List options = q['options'] ?? [];
-
-            return Card(
-              color: Colors.white,
-              elevation: 3,
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Colors.red, width: 1),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Q${index + 1}: $questionText",
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red),
-                    ),
-                    const SizedBox(height: 12),
-                    SegmentedButton<String>(
-                      segments: List.generate(options.length, (i) {
-                        final optionLabel = ["A", "B", "C", "D"][i];
-                        final optionText = options[i];
-                        return ButtonSegment<String>(
-                          value: optionLabel,
-                          label: Text(
-                            "$optionLabel. $optionText",
-                            style: const TextStyle(color: Colors.black),
-                          ),
-                        );
-                      }),
-                      selected: {
-                        if (answers[index] != null) answers[index]!
-                      },
-                      onSelectionChanged: (Set<String> newSelection) {
-                        setState(() {
-                          if (newSelection.isEmpty) {
-                            answers.remove(index);
-                          } else {
-                            answers[index] = newSelection.first;
-                          }
-                        });
-                      },
-                      multiSelectionEnabled: false,
-                      emptySelectionAllowed: true,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );

@@ -147,21 +147,25 @@ class _VerificationScreenState extends State<VerificationScreen>
                       borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.08),
-                          Colors.white.withOpacity(0.02),
+                          Colors.white
+                              .withAlpha((255 * 0.05).round()), // Use withAlpha
+                          Colors.white
+                              .withAlpha((255 * 0.05).round()), // Use withAlpha
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.15),
-                        width: 1.5,
+                        color: Colors.white
+                            .withAlpha((255 * 0.1).round()), // Use withAlpha
+                        width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 30,
-                          offset: const Offset(0, 15),
+                          color: Colors.black
+                              .withAlpha((255 * 0.1).round()), // Use withAlpha
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
@@ -210,39 +214,16 @@ class _VerificationScreenState extends State<VerificationScreen>
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                            const SizedBox(height: 24),
-
-                            // 6-Digit Code Input using custom widget
-                            Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 4),
-                                    child: Text(
-                                      "Enter verification code",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  SixDigitCodeField(
-                                    onCodeChanged: _onCodeChanged,
-                                    onCodeCompleted: _onCodeCompleted,
-                                    autoFocus: true,
-                                  ),
-                                ],
-                              ),
+                            const SizedBox(height: 16),
+                            CustomTextField(
+                              label: "6-digit Code",
+                              controller: codeController,
+                              inputType: TextInputType.number,
+                              textColor: Colors.white,
+                              backgroundColor: Colors.white.withAlpha(
+                                  (255 * 0.1).round()), // Use withAlpha
                             ),
-
-                            const SizedBox(height: 24),
-
-                            // Verify Button
+                            const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
                               height: 48,

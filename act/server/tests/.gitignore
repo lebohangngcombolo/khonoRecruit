@@ -32,3 +32,9 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Server specific
+act/server/.env
+act/server/.venv/
+act/server/app/__pycache__/
+act/server/serviceAccountKey.json

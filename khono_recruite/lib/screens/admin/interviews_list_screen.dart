@@ -108,38 +108,21 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       initialDate: DateTime.now(),
     );
 
-    if (picked != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (time != null && picked != null) { // Added null check for 'picked'
+      final newDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
       );
-      if (time != null) {
-        final newDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          time.hour,
-          time.minute,
-        );
-        rescheduleInterview(id, newDateTime);
-      }
+      rescheduleInterview(id, newDateTime);
     }
-  }
-
-  Color getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'scheduled':
-        return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      case 'rescheduled':
-        return Colors.orange;
-      default:
-        return Colors.grey;
     }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,129 +131,62 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
     final redColor = const Color.fromRGBO(151, 18, 8, 1);
 
     return Scaffold(
-      // 🌆 Dynamic background implementation
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(themeProvider.backgroundImage),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(
-              "Interview Schedule",
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: true,
-            backgroundColor: (themeProvider.isDarkMode
-                    ? const Color(0xFF14131E)
-                    : Colors.white)
-                .withValues(alpha: 0.9),
-            elevation: 0,
-            foregroundColor:
-                themeProvider.isDarkMode ? Colors.white : Colors.black87,
-            iconTheme: IconThemeData(
-                color:
-                    themeProvider.isDarkMode ? Colors.white : Colors.black87),
-          ),
-          body: loading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.redAccent),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Loading Interviews...",
-                        style: GoogleFonts.inter(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                          fontSize: 16,
+      appBar: AppBar(
+        title: const Text("Scheduled Interviews"),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : interviews.isEmpty
+              ? const Center(child: Text("No interviews found"))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: interviews.map((i) {
+                      final scheduled = i['scheduled_time'] != null
+                          ? DateFormat('yyyy-MM-dd HH:mm')
+                              .format(DateTime.parse(i['scheduled_time']))
+                          : 'N/A';
+
+                      return Container(
+                        width: width < 600 ? double.infinity : 420,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
+                              blurRadius: 8,
+                              offset: const Offset(2, 4),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : interviews.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            size: 80,
-                            color: themeProvider.isDarkMode
-                                ? Colors.grey.shade600
-                                : Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "No Interviews Scheduled",
-                            style: GoogleFonts.inter(
-                              color: themeProvider.isDarkMode
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade600,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundImage: (() {
+                                final dynamic v = i['candidate_picture'];
+                                if (v is String && v.isNotEmpty) {
+                                  return NetworkImage(v) as ImageProvider<Object>;
+                                }
+                                return null;
+                              })(),
+                              child: (i['candidate_picture'] is! String ||
+                                      (i['candidate_picture'] as String).isEmpty)
+                                  ? const Icon(Icons.person, size: 40)
+                                  : null,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Interviews will appear here once scheduled",
-                            style: GoogleFonts.inter(
-                              color: themeProvider.isDarkMode
-                                  ? Colors.grey.shade500
-                                  : Colors.grey.shade500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        // Header with stats
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          margin: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: (themeProvider.isDarkMode
-                                    ? const Color(0xFF14131E)
-                                    : Colors.white)
-                                .withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: redColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.calendar_today,
-                                  color: redColor,
-                                  size: 28,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(

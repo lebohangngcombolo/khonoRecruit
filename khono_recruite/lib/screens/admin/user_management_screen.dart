@@ -176,166 +176,38 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       : Colors.white)
                   .withValues(alpha: 0.95),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: Text(
-                "Add Team Member",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  color:
-                      themeProvider.isDarkMode ? Colors.white : Colors.black87,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (errorMessage != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                errorMessage!,
-                                style: GoogleFonts.inter(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: "Full Name",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF14131E)
-                                : Colors.white)
-                            .withValues(alpha: 0.9),
-                        filled: true,
-                        labelStyle: TextStyle(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                      onChanged: (val) => name = val,
-                      style: GoogleFonts.inter(
-                        color: themeProvider.isDarkMode
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: "Email Address",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF14131E)
-                                : Colors.white)
-                            .withValues(alpha: 0.9),
-                        filled: true,
-                        labelStyle: TextStyle(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                      onChanged: (val) => email = val,
-                      style: GoogleFonts.inter(
-                        color: themeProvider.isDarkMode
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: role.isNotEmpty ? role : null,
-                      items: roles
-                          .map((r) => DropdownMenuItem(
-                                value: r,
-                                child: Text(
-                                  r,
-                                  style: GoogleFonts.inter(
-                                    color: themeProvider.isDarkMode
-                                        ? Colors.white
-                                        : Colors.black87,
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) role = val;
-                      },
-                      decoration: InputDecoration(
-                        labelText: "Select Role",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Colors.redAccent, width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        fillColor: (themeProvider.isDarkMode
-                                ? const Color(0xFF14131E)
-                                : Colors.white)
-                            .withValues(alpha: 0.9),
-                        filled: true,
-                        labelStyle: TextStyle(
-                          color: themeProvider.isDarkMode
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                      dropdownColor: (themeProvider.isDarkMode
-                              ? const Color(0xFF1E1E1E)
-                              : Colors.white)
-                          .withValues(alpha: 0.95),
-                      style: GoogleFonts.inter(
-                        color: themeProvider.isDarkMode
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Text("Add Member",
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMessage != null)
+                    Text(errorMessage!,
+                        style: const TextStyle(color: Colors.red)),
+                  TextField(
+                    decoration:
+                        const InputDecoration(hintText: "Enter full name"),
+                    onChanged: (val) => name = val,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: const InputDecoration(hintText: "Enter email"),
+                    onChanged: (val) => email = val,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: role.isNotEmpty ? role : null,
+                    items: roles
+                        .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) role = val;
+                    },
+                    decoration: const InputDecoration(labelText: "Select Role"),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(

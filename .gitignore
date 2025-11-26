@@ -1,0 +1,9 @@
+server/serviceAccountKey.json
+
+__pycache__/
+*.pyc
+
+act/server/.env
+
+act/server/.venv/
+act/server/serviceAccountKey.json

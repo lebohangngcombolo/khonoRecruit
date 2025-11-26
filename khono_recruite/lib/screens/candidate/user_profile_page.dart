@@ -4,10 +4,12 @@ import 'dart:io' show File;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_textfield.dart';
 
@@ -69,6 +71,7 @@ class _ProfilePageState extends State<ProfilePage>
   bool jobAlertsEnabled = true;
   bool profileVisible = true;
   bool enrollmentCompleted = false;
+  bool twoFactorEnabled = false;
 
   List<dynamic> documents = [];
 
@@ -139,6 +142,7 @@ class _ProfilePageState extends State<ProfilePage>
         enrollmentCompleted = data['enrollment_completed'] ?? false;
         jobAlertsEnabled = data['job_alerts_enabled'] ?? true;
         profileVisible = data['profile_visible'] ?? true;
+        twoFactorEnabled = data['two_factor_enabled'] ?? false;
       }
     } catch (e) {
       debugPrint("Error fetching profile/settings: $e");
@@ -290,6 +294,7 @@ class _ProfilePageState extends State<ProfilePage>
         "job_alerts_enabled": jobAlertsEnabled,
         "profile_visible": profileVisible,
         "enrollment_completed": enrollmentCompleted,
+        "two_factor_enabled": twoFactorEnabled,
       };
 
       final res = await http.put(
@@ -340,38 +345,44 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-
-    if (loading)
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-
-    return Theme(
-      data: themeProvider.themeData,
-      child: Scaffold(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.grey[100],
-        body: Row(
+  Widget _outlineSwitch(
+      {required bool value, required ValueChanged<bool> onChanged}) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: SizedBox(
+        width: 56,
+        height: 32,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            // Sidebar
-            Container(
-              width: 200,
-              color: Colors.redAccent,
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  _sidebarButton("Profile"),
-                  _sidebarButton("Settings"),
-                  _sidebarButton("2FA"),
-                  _sidebarButton("Reset Password"),
-                ],
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 56,
+              height: 28,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFC10D00),
+                  width: 2,
+                ),
               ),
             ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _buildSelectedTab(),
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC10D00),
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: const Color(0xFFC10D00), width: 2),
+                  ),
+                ),
               ),
             ),
           ],
@@ -380,24 +391,214 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  Widget _sidebarButton(String title) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedSidebar = title;
-          if (title == "Profile") showProfileSummary = true;
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        color: selectedSidebar == title ? Colors.red[700] : Colors.redAccent,
-        child: Center(
-            child: Text(title,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold))),
+  Widget _toggleRow(String title, bool value, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(
+                  color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          _outlineSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
+  }
+
+  Widget _bannerCard(String title, Widget child) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.black.withOpacity(0.10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFC10D00).withOpacity(0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 6),
+          )
+        ],
+        border: Border.all(
+          color: const Color(0xFFC10D00).withAlpha((255 * 0.2).round()),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: DefaultTextStyle.merge(
+          style: const TextStyle(color: Colors.white),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return Theme(
+      data: themeProvider.themeData,
+      child: Scaffold(
+        backgroundColor: Colors
+            .transparent, // Set to transparent to show the background image
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/Frame 1.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Sidebar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    width: 250,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      border: Border(
+                        right: BorderSide(
+                            color: Colors.grey.shade200.withOpacity(0.1),
+                            width: 1),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha((255 * 0.02).round()),
+                          blurRadius: 8,
+                          offset: const Offset(2, 0),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 72,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Image.asset(
+                                'assets/icons/khono.png',
+                                height: 40,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                        _sidebarButton("Profile"),
+                        _sidebarButton("Settings"),
+                        _sidebarButton("2FA"),
+                        _sidebarButton("Reset Password"),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildSelectedTab(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sidebarButton(String title) {
+    final isSelected = selectedSidebar == title;
+    final iconPath = _iconForTitle(title);
+    return SizedBox(
+      height: 48,
+      child: ListTile(
+        leading: iconPath != null
+            ? Image.asset(
+                iconPath,
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  IconData fallback;
+                  switch (title) {
+                    case "Profile":
+                      fallback = Icons.person_outline;
+                      break;
+                    case "Settings":
+                      fallback = Icons.settings_outlined;
+                      break;
+                    case "2FA":
+                      fallback = Icons.lock_outline;
+                      break;
+                    case "Reset Password":
+                      fallback = Icons.password_outlined;
+                      break;
+                    default:
+                      fallback = Icons.circle_outlined;
+                  }
+                  return Icon(fallback, color: Colors.white, size: 20);
+                },
+              )
+            : null,
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+              color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        selected: isSelected,
+        hoverColor: const Color(0xFFC10D00).withOpacity(0.4),
+        focusColor: const Color(0xFFC10D00).withOpacity(0.4),
+        selectedTileColor: const Color(0xFFC10D00).withOpacity(0.4),
+        onTap: () {
+          setState(() {
+            selectedSidebar = title;
+            if (title == "Profile") showProfileSummary = true;
+          });
+        },
+      ),
+    );
+  }
+
+  String? _iconForTitle(String title) {
+    switch (title) {
+      case "Profile":
+        return 'assets/icons/Account_User Profile/red_user_profile.png';
+      case "Settings":
+        return 'assets/icons/RED_Settings icon badge.png';
+      case "2FA":
+        return 'assets/icons/Login_Lock/Lock_Red Badge_White.png';
+      case "Reset Password":
+        return 'assets/icons/Red_chnage password_badge.png';
+      default:
+        return null;
+    }
   }
 
   Widget _buildSelectedTab() {
@@ -442,48 +643,67 @@ class _ProfilePageState extends State<ProfilePage>
               Navigator.pop(context); // navigate to dashboard
             },
           ),
-          _modernCard(
+          _bannerCard(
             "Profile",
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _getProfileImageProvider(),
+                  child: Image.asset(
+                    'assets/icons/Account_User Profile/User Profile_White Badge_Red.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Center(
-                  child: Text(fullNameController.text,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    fullNameController.text,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
                 Center(
                   child: Text(emailController.text,
-                      style: const TextStyle(color: Colors.grey)),
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      )),
                 ),
                 const SizedBox(height: 12),
                 Center(
                   child: ElevatedButton(
                     onPressed: () => setState(() => showProfileSummary = false),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent),
+                        backgroundColor: const Color(0xFFC10D00)),
                     child: const Text("Edit Profile"),
                   ),
                 ),
                 const Divider(height: 30),
-                Text("Title: ${titleController.text}",
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  "Title: ${titleController.text}",
+                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+                ),
                 const SizedBox(height: 6),
-                Text("Nationality: ${nationalityController.text}",
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  "Nationality: ${nationalityController.text}",
+                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+                ),
                 const SizedBox(height: 6),
-                Text("Bio: ${bioController.text}",
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  "Bio: ${bioController.text}",
+                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+                ),
                 const SizedBox(height: 6),
-                Text("Location: ${locationController.text}",
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  "Location: ${locationController.text}",
+                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+                ),
                 const SizedBox(height: 6),
                 InkWell(
                   onTap: () => _launchUrl(portfolioController.text),
@@ -525,86 +745,185 @@ class _ProfilePageState extends State<ProfilePage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _modernCard(
+          _bannerCard(
             "Personal Info",
             Column(
               children: [
                 GestureDetector(
                   onTap: _pickProfileImage,
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _getProfileImageProvider(),
+                  child: Image.asset(
+                    'assets/icons/Account_User Profile/User Profile_White Badge_Red.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 12),
                 CustomTextField(
-                    label: "Full Name", controller: fullNameController),
-                CustomTextField(label: "Email", controller: emailController),
-                CustomTextField(label: "Phone", controller: phoneController),
-                CustomTextField(label: "Gender", controller: genderController),
+                  label: "Full Name",
+                  controller: fullNameController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Date of Birth", controller: dobController),
+                  label: "Email",
+                  controller: emailController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Nationality", controller: nationalityController),
+                  label: "Phone",
+                  controller: phoneController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "ID Number", controller: idNumberController),
-                CustomTextField(label: "Bio", controller: bioController),
+                  label: "Gender",
+                  controller: genderController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Location", controller: locationController),
-                CustomTextField(label: "Title", controller: titleController),
+                  label: "Date of Birth",
+                  controller: dobController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Nationality",
+                  controller: nationalityController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "ID Number",
+                  controller: idNumberController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Bio",
+                  controller: bioController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Location",
+                  controller: locationController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Title",
+                  controller: titleController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
               ],
             ),
           ),
-          _modernCard(
+          _bannerCard(
             "Education & Skills",
             Column(
               children: [
-                CustomTextField(label: "Degree", controller: degreeController),
                 CustomTextField(
-                    label: "Institution", controller: institutionController),
+                  label: "Degree",
+                  controller: degreeController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Graduation Year",
-                    controller: graduationYearController),
+                  label: "Institution",
+                  controller: institutionController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Skills (comma separated)",
-                    controller: skillsController),
+                  label: "Graduation Year",
+                  controller: graduationYearController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Skills (comma separated)",
+                  controller: skillsController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
               ],
             ),
           ),
-          _modernCard(
+          _bannerCard(
             "Work Experience",
             Column(
               children: [
                 CustomTextField(
-                    label: "Job Title", controller: jobTitleController),
+                  label: "Job Title",
+                  controller: jobTitleController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Company", controller: companyController),
+                  label: "Company",
+                  controller: companyController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Years of Experience",
-                    controller: yearsOfExpController),
+                  label: "Years of Experience",
+                  controller: yearsOfExpController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Work Experience Details",
-                    controller: workExpController),
+                  label: "Work Experience Details",
+                  controller: workExpController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
               ],
             ),
           ),
-          _modernCard(
+          _bannerCard(
             "Online Profiles & CV",
             Column(
               children: [
                 CustomTextField(
-                    label: "LinkedIn", controller: linkedinController),
-                CustomTextField(label: "GitHub", controller: githubController),
+                  label: "LinkedIn",
+                  controller: linkedinController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 CustomTextField(
-                    label: "Portfolio", controller: portfolioController),
-                CustomTextField(label: "CV Text", controller: cvTextController),
-                CustomTextField(label: "CV URL", controller: cvUrlController),
+                  label: "GitHub",
+                  controller: githubController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "Portfolio",
+                  controller: portfolioController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "CV Text",
+                  controller: cvTextController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
+                CustomTextField(
+                  label: "CV URL",
+                  controller: cvUrlController,
+                  textColor: Colors.white,
+                  backgroundColor: Colors.black.withOpacity(0.10),
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: updateProfile,
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent),
-                  child: const Text("Save Profile"),
+                      backgroundColor: const Color(0xFFC10D00)),
+                  child: const Text("Save Changes"),
                 ),
               ],
             ),
@@ -618,40 +937,25 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildSettingsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: _modernCard(
+      child: _bannerCard(
         "Settings",
         Column(
           children: [
-            SwitchListTile(
-              title: const Text("Dark Mode"),
-              value: darkMode,
-              onChanged: (v) => setState(() => darkMode = v),
-            ),
-            SwitchListTile(
-              title: const Text("Notifications"),
-              value: notificationsEnabled,
-              onChanged: (v) => setState(() => notificationsEnabled = v),
-            ),
-            SwitchListTile(
-              title: const Text("Job Alerts"),
-              value: jobAlertsEnabled,
-              onChanged: (v) => setState(() => jobAlertsEnabled = v),
-            ),
-            SwitchListTile(
-              title: const Text("Profile Visible"),
-              value: profileVisible,
-              onChanged: (v) => setState(() => profileVisible = v),
-            ),
-            SwitchListTile(
-              title: const Text("Enrollment Completed"),
-              value: enrollmentCompleted,
-              onChanged: (v) => setState(() => enrollmentCompleted = v),
-            ),
+            _toggleRow(
+                "Dark Mode", darkMode, (v) => setState(() => darkMode = v)),
+            _toggleRow("Notifications", notificationsEnabled,
+                (v) => setState(() => notificationsEnabled = v)),
+            _toggleRow("Job Alerts", jobAlertsEnabled,
+                (v) => setState(() => jobAlertsEnabled = v)),
+            _toggleRow("Profile Visible", profileVisible,
+                (v) => setState(() => profileVisible = v)),
+            _toggleRow("Enrollment Completed", enrollmentCompleted,
+                (v) => setState(() => enrollmentCompleted = v)),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: updateSettings,
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC10D00)),
               child: const Text("Save Settings"),
             ),
           ],
@@ -663,21 +967,24 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _build2FATab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: _modernCard(
+      child: _bannerCard(
         "Two-Factor Authentication",
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-                "Enable 2FA to add an extra layer of security to your account."),
+            Text(
+              "Enable 2FA to add an extra layer of security to your account.",
+              style: GoogleFonts.poppins(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            _toggleRow("Enable Two-Factor Authentication", twoFactorEnabled,
+                (v) => setState(() => twoFactorEnabled = v)),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Implement 2FA enable logic
-              },
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: const Text("Enable 2FA"),
+              onPressed: updateSettings,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC10D00)),
+              child: const Text("Save 2FA Settings"),
             ),
           ],
         ),
@@ -742,7 +1049,7 @@ class _ProfilePageState extends State<ProfilePage>
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: _modernCard(
+      child: _bannerCard(
         "Reset Password",
         Column(
           children: [
@@ -750,24 +1057,30 @@ class _ProfilePageState extends State<ProfilePage>
               label: "Current Password",
               controller: currentPassword,
               obscureText: true,
+              textColor: Colors.white,
+              backgroundColor: Colors.black.withOpacity(0.10),
             ),
             const SizedBox(height: 10),
             CustomTextField(
               label: "New Password",
               controller: newPassword,
               obscureText: true,
+              textColor: Colors.white,
+              backgroundColor: Colors.black.withOpacity(0.10),
             ),
             const SizedBox(height: 10),
             CustomTextField(
               label: "Confirm New Password",
               controller: confirmPassword,
               obscureText: true,
+              textColor: Colors.white,
+              backgroundColor: Colors.black.withOpacity(0.10),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : changePassword,
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC10D00)),
               child: isLoading
                   ? const SizedBox(
                       height: 20,

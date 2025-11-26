@@ -173,7 +173,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.redAccent.withValues(alpha: 0.1),
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -213,7 +214,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: Colors.redAccent.withValues(alpha: 0.1),
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -264,7 +266,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.1),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.1),
                                           blurRadius: 15,
                                           offset: const Offset(0, 6),
                                         ),
@@ -276,7 +279,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(20),
                                           decoration: BoxDecoration(
-                                            color: scoreColor.withValues(alpha: 0.1),
+                                            color: scoreColor.withValues(
+                                                alpha: 0.1),
                                             borderRadius:
                                                 const BorderRadius.only(
                                               topLeft: Radius.circular(20),
@@ -344,7 +348,8 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
                                                           vertical: 4),
                                                       decoration: BoxDecoration(
                                                         color: scoreColor
-                                                            .withValues(alpha: 0.2),
+                                                            .withValues(
+                                                                alpha: 0.2),
                                                         borderRadius:
                                                             BorderRadius
                                                                 .circular(6),

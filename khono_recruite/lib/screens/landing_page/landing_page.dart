@@ -45,20 +45,16 @@ class LandingPage extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(
-                            child: Image.asset(
-                              'assets/images/logo2.png',
-                              width: 320,
-                              height: 120,
-                              fit: BoxFit.contain,
-                            ),
+                          Image.asset(
+                            'assets/images/logo2.png',
+                            width: 320,
+                            height: 120,
+                            fit: BoxFit.contain,
                           ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   _navItem("Khonology"),
                                   _navItem("Interview Mock up"),
@@ -229,7 +225,8 @@ class LandingPage extends StatelessWidget {
                                 width: photoWidth,
                                 height: photoWidth,
                                 color: Colors.grey.shade800,
-                                child: Icon(Icons.person, color: Colors.grey.shade600, size: 40),
+                                child: Icon(Icons.person,
+                                    color: Colors.grey.shade600, size: 40),
                               );
                             },
                           ),

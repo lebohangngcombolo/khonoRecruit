@@ -127,108 +127,116 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
     final fileLabel = selectedFileName ?? 'No file selected';
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Card(
-              color: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Colors.red, width: 1)),
-              margin: const EdgeInsets.all(16),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.upload_file, size: 60, color: Colors.red),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Upload Your Resume",
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Select your CV file and optionally paste the text content for analysis.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pickFile,
-                            icon: const Icon(Icons.folder_open,
-                                color: Colors.red),
-                            label: const Text("Select File",
-                                style: TextStyle(color: Colors.red)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.red.shade700),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 14, horizontal: 16),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/Frame 1.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Card(
+                color: Colors.white,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Colors.red, width: 1)),
+                margin: const EdgeInsets.all(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.upload_file, size: 60, color: Colors.red),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Upload Your Resume",
+                        style:
+                            TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Select your CV file and optionally paste the text content for analysis.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _pickFile,
+                              icon: const Icon(Icons.folder_open,
+                                  color: Colors.red),
+                              label: const Text("Select File",
+                                  style: TextStyle(color: Colors.red)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.red.shade700),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14, horizontal: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            fileLabel,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black87),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              fileLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.black87),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: resumeTextController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        labelText: "Paste your CV text (optional)",
-                        labelStyle: const TextStyle(color: Colors.black54),
-                        contentPadding: const EdgeInsets.all(12),
-                        filled: true,
-                        fillColor: Colors.grey[200],
+                        ],
                       ),
-                      style: const TextStyle(color: Colors.black87),
-                      maxLines: 5,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: uploading ? null : _uploadCV,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: resumeTextController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
+                          labelText: "Paste your CV text (optional)",
+                          labelStyle: const TextStyle(color: Colors.black54),
+                          contentPadding: const EdgeInsets.all(12),
+                          filled: true,
+                          fillColor: Colors.grey[200],
                         ),
-                        child: uploading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Text("Upload CV & Continue",
-                                style: TextStyle(fontSize: 16)),
+                        style: const TextStyle(color: Colors.black87),
+                        maxLines: 5,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Supported: PDF/DOC/DOCX/TXT. Max file size depends on server config.',
-                      style: TextStyle(color: Colors.black54, fontSize: 12),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: uploading ? null : _uploadCV,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: uploading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2))
+                              : const Text("Upload CV & Continue",
+                                  style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Supported: PDF/DOC/DOCX/TXT. Max file size depends on server config.',
+                        style: TextStyle(color: Colors.black54, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

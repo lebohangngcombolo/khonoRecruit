@@ -161,7 +161,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
           Color color, IconData icon) =>
       GlassCard(
         blur: 8,
-        opacity: 0.1,
+        opacity: 0.1, // This is a parameter for GlassCard, keep as double.
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -223,7 +223,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildMockChart(String title, Color color) {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -256,7 +256,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildPredictiveAnalytics() {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -355,7 +355,7 @@ class _HMAnalyticsPageState extends State<HMAnalyticsPage> {
   Widget _buildDetailedReports() {
     return GlassCard(
       blur: 8,
-      opacity: 0.1,
+      opacity: 0.1, // This is a parameter for GlassCard, keep as double.
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

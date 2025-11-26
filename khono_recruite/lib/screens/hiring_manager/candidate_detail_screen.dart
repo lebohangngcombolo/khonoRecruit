@@ -1,3 +1,4 @@
+import 'dart:html' as html; // For web download
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -5,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'interview_schedule_page.dart';
@@ -129,13 +129,13 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
       }
 
       if (kIsWeb) {
-        final uri = Uri.parse(cvUrl);
-        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (!launched) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Could not launch CV URL")),
-          );
-        }
+        html.AnchorElement(href: cvUrl)
+          ..setAttribute("download", "cv_$fullName.pdf")
+          ..click();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Download started")),
+        );
       } else {
         final dir = await getApplicationDocumentsDirectory();
         final savePath = "${dir.path}/cv_$fullName.pdf";

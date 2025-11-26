@@ -89,19 +89,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                       borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.05),
-                          Colors.white.withOpacity(0.05),
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
+                          Colors.white.withAlpha((255 * 0.05).round()), // Use withAlpha
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha((255 * 0.1).round()), // Use withAlpha
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -150,7 +150,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                               controller: emailController,
                               inputType: TextInputType.emailAddress,
                               textColor: Colors.white,
-                              backgroundColor: Colors.white.withOpacity(0.1),
+                              backgroundColor: Colors.white.withAlpha((255 * 0.1).round()), // Use withAlpha
                             ),
                             const SizedBox(height: 20),
                             SizedBox(

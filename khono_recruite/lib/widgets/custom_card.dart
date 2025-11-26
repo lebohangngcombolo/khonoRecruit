@@ -44,21 +44,27 @@ class _CustomCardState extends State<CustomCard> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.white.withValues(alpha: isHovered ? 0.1 : 0.05),
-                      Colors.white.withValues(alpha: isHovered ? 0.15 : 0.08)
+                      Colors.white.withAlpha((255 * (isHovered ? 0.1 : 0.05))
+                          .round()), // Use withAlpha
+                      Colors.white.withAlpha((255 * (isHovered ? 0.15 : 0.08))
+                          .round()) // Use withAlpha
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: isHovered ? 0.25 : 0.15),
+                    color: Colors.white.withAlpha(
+                        (255 * (isHovered ? 0.25 : 0.15))
+                            .round()), // Use withAlpha
                     width: 1.5,
                   ),
                   boxShadow: [
                     if (widget.shadow)
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isHovered ? 0.25 : 0.15),
+                        color: Colors.black.withAlpha(
+                            (255 * (isHovered ? 0.25 : 0.15))
+                                .round()), // Use withAlpha
                         blurRadius: isHovered ? 15 : 8,
                         offset: const Offset(0, 8),
                       ),

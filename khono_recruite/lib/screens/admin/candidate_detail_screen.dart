@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+// For web download
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -100,6 +101,7 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
     }
   }
 
+  @pragma('vm:entry-point')
   Future<void> downloadCV(int candidateId, BuildContext context,
       String fullName, String jwtToken) async {
     try {
@@ -133,11 +135,13 @@ class _CandidateDetailScreenState extends State<CandidateDetailScreen>
         final uri = Uri.parse(cvUrl);
         final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ok ? "Opened CV in a new tab" : "Failed to open CV")),
+          SnackBar(
+              content:
+                  Text(ok ? "Opened CV in a new tab" : "Failed to open CV")),
         );
       } else {
         final dir = await getApplicationDocumentsDirectory();
-        final savePath = "${dir.path}/cv_$fullName.pdf";
+        final savePath = "${dir.path}/cv_${fullName}.pdf";
 
         await Dio().download(cvUrl, savePath);
 
