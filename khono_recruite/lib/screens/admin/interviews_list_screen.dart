@@ -112,7 +112,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       context: context,
       initialTime: TimeOfDay.now(),
     );
-    if (time != null && picked != null) { // Added null check for 'picked'
+    if (time != null && picked != null) { 
       final newDateTime = DateTime(
         picked.year,
         picked.month,
@@ -122,7 +122,7 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
       );
       rescheduleInterview(id, newDateTime);
     }
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,421 +186,62 @@ class _InterviewListScreenState extends State<InterviewListScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: Column(
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "Interview Schedule",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      color: themeProvider.isDarkMode
-                                          ? Colors.white
-                                          : Colors.black87,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Interview Schedule",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.white
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Scheduled at: $scheduled",
+                                          style: GoogleFonts.inter(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.grey.shade400
+                                                : Colors.grey.shade600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    "${interviews.length} interviews scheduled",
-                                    style: GoogleFonts.inter(
-                                      color: themeProvider.isDarkMode
-                                          ? Colors.grey.shade400
-                                          : Colors.grey.shade600,
-                                      fontSize: 14,
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: redColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "Active",
+                                      style: GoogleFonts.inter(
+                                        color: redColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: redColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  "Active",
-                                  style: GoogleFonts.inter(
-                                    color: redColor,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Interviews Grid
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Wrap(
-                              spacing: 20,
-                              runSpacing: 20,
-                              children: interviews.map((i) {
-                                final scheduled = i['scheduled_time'] != null
-                                    ? DateFormat('MMM dd, yyyy • HH:mm').format(
-                                        DateTime.parse(i['scheduled_time']))
-                                    : 'Not Scheduled';
-
-                                final status = i['status'] ?? 'Scheduled';
-                                final statusColor = getStatusColor(status);
-
-                                return Container(
-                                  width: width < 600 ? double.infinity : 400,
-                                  decoration: BoxDecoration(
-                                    color: (themeProvider.isDarkMode
-                                            ? const Color(0xFF14131E)
-                                            : Colors.white)
-                                        .withValues(alpha: 0.9),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.08),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                    border: Border.all(
-                                      color: themeProvider.isDarkMode
-                                          ? Colors.grey.shade800
-                                          : Colors.grey.withValues(alpha: 0.1),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Header with status
-                                      Container(
-                                        padding: const EdgeInsets.all(20),
-                                        decoration: BoxDecoration(
-                                          color: statusColor.withValues(alpha: 0.1),
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(20),
-                                            topRight: Radius.circular(20),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: statusColor
-                                                    .withValues(alpha: 0.2),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                status.toUpperCase(),
-                                                style: GoogleFonts.inter(
-                                                  color: statusColor,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            Icon(
-                                              Icons.calendar_today,
-                                              color: statusColor,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              scheduled,
-                                              style: GoogleFonts.inter(
-                                                color: themeProvider.isDarkMode
-                                                    ? Colors.grey.shade400
-                                                    : Colors.grey.shade600,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Content
-                                      Padding(
-                                        padding: const EdgeInsets.all(20),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Candidate Avatar
-                                            Stack(
-                                              children: [
-                                                Container(
-                                                  width: 60,
-                                                  height: 60,
-                                                  decoration: BoxDecoration(
-                                                    color: redColor
-                                                        .withValues(alpha: 0.1),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: redColor
-                                                          .withValues(alpha: 0.2),
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                  child:
-                                                      i['candidate_picture'] !=
-                                                              null
-                                                          ? ClipOval(
-                                                              child:
-                                                                  Image.network(
-                                                                i['candidate_picture'],
-                                                                width: 60,
-                                                                height: 60,
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ),
-                                                            )
-                                                          : Icon(
-                                                              Icons.person,
-                                                              size: 30,
-                                                              color: redColor
-                                                                  .withValues(
-                                                                      alpha: 0.6),
-                                                            ),
-                                                ),
-                                                Positioned(
-                                                  bottom: 0,
-                                                  right: 0,
-                                                  child: Container(
-                                                    width: 16,
-                                                    height: 16,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                        color: Colors.white,
-                                                        width: 2,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(width: 16),
-                                            // Candidate Details
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    i['job_title'] ??
-                                                        'No Job Title',
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: themeProvider
-                                                              .isDarkMode
-                                                          ? Colors.white
-                                                          : Colors.black87,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  _buildDetailRow(
-                                                    icon: Icons.person,
-                                                    text: i['candidate_name'] ??
-                                                        'Unknown Candidate',
-                                                    themeProvider:
-                                                        themeProvider,
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  _buildDetailRow(
-                                                    icon: Icons.video_call,
-                                                    text:
-                                                        "Type: ${i['interview_type'] ?? 'N/A'}",
-                                                    themeProvider:
-                                                        themeProvider,
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  // Action Buttons
-                                                  Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                            boxShadow: [
-                                                              BoxShadow(
-                                                                color: Colors
-                                                                    .red
-                                                                    .withValues(alpha: 0.3),
-                                                                blurRadius: 8,
-                                                                offset:
-                                                                    const Offset(
-                                                                        0, 4),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          child: ElevatedButton
-                                                              .icon(
-                                                            icon: const Icon(
-                                                                Icons
-                                                                    .cancel_outlined,
-                                                                size: 16),
-                                                            label: Text(
-                                                              "Cancel",
-                                                              style: GoogleFonts
-                                                                  .inter(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                            ),
-                                                            onPressed: () =>
-                                                                cancelInterview(
-                                                                    i['id']),
-                                                            style:
-                                                                ElevatedButton
-                                                                    .styleFrom(
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                              foregroundColor:
-                                                                  Colors.white,
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          12),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Expanded(
-                                                        child: Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        12),
-                                                            boxShadow: [
-                                                              BoxShadow(
-                                                                color: redColor
-                                                                    .withValues(alpha: 0.3),
-                                                                blurRadius: 8,
-                                                                offset:
-                                                                    const Offset(
-                                                                        0, 4),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          child: ElevatedButton
-                                                              .icon(
-                                                            icon: const Icon(
-                                                                Icons.schedule,
-                                                                size: 16),
-                                                            label: Text(
-                                                              "Reschedule",
-                                                              style: GoogleFonts
-                                                                  .inter(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                            ),
-                                                            onPressed: () =>
-                                                                showRescheduleDialog(
-                                                                    i['id']),
-                                                            style:
-                                                                ElevatedButton
-                                                                    .styleFrom(
-                                                              backgroundColor:
-                                                                  redColor,
-                                                              foregroundColor:
-                                                                  Colors.white,
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          12),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(
-      {required IconData icon,
-      required String text,
-      required ThemeProvider themeProvider}) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: themeProvider.isDarkMode
-              ? Colors.grey.shade400
-              : Colors.grey.shade500,
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              color: themeProvider.isDarkMode
-                  ? Colors.grey.shade400
-                  : Colors.grey.shade600,
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            );
   }
 }

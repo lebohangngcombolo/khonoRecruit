@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -13,9 +12,10 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Color? backgroundColor;
   final Color? textColor;
+  final Color? borderColor;
   final bool obscureText;
-  final TextAlign? textAlign; // <-- added
-  final TextStyle? style; // <-- added
+  final TextAlign? textAlign;
+  final TextStyle? style;
 
   const CustomTextField({
     super.key,
@@ -32,8 +32,8 @@ class CustomTextField extends StatelessWidget {
     this.textColor,
     this.borderColor,
     this.obscureText = false,
-    this.textAlign, // <-- added
-    this.style, // <-- added
+    this.textAlign,
+    this.style,
   });
 
   @override
@@ -44,7 +44,8 @@ class CustomTextField extends StatelessWidget {
             const Color.fromARGB(255, 147, 146, 146).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color.fromARGB(255, 236, 0, 0).withValues(alpha: 0.3),
+          color: borderColor ??
+              const Color.fromARGB(255, 236, 0, 0).withValues(alpha: 0.3),
         ),
       ),
       child: TextFormField(

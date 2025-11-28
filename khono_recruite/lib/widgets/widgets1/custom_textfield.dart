@@ -9,8 +9,8 @@ class CustomTextField extends StatelessWidget {
   final int maxLines;
   final Function(String)? onChanged;
   final String? Function(String?)? validator;
-  final Color? backgroundColor; // new
-  final Color? textColor; // new
+  final Color? backgroundColor;
+  final Color? textColor;
   final bool obscureText;
 
   const CustomTextField({
@@ -32,18 +32,10 @@ class CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-<<<<<<<< HEAD:khono_recruite/lib/widgets/widgets1/custom_textfield.dart
         color: backgroundColor ?? Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.3),
-========
-        color: backgroundColor ??
-            const Color.fromARGB(255, 147, 146, 146).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color.fromARGB(255, 236, 0, 0).withOpacity(0.3),
->>>>>>>> 75016d5ebef202b71a7cc69eab1f3a3c6c746981:khono_recruite/lib/widgets/custom_textfield.dart
         ),
       ),
       child: TextFormField(
@@ -55,11 +47,7 @@ class CustomTextField extends StatelessWidget {
         validator: validator,
         obscureText: obscureText,
         style: TextStyle(
-<<<<<<<< HEAD:khono_recruite/lib/widgets/widgets1/custom_textfield.dart
           color: textColor ?? Colors.white,
-========
-          color: textColor ?? const Color.fromARGB(255, 199, 0, 0),
->>>>>>>> 75016d5ebef202b71a7cc69eab1f3a3c6c746981:khono_recruite/lib/widgets/custom_textfield.dart
         ),
         decoration: InputDecoration(
           labelText: label,

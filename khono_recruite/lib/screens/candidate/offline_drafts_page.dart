@@ -189,7 +189,7 @@ class _OfflineDraftsPageState extends State<OfflineDraftsPage> {
                                         MaterialPageRoute(
                                           builder: (_) => JobDetailsPage(
                                             job: job,
-                                            draftForm: form,
+                                            draftData: form,
                                           ),
                                         ),
                                       );

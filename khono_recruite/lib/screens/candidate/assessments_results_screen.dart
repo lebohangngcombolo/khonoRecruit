@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 class AssessmentResultsPage extends StatefulWidget {

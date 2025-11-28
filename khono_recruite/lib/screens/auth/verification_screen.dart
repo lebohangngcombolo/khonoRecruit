@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/custom_textfield.dart';
 import '../../widgets/six_digit_code_field.dart'; // Import the custom widget
 import '../../providers/theme_provider.dart';
 import '../enrollment/enrollment_screen.dart';
@@ -20,6 +21,7 @@ class _VerificationScreenState extends State<VerificationScreen>
     with SingleTickerProviderStateMixin {
   String verificationCode = '';
   bool loading = false;
+  final TextEditingController codeController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -40,6 +42,7 @@ class _VerificationScreenState extends State<VerificationScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    codeController.dispose();
     super.dispose();
   }
 

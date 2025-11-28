@@ -23,9 +23,10 @@ class _OAuthCallbackScreenState extends State<OAuthCallbackScreen> {
   Future<void> _handleOAuthRedirect() async {
     final uri = Uri.base; // Gets full current browser URL
     final accessToken = uri.queryParameters['access_token'];
+    final refreshToken = uri.queryParameters['refresh_token'];
     final role = uri.queryParameters['role'];
 
-    if (accessToken != null && role != null) {
+    if (accessToken != null && refreshToken != null && role != null) {
       // Store tokens securely
       await AuthService.storeTokens(accessToken, refreshToken, role);
 

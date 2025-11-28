@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -14,7 +15,7 @@ import 'forgot_password_screen.dart';
 import '../candidate/candidate_dashboard.dart';
 import '../enrollment/enrollment_screen.dart';
 import '../admin/admin_dashboard.dart';
-import 'mfa_verification_screen.dart'; // 🆕 Import MFA screen
+import 'mfa_verification_screen.dart'; // Import MFA screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,9 +30,9 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController passwordController = TextEditingController();
   bool loading = false;
 
-  // 🆕 MFA state variables - PROPERLY TYPED
+  // MFA state variables - PROPERLY TYPED
   String? _mfaSessionToken;
-  String? _userId; // 🆕 Ensure this is String, not int
+  String? _userId; // Ensure this is String, not int
   bool _showMfaForm = false;
 
   late AnimationController _animationController;
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // 🆕 UPDATED LOGIN WITH MFA SUPPORT - Navigation approach
+  // UPDATED LOGIN WITH MFA SUPPORT - Navigation approach
   void _login() async {
     setState(() => loading = true);
     try {
@@ -69,13 +70,12 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (result['success']) {
-        // 🆕 Check if MFA is required
+        // Check if MFA is required
         if (result['mfa_required'] == true) {
-          // 🆕 STORE THE MFA SESSION TOKEN IN STATE
+          // STORE THE MFA SESSION TOKEN IN STATE
           setState(() {
             _mfaSessionToken = result['mfa_session_token'];
-            _userId =
-                result['user_id']?.toString() ?? ''; // 🆕 Convert to string
+            _userId = result['user_id']?.toString() ?? ''; // Convert to string
           });
 
           // Navigate to MFA verification screen
@@ -85,11 +85,11 @@ class _LoginScreenState extends State<LoginScreen>
               builder: (_) => MfaVerificationScreen(
                 mfaSessionToken: result['mfa_session_token'],
                 userId:
-                    result['user_id']?.toString() ?? '', // 🆕 Convert to string
+                    result['user_id']?.toString() ?? '', // Convert to string
                 onVerify: _verifyMfa,
                 onBack: () {
                   Navigator.pop(context);
-                  // 🆕 Clear MFA state when going back
+                  // Clear MFA state when going back
                   setState(() {
                     _mfaSessionToken = null;
                     _userId = null;
@@ -121,9 +121,9 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-// 🆕 MFA VERIFICATION - Updated for navigation approach
+// MFA VERIFICATION - Updated for navigation approach
   void _verifyMfa(String token) async {
-    // 🆕 ADD NULL SAFETY CHECK
+    // ADD NULL SAFETY CHECK
     if (_mfaSessionToken == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
       final result = await AuthService.verifyMfaLogin(_mfaSessionToken!, token);
 
       if (result['success']) {
-        // 🆕 CLEAR MFA STATE AFTER SUCCESS
+        // CLEAR MFA STATE AFTER SUCCESS
         setState(() {
           _mfaSessionToken = null;
           _userId = null;
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // 🆕 BACK TO LOGIN FORM
+  // BACK TO LOGIN FORM
   void _backToLogin() {
     setState(() {
       _showMfaForm = false;
@@ -237,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
     final themeProvider = Provider.of<ThemeProvider>(context);
     final size = MediaQuery.of(context).size;
 
-    // 🆕 Show MFA form if required
+    // Show MFA form if required
     if (_showMfaForm) {
       return MfaVerificationScreen(
         mfaSessionToken: _mfaSessionToken!,
@@ -295,18 +295,6 @@ class _LoginScreenState extends State<LoginScreen>
                     width: size.width > 800 ? 400 : size.width * 0.9,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 32),
-<<<<<<< HEAD
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 16),
-                        Text(
-                          "WELCOME BACK",
-                          style: GoogleFonts.poppins(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-=======
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
                       gradient: LinearGradient(
@@ -508,156 +496,9 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 16),
                             ],
->>>>>>> origin/Devel
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          "Login",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        CustomTextField(
-                          label: "Email",
-                          controller: emailController,
-                          inputType: TextInputType.emailAddress,
-                          backgroundColor: const Color(0xFF2A2A2A),
-                          borderColor: const Color(0xFFC10D00),
-                          textColor: Colors.white,
-                        ),
-                        const SizedBox(height: 12),
-                        CustomTextField(
-                          label: "Password",
-                          controller: passwordController,
-                          obscureText: true,
-                          backgroundColor: const Color(0xFF2A2A2A),
-                          borderColor: const Color(0xFFC10D00),
-                          textColor: Colors.white,
-                        ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ForgotPasswordScreen()),
-                            ),
-                            child: Text(
-                              "Forgot Password?",
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        FractionallySizedBox(
-                          widthFactor: 0.5,
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 35,
-                            child: ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFC10D00),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(
-                                      color: Color(0xFFC10D00), width: 2),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: Text(
-                                "LOGIN",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            const Expanded(child: Divider(color: Colors.white)),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                "Or login with",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const Expanded(child: Divider(color: Colors.white)),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: const FaIcon(FontAwesomeIcons.google,
-                                  color: Colors.white, size: 32),
-                              onPressed: () => _socialLogin("Google"),
-                            ),
-                            const SizedBox(width: 24),
-                            IconButton(
-                              icon: const FaIcon(FontAwesomeIcons.github,
-                                  color: Colors.white, size: 32),
-                              onPressed: () => _socialLogin("GitHub"),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Don't have an account? ",
-                              style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            GestureDetector(
-                              onTap: () => Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const RegisterScreen()),
-                              ),
-                              child: Text(
-                                "Register",
-                                style: GoogleFonts.poppins(
-                                    color: Color(0xFFC10D00),
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        IconButton(
-                          icon: Icon(
-                              themeProvider.isDarkMode
-                                  ? Icons.light_mode
-                                  : Icons.dark_mode,
-                              color: Colors.white),
-                          onPressed: () => themeProvider.toggleTheme(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                      ),
                     ),
                   ),
                 ),

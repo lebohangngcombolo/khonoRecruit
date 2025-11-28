@@ -18,6 +18,9 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   final List<CollaborationMessage> _messages = [];
   final List<SharedNote> _sharedNotes = [];
   final List<Meeting> _meetings = [];
+  final List<TeamMember> _teamMembers = [];
+
+  bool _isConnected = false;
 
   bool _isLoadingNotes = true;
   bool _isLoadingMeetings = true;
@@ -30,8 +33,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   @override
   void initState() {
     super.initState();
-    _loadNotes();
-    _loadMeetings();
+    _loadTeamData();
+    _initializeWebSocket();
   }
 
   void _initializeWebSocket() {
@@ -65,32 +68,40 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     try {
       // Update user activity
       TeamService.updateUserActivity();
-      
+
       // Load team members from API
       final membersData = await TeamService.getTeamMembers();
-      final members = membersData.map((json) => TeamMember(
-        name: json['name'] ?? 'Unknown',
-        role: json['role'] ?? 'Team Member',
-        isOnline: json['isOnline'] ?? false,
-      )).toList();
+      final members = membersData
+          .map((json) => TeamMember(
+                name: json['name'] ?? 'Unknown',
+                role: json['role'] ?? 'Team Member',
+                isOnline: json['isOnline'] ?? false,
+              ))
+          .toList();
 
       // Load shared notes from API
       final notesData = await TeamService.getTeamNotes();
-      final notes = notesData.map((json) => SharedNote(
-        title: json['title'] ?? '',
-        content: json['content'] ?? '',
-        author: json['author'] ?? 'Unknown',
-        lastModified: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
-      )).toList();
+      final notes = notesData
+          .map((json) => SharedNote(
+                title: json['title'] ?? '',
+                content: json['content'] ?? '',
+                author: json['author'] ?? 'Unknown',
+                lastModified: DateTime.tryParse(json['updated_at'] ?? '') ??
+                    DateTime.now(),
+              ))
+          .toList();
 
       // Load messages from API
       final messagesData = await TeamService.getTeamMessages();
-      final messages = messagesData.map((json) => CollaborationMessage(
-        author: json['author'] ?? 'Unknown',
-        content: json['message'] ?? '',
-        timestamp: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-        entity: json['entity_type'] ?? 'general',
-      )).toList();
+      final messages = messagesData
+          .map((json) => CollaborationMessage(
+                author: json['author'] ?? 'Unknown',
+                content: json['message'] ?? '',
+                timestamp: DateTime.tryParse(json['created_at'] ?? '') ??
+                    DateTime.now(),
+                entity: json['entity_type'] ?? 'general',
+              ))
+          .toList();
 
       setState(() {
         _teamMembers.clear();
@@ -294,64 +305,13 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                     onPressed: () {
                       Navigator.pop(context);
                       _createMeeting(
-                          titleController.text, datetimeController.text);
+                        titleController.text,
+                        datetimeController.text,
+                      );
                     },
                     child: const Text('Schedule')),
               ],
             ));
-  }
-
-  // ---------------- Notes & Meetings Panels ----------------
-  Widget _buildSharedNotesPanel() {
-    return GlassCard(
-      blur: 8,
-      opacity: 0.1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Team Members',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                shadows: [
-                  Shadow(
-                    color: Colors.black54,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: _teamMembers.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No team members found',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _teamMembers.length,
-                      itemBuilder: (context, index) {
-                        final member = _teamMembers[index];
-                        return _buildTeamMemberCard(member);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildSharedNoteCard(SharedNote note) {
@@ -361,48 +321,50 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
       decoration: BoxDecoration(
         color: AppColors.lightGrey.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: AppColors.primaryRed.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(note.title,
-              style: const TextStyle(
-                color: AppColors.primaryWhite,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+          Text(
+            note.title,
+            style: const TextStyle(
+              color: AppColors.primaryWhite,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note.content,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'By ${note.author}',
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 10,
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  member.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              const Spacer(),
+              Text(
+                _formatTimeAgo(note.lastModified),
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 10,
                 ),
-                Text(
-                  member.role,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: member.isOnline ? Colors.green : AppColors.textGrey,
-              shape: BoxShape.circle,
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -442,7 +404,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
             ));
   }
 
-  Widget _buildMeetingsPanel() {
+  Widget _buildSharedNotesPanel() {
     return GlassCard(
       blur: 8,
       opacity: 0.1,
@@ -501,60 +463,45 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   Widget _buildMeetingCard(Meeting meeting) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () => _viewSharedNote(note),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.lightGrey.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.primaryRed.withValues(alpha: 0.1),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.lightGrey.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.primaryRed.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            meeting.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 4),
+          Text(
+            meeting.datetime,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
             children: [
               Text(
-                note.title,
+                'Organizer: ${meeting.organizer}',
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.white60,
+                  fontSize: 10,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                note.content,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    'By ${note.author}',
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _formatTimeAgo(note.lastModified),
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -769,7 +716,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               decoration: const InputDecoration(
                 hintText: 'Type a message... (use @ to mention)',
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               ),
               maxLines: null,
               onSubmitted: (value) => _sendMessage(),
@@ -803,23 +751,22 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     if (_messageController.text.trim().isEmpty) return;
 
     final messageText = _messageController.text.trim();
-    
+
     try {
       // Extract mentions from message
       final mentions = _extractMentions(messageText);
-      
+
       // Send message to API
       await TeamService.sendTeamMessage(messageText);
-      
+
       // If there are mentions, send notifications
       if (mentions.isNotEmpty) {
         await _sendMentionNotifications(mentions, messageText);
       }
-      
+
       // Clear input and reload messages
       _messageController.clear();
       _loadTeamData();
-      
     } catch (e) {
       debugPrint('Error sending message: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -836,28 +783,30 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     final mentions = <String>[];
     final mentionRegex = RegExp(r'@([\w\.\-]+)');
     final matches = mentionRegex.allMatches(text);
-    
+
     for (final match in matches) {
       mentions.add(match.group(1)!);
     }
-    
+
     return mentions;
   }
 
   // Send notifications to mentioned users
-  Future<void> _sendMentionNotifications(List<String> mentions, String messageText) async {
+  Future<void> _sendMentionNotifications(
+      List<String> mentions, String messageText) async {
     try {
       for (final mention in mentions) {
         // Find the user by name/email
         final mentionedUser = _teamMembers.firstWhere(
           (member) => member.name.toLowerCase().contains(mention.toLowerCase()),
-          orElse: () => TeamMember(name: '', role: '', isOnline: false),
+          orElse: () => const TeamMember(name: '', role: '', isOnline: false),
         );
-        
+
         if (mentionedUser.name.isNotEmpty) {
           // Send notification via API
           // This would call a notifications endpoint
-          debugPrint('Sending notification to ${mentionedUser.name} for mention');
+          debugPrint(
+              'Sending notification to ${mentionedUser.name} for mention');
         }
       }
     } catch (e) {
@@ -880,7 +829,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
               final member = _teamMembers[index];
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: member.isOnline 
+                  backgroundColor: member.isOnline
                       ? Colors.green.withValues(alpha: 0.2)
                       : Colors.grey.withValues(alpha: 0.2),
                   child: Text(
@@ -940,17 +889,17 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   Widget _buildMessageContent(String content) {
     final mentionRegex = RegExp(r'@([\w\.\-]+)');
     final matches = mentionRegex.allMatches(content);
-    
+
     if (matches.isEmpty) {
       return Text(
         content,
         style: const TextStyle(color: Colors.white),
       );
     }
-    
+
     final spans = <TextSpan>[];
     int currentIndex = 0;
-    
+
     for (final match in matches) {
       // Add text before mention
       if (match.start > currentIndex) {
@@ -959,7 +908,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           style: const TextStyle(color: Colors.white),
         ));
       }
-      
+
       // Add highlighted mention
       spans.add(TextSpan(
         text: match.group(0),
@@ -969,10 +918,10 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           backgroundColor: Color(0x20FF0000),
         ),
       ));
-      
+
       currentIndex = match.end;
     }
-    
+
     // Add remaining text
     if (currentIndex < content.length) {
       spans.add(TextSpan(
@@ -980,7 +929,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
         style: const TextStyle(color: Colors.white),
       ));
     }
-    
+
     return RichText(
       text: TextSpan(children: spans),
     );
@@ -989,7 +938,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
   void _createSharedNote() {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1022,7 +971,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+              if (titleController.text.isNotEmpty &&
+                  contentController.text.isNotEmpty) {
                 try {
                   await TeamService.createTeamNote(
                     titleController.text,
@@ -1081,7 +1031,7 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     final descriptionController = TextEditingController();
     DateTime selectedDate = DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.now();
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1112,8 +1062,10 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.calendar_today, color: AppColors.primaryRed),
-                  title: Text('Date: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                  leading: const Icon(Icons.calendar_today,
+                      color: AppColors.primaryRed),
+                  title: Text(
+                      'Date: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
                   trailing: const Icon(Icons.arrow_drop_down),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -1128,7 +1080,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.access_time, color: AppColors.primaryRed),
+                  leading: const Icon(Icons.access_time,
+                      color: AppColors.primaryRed),
                   title: Text('Time: ${selectedTime.format(context)}'),
                   trailing: const Icon(Icons.arrow_drop_down),
                   onTap: () async {
@@ -1191,7 +1144,8 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.calendar_month, color: AppColors.primaryRed, size: 20),
+                const Icon(Icons.calendar_month,
+                    color: AppColors.primaryRed, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Upcoming Meetings',
@@ -1241,20 +1195,28 @@ class _HMTeamCollaborationPageState extends State<HMTeamCollaborationPage> {
     );
   }
 
-  Widget _buildMeetingItem(String title, String description, DateTime dateTime, IconData icon) {
+  Widget _buildMeetingItem(
+      String title, String description, DateTime dateTime, IconData icon) {
     final now = DateTime.now();
-    final isToday = dateTime.day == now.day && dateTime.month == now.month && dateTime.year == now.year;
-    final isTomorrow = dateTime.day == now.day + 1 && dateTime.month == now.month && dateTime.year == now.year;
-    
+    final isToday = dateTime.day == now.day &&
+        dateTime.month == now.month &&
+        dateTime.year == now.year;
+    final isTomorrow = dateTime.day == now.day + 1 &&
+        dateTime.month == now.month &&
+        dateTime.year == now.year;
+
     String timeText;
     if (isToday) {
-      timeText = 'Today ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+      timeText =
+          'Today ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (isTomorrow) {
-      timeText = 'Tomorrow ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+      timeText =
+          'Tomorrow ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
-      timeText = '${dateTime.day}/${dateTime.month} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+      timeText =
+          '${dateTime.day}/${dateTime.month} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
     }
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),

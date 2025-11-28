@@ -9,9 +9,9 @@ import '../../services/drafts_service.dart';
 
 class JobDetailsPage extends StatefulWidget {
   final Map<String, dynamic> job;
-  final Map<String, dynamic>? draftForm;
+  final Map<String, dynamic>? draftData;
 
-  const JobDetailsPage({super.key, required this.job, this.draftForm});
+  const JobDetailsPage({super.key, required this.job, this.draftData});
 
   @override
   State<JobDetailsPage> createState() => _JobDetailsPageState();
