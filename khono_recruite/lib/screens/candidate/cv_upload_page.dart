@@ -21,6 +21,17 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
   bool uploading = false;
   String? token;
 
+  // Theme Colors
+  final Color _primaryDark = Colors.white; // Background
+  final Color _cardDark = Colors.white; // Card background
+  final Color _accentRed = Color(0xFFE53935); // Main red
+  final Color _accentPurple = Color(0xFFD32F2F); // Dark red
+  final Color _accentBlue = Color(0xFFEF5350); // Light red
+  final Color _accentGreen = Color(0xFF43A047); // Success
+  final Color _textPrimary = Colors.black; // Main text
+  final Color _textSecondary = Colors.redAccent; // Secondary text
+  final Color _surfaceOverlay = Colors.red.withOpacity(0.1); // subtle overlay
+
   @override
   void initState() {
     super.initState();
@@ -127,108 +138,143 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
     final fileLabel = selectedFileName ?? 'No file selected';
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Card(
-              color: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
+      backgroundColor: _primaryDark,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/dark.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _cardDark,
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Colors.red, width: 1)),
-              margin: const EdgeInsets.all(16),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.upload_file, size: 60, color: Colors.red),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Upload Your Resume",
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Select your CV file and optionally paste the text content for analysis.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pickFile,
-                            icon: const Icon(Icons.folder_open,
-                                color: Colors.red),
-                            label: const Text("Select File",
-                                style: TextStyle(color: Colors.red)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.red.shade700),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 14, horizontal: 16),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            fileLabel,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black87),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: resumeTextController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        labelText: "Paste your CV text (optional)",
-                        labelStyle: const TextStyle(color: Colors.black54),
-                        contentPadding: const EdgeInsets.all(12),
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                      ),
-                      style: const TextStyle(color: Colors.black87),
-                      maxLines: 5,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: uploading ? null : _uploadCV,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: uploading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Text("Upload CV & Continue",
-                                style: TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Supported: PDF/DOC/DOCX/TXT. Max file size depends on server config.',
-                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                  border: Border.all(color: _accentRed.withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.upload_file, size: 60, color: _accentRed),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Upload Your Resume",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: _textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Select your CV file and optionally paste the text content for analysis.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: _textSecondary),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _pickFile,
+                              icon: Icon(Icons.folder_open, color: _accentRed),
+                              label: Text(
+                                "Select File",
+                                style: TextStyle(color: _accentRed),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: _accentRed),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14, horizontal: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              fileLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: _textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _primaryDark.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border:
+                              Border.all(color: _accentRed.withOpacity(0.3)),
+                        ),
+                        child: TextField(
+                          controller: resumeTextController,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            labelText: "Paste your CV text (optional)",
+                            labelStyle: TextStyle(color: _textSecondary),
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                          style: TextStyle(color: _textPrimary),
+                          maxLines: 5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: uploading ? null : _uploadCV,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _accentRed,
+                            foregroundColor: _textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: uploading
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: _textPrimary,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  "Upload CV & Continue",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Supported: PDF/DOC/DOCX/TXT. Max file size depends on server config.',
+                        style: TextStyle(color: _textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

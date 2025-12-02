@@ -26,7 +26,7 @@ class EmailService:
     def send_password_reset_email(email, reset_token):
         """Send password reset instructions."""
         subject = "Password Reset Request"
-        reset_link = f"http://localhost:65290/reset-password?token={reset_token}"
+        reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
         try:
             html = render_template(
                 'email_templates/password_reset_email.html', 
@@ -117,3 +117,49 @@ class EmailService:
 
         thread = Thread(target=send_email, args=[app, subject, recipients, html_body, text_body])
         thread.start()
+        
+    @staticmethod
+    def send_interview_cancellation(email, candidate_name, interview_date, interview_type, reason=None):
+        """
+        Send email notification that an interview has been cancelled.
+        Includes optional reason and always provides HTML + plain text.
+        """
+        subject = "Interview Cancellation Notice"
+    
+        # Ensure reason is a string
+        reason_text = reason or "No specific reason provided."
+    
+        try:
+            html = render_template(
+                'email_templates/interview_cancellation.html',
+                candidate_name=candidate_name,
+                interview_date=interview_date,
+                interview_type=interview_type,
+                reason=reason_text
+            )
+            text_body = f"Hi {candidate_name},\n\nYour {interview_type} interview scheduled on {interview_date} has been cancelled.\nReason: {reason_text}\n\nPlease contact us for rescheduling."
+        except Exception:
+            logging.error(f"Failed to render interview cancellation template for {email}", exc_info=True)
+            html = text_body = f"Hi {candidate_name}, your {interview_type} interview scheduled on {interview_date} has been cancelled.\nReason: {reason_text}"
+
+        EmailService.send_async_email(subject, [email], html, text_body=text_body)
+        
+    @staticmethod
+    def send_interview_reschedule_email(email, candidate_name, old_time, new_time, interview_type, meeting_link=None):
+        """Send interview reschedule notification."""
+        subject = "Interview Rescheduled"
+        try:
+            html = render_template(
+                "email_templates/interview_reschedule.html",
+                candidate_name=candidate_name,
+                old_time=old_time,
+                new_time=new_time,
+                interview_type=interview_type,
+                meeting_link=meeting_link
+            )
+        except Exception:
+            logging.error(f"Failed to render reschedule email template for {email}", exc_info=True)
+            html = f"Hi {candidate_name}, your {interview_type} interview has been rescheduled from {old_time} to {new_time}. Link: {meeting_link}"
+
+        EmailService.send_async_email(subject, [email], html)
+

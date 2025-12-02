@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Rescheduled - Recruitment Pro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            color: #e53935;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .interview-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #e53935;
+        }
+        .detail-item {
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #e53935;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .calendar-links {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .calendar-button {
+            display: inline-block;
+            background: #4285f4;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Recruitment Pro</div>
+            <h2>Interview Rescheduled</h2>
+        </div>
+
+        <p>Dear {{ candidate_name }},</p>
+
+        <p>Your interview has been <strong>rescheduled</strong>. Please find the updated details below:</p>
+
+        <div class="interview-details">
+            <div class="detail-item"><strong>Interview Type:</strong> {{ interview_type }}</div>
+            <div class="detail-item"><strong>Previous Date & Time:</strong> {{ old_time }}</div>
+            <div class="detail-item"><strong>New Date & Time:</strong> {{ new_time }}</div>
+            {% if meeting_link %}
+            <div class="detail-item">
+                <a href="{{ meeting_link }}" class="button">Join Interview</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <h3>Preparation Tips:</h3>
+        <ul>
+            <li>Test your audio and video equipment beforehand</li>
+            <li>Find a quiet, well-lit space for the interview</li>
+            <li>Have your resume and any relevant documents ready</li>
+            <li>Prepare questions to ask about the role and company</li>
+        </ul>
+
+        <div class="calendar-links">
+            <p>Add to calendar:</p>
+            <a href="#" class="calendar-button">Google Calendar</a>
+            <a href="#" class="calendar-button">Outlook</a>
+            <a href="#" class="calendar-button">iCal</a>
+        </div>
+
+        <p>We look forward to speaking with you!</p>
+
+        <p>Best regards,<br>
+        The Hiring Team</p>
+
+        <div class="footer">
+            <p>© 2025 Recruitment Pro. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

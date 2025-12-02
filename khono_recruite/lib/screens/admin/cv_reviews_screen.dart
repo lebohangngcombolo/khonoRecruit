@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/admin_service.dart';
+import '../../providers/theme_provider.dart';
 
 class CVReviewsScreen extends StatefulWidget {
   const CVReviewsScreen({super.key});
@@ -36,13 +38,20 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
   }
 
   Color getScoreColor(double score) {
-    if (score >= 70) return Colors.greenAccent;
-    if (score >= 50) return Colors.orangeAccent;
+    if (score >= 70) return Colors.green;
+    if (score >= 50) return Colors.orange;
     return Colors.redAccent;
+  }
+
+  String getScoreLabel(double score) {
+    if (score >= 70) return 'Excellent';
+    if (score >= 50) return 'Good';
+    return 'Needs Review';
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth > 1000
         ? 3
@@ -51,242 +60,585 @@ class _CVReviewsScreenState extends State<CVReviewsScreen> {
             : 1;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text("CV Reviews"),
-        backgroundColor: Colors.redAccent,
-        elevation: 0,
-      ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.redAccent))
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: cvReviews.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.folder_open, size: 80, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            "No CV reviews found",
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
-                          ),
-                        ],
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              "CV Reviews Dashboard",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: (themeProvider.isDarkMode
+                    ? const Color(0xFF14131E)
+                    : Colors.white)
+                .withOpacity(0.9),
+            elevation: 0,
+            foregroundColor:
+                themeProvider.isDarkMode ? Colors.white : Colors.black87,
+            iconTheme: IconThemeData(
+                color:
+                    themeProvider.isDarkMode ? Colors.white : Colors.black87),
+          ),
+          body: loading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.redAccent),
                       ),
-                    )
-                  : GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 0.75,
+                      const SizedBox(height: 16),
+                      Text(
+                        "Loading CV Reviews...",
+                        style: GoogleFonts.inter(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                          fontSize: 16,
+                        ),
                       ),
-                      itemCount: cvReviews.length,
-                      itemBuilder: (_, index) {
-                        final review = cvReviews[index];
-                        final score = (review['cv_score'] ?? 0).toDouble();
-                        final topColor = getScoreColor(score);
-
-                        final cvParser = review['cv_parser_result'] ?? {};
-                        final skills = cvParser['skills'] ?? [];
-                        final education = cvParser['education'] ?? [];
-                        final workExp = cvParser['work_experience'] ?? [];
-
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
+                    ],
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: cvReviews.isEmpty
+                      ? Center(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Top color indicator
-                              Container(
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: topColor,
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16)),
+                              Icon(
+                                Icons.assignment_outlined,
+                                size: 80,
+                                color: themeProvider.isDarkMode
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "No CV Reviews Found",
+                                style: GoogleFonts.inter(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Candidate & Score
-                                      Row(
-                                        children: [
-                                          CircularPercentIndicator(
-                                            radius: 28,
-                                            lineWidth: 5,
-                                            percent:
-                                                (score / 100).clamp(0.0, 1.0),
-                                            center: Text(
-                                              "${score.toStringAsFixed(0)}%",
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12),
-                                            ),
-                                            progressColor: topColor,
-                                            backgroundColor: Colors.grey[300]!,
-                                            circularStrokeCap:
-                                                CircularStrokeCap.round,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              review['full_name'] ??
-                                                  "Unknown Candidate",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-
-                                      // CV Fit Linear Progress
-                                      Text(
-                                        "CV Fit Score",
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      LinearPercentIndicator(
-                                        lineHeight: 8,
-                                        percent: (score / 100).clamp(0.0, 1.0),
-                                        backgroundColor: Colors.grey[300]!,
-                                        progressColor: topColor,
-                                      ),
-                                      const SizedBox(height: 12),
-
-                                      // Skills
-                                      if (skills.isNotEmpty)
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Skills",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Wrap(
-                                              spacing: 6,
-                                              runSpacing: 4,
-                                              children: skills
-                                                  .map<Widget>((s) => Chip(
-                                                        label: Text(
-                                                          s.toString(),
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 10),
-                                                        ),
-                                                        backgroundColor:
-                                                            topColor
-                                                                .withOpacity(
-                                                                    0.2),
-                                                        visualDensity:
-                                                            VisualDensity
-                                                                .compact,
-                                                      ))
-                                                  .toList(),
-                                            ),
-                                            const SizedBox(height: 8),
-                                          ],
-                                        ),
-
-                                      // Education
-                                      if (education.isNotEmpty)
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Education",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            ...education
-                                                .map<Widget>((edu) => Text(
-                                                      "${edu['degree'] ?? ''} - ${edu['institution'] ?? ''} (${edu['year'] ?? ''})",
-                                                      style: const TextStyle(
-                                                          fontSize: 11),
-                                                    )),
-                                            const SizedBox(height: 8),
-                                          ],
-                                        ),
-
-                                      // Work Experience
-                                      if (workExp.isNotEmpty)
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Work Experience",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            ...workExp
-                                                .map<Widget>((exp) => Text(
-                                                      "${exp['role'] ?? ''} at ${exp['company'] ?? ''} (${exp['years'] ?? ''})",
-                                                      style: const TextStyle(
-                                                          fontSize: 11),
-                                                    )),
-                                            const SizedBox(height: 8),
-                                          ],
-                                        ),
-
-                                      // Download CV
-                                      if (review['cv_url'] != null)
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: ElevatedButton.icon(
-                                            icon: const Icon(Icons.download,
-                                                size: 16),
-                                            label: const Text("Download CV",
-                                                style: TextStyle(fontSize: 11)),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.redAccent,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6),
-                                            ),
-                                            onPressed: () async {
-                                              final url =
-                                                  Uri.parse(review['cv_url']);
-                                              if (await canLaunchUrl(url)) {
-                                                await launchUrl(url,
-                                                    mode: LaunchMode
-                                                        .externalApplication);
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "CV reviews will appear here once available",
+                                style: GoogleFonts.inter(
+                                  color: themeProvider.isDarkMode
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade500,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-            ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header with stats
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: (themeProvider.isDarkMode
+                                        ? const Color(0xFF14131E)
+                                        : Colors.white)
+                                    .withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.assignment_outlined,
+                                      color: Colors.redAccent,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "CV Reviews",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                      Text(
+                                        "${cvReviews.length} candidates reviewed",
+                                        style: GoogleFonts.inter(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "Active Reviews",
+                                      style: GoogleFonts.inter(
+                                        color: Colors.redAccent,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Grid of CV reviews
+                            Expanded(
+                              child: GridView.builder(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  mainAxisSpacing: 20,
+                                  crossAxisSpacing: 20,
+                                  childAspectRatio: 0.75,
+                                ),
+                                itemCount: cvReviews.length,
+                                itemBuilder: (_, index) {
+                                  final review = cvReviews[index];
+                                  final score =
+                                      (review['cv_score'] ?? 0).toDouble();
+                                  final scoreColor = getScoreColor(score);
+                                  final scoreLabel = getScoreLabel(score);
+
+                                  final cvParser =
+                                      review['cv_parser_result'] ?? {};
+                                  final skills = cvParser['skills'] ?? [];
+                                  final education = cvParser['education'] ?? [];
+                                  final workExp =
+                                      cvParser['work_experience'] ?? [];
+
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: (themeProvider.isDarkMode
+                                              ? const Color(0xFF14131E)
+                                              : Colors.white)
+                                          .withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 15,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        // Header with score
+                                        Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: scoreColor.withOpacity(0.1),
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                              topLeft: Radius.circular(20),
+                                              topRight: Radius.circular(20),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  CircularPercentIndicator(
+                                                    radius: 30,
+                                                    lineWidth: 6,
+                                                    percent: (score / 100)
+                                                        .clamp(0.0, 1.0),
+                                                    center: Text(
+                                                      "${score.toStringAsFixed(0)}%",
+                                                      style: GoogleFonts.inter(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
+                                                        color: scoreColor,
+                                                      ),
+                                                    ),
+                                                    progressColor: scoreColor,
+                                                    backgroundColor:
+                                                        themeProvider.isDarkMode
+                                                            ? Colors
+                                                                .grey.shade800
+                                                            : Colors
+                                                                .grey.shade200,
+                                                    circularStrokeCap:
+                                                        CircularStrokeCap.round,
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      review['full_name'] ??
+                                                          "Unknown Candidate",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: themeProvider
+                                                                .isDarkMode
+                                                            ? Colors.white
+                                                            : Colors.black87,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: scoreColor
+                                                            .withOpacity(0.2),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        scoreLabel,
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                          color: scoreColor,
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // CV Fit Score
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          "CV Fit Score",
+                                                          style:
+                                                              GoogleFonts.inter(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 12,
+                                                            color: themeProvider
+                                                                    .isDarkMode
+                                                                ? Colors.grey
+                                                                    .shade400
+                                                                : Colors.grey
+                                                                    .shade700,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          "${score.toStringAsFixed(1)}%",
+                                                          style:
+                                                              GoogleFonts.inter(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 12,
+                                                            color: scoreColor,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    LinearPercentIndicator(
+                                                      lineHeight: 6,
+                                                      percent: (score / 100)
+                                                          .clamp(0.0, 1.0),
+                                                      backgroundColor:
+                                                          themeProvider
+                                                                  .isDarkMode
+                                                              ? Colors
+                                                                  .grey.shade800
+                                                              : Colors.grey
+                                                                  .shade200,
+                                                      progressColor: scoreColor,
+                                                      barRadius:
+                                                          const Radius.circular(
+                                                              3),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 16),
+
+                                                // Skills
+                                                if (skills.isNotEmpty)
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        "Skills",
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 12,
+                                                          color: themeProvider
+                                                                  .isDarkMode
+                                                              ? Colors
+                                                                  .grey.shade400
+                                                              : Colors.grey
+                                                                  .shade700,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Wrap(
+                                                        spacing: 6,
+                                                        runSpacing: 6,
+                                                        children: skills
+                                                            .take(4)
+                                                            .map<Widget>(
+                                                                (s) =>
+                                                                    Container(
+                                                                      padding: const EdgeInsets
+                                                                          .symmetric(
+                                                                          horizontal:
+                                                                              8,
+                                                                          vertical:
+                                                                              4),
+                                                                      decoration:
+                                                                          BoxDecoration(
+                                                                        color: Colors
+                                                                            .redAccent
+                                                                            .withOpacity(0.1),
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(12),
+                                                                      ),
+                                                                      child:
+                                                                          Text(
+                                                                        s.toString(),
+                                                                        style: GoogleFonts
+                                                                            .inter(
+                                                                          fontSize:
+                                                                              10,
+                                                                          color:
+                                                                              Colors.redAccent,
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                        ),
+                                                                      ),
+                                                                    ))
+                                                            .toList(),
+                                                      ),
+                                                      if (skills.length > 4)
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .only(top: 4),
+                                                          child: Text(
+                                                            "+${skills.length - 4} more",
+                                                            style: GoogleFonts
+                                                                .inter(
+                                                              fontSize: 10,
+                                                              color: themeProvider
+                                                                      .isDarkMode
+                                                                  ? Colors.grey
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      const SizedBox(
+                                                          height: 12),
+                                                    ],
+                                                  ),
+
+                                                // Education
+                                                if (education.isNotEmpty)
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        "Education",
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 12,
+                                                          color: themeProvider
+                                                                  .isDarkMode
+                                                              ? Colors
+                                                                  .grey.shade400
+                                                              : Colors.grey
+                                                                  .shade700,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      ...education
+                                                          .take(2)
+                                                          .map<Widget>(
+                                                              (edu) => Padding(
+                                                                    padding: const EdgeInsets
+                                                                        .only(
+                                                                        bottom:
+                                                                            4),
+                                                                    child: Text(
+                                                                      "• ${edu['degree'] ?? ''} - ${edu['institution'] ?? ''}",
+                                                                      style: GoogleFonts
+                                                                          .inter(
+                                                                        fontSize:
+                                                                            10,
+                                                                        color: themeProvider.isDarkMode
+                                                                            ? Colors.grey.shade500
+                                                                            : Colors.grey.shade600,
+                                                                      ),
+                                                                      maxLines:
+                                                                          1,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  )),
+                                                      const SizedBox(
+                                                          height: 12),
+                                                    ],
+                                                  ),
+
+                                                // Work Experience
+                                                if (workExp.isNotEmpty)
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          "Experience",
+                                                          style:
+                                                              GoogleFonts.inter(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 12,
+                                                            color: themeProvider
+                                                                    .isDarkMode
+                                                                ? Colors.grey
+                                                                    .shade400
+                                                                : Colors.grey
+                                                                    .shade700,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 6),
+                                                        ...workExp
+                                                            .take(2)
+                                                            .map<Widget>(
+                                                                (exp) =>
+                                                                    Padding(
+                                                                      padding: const EdgeInsets
+                                                                          .only(
+                                                                          bottom:
+                                                                              4),
+                                                                      child:
+                                                                          Text(
+                                                                        "• ${exp['role'] ?? ''} at ${exp['company'] ?? ''}",
+                                                                        style: GoogleFonts
+                                                                            .inter(
+                                                                          fontSize:
+                                                                              10,
+                                                                          color: themeProvider.isDarkMode
+                                                                              ? Colors.grey.shade500
+                                                                              : Colors.grey.shade600,
+                                                                        ),
+                                                                        maxLines:
+                                                                            1,
+                                                                        overflow:
+                                                                            TextOverflow.ellipsis,
+                                                                      ),
+                                                                    )),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+        ),
+      ),
     );
   }
 }

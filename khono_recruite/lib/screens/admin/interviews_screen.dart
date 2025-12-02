@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/admin_service.dart';
 import '../../widgets/custom_button.dart';
 import 'interview_schedule_page.dart'; // ✅ Import the schedule interview page
+import '../../providers/theme_provider.dart';
 
 class InterviewsScreen extends StatefulWidget {
   const InterviewsScreen({super.key});
@@ -47,52 +49,106 @@ class _InterviewsScreenState extends State<InterviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Scheduled Interviews"),
-        actions: [
-          // ✅ Schedule Interview Button
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: "Schedule Interview",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ScheduleInterviewPage(
-                    candidateId: 1, // ✅ Replace with selected candidate ID
-                  ),
-                ),
-              ).then((_) => fetchInterviews());
-            },
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
           ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator(color: Colors.red))
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: interviews.isEmpty
-                  ? const Center(child: Text("No interviews scheduled"))
-                  : ListView.builder(
-                      itemCount: interviews.length,
-                      itemBuilder: (_, index) {
-                        final i = interviews[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            title: Text("Candidate: ${i['candidate_name']}"),
-                            subtitle: Text(
-                                "Job: ${i['job_title']}\nDate: ${i['date']}"),
-                            trailing: CustomButton(
-                              text: "Cancel",
-                              onPressed: () => cancelInterview(i['id'] as int),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              "Scheduled Interviews",
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+            backgroundColor: (themeProvider.isDarkMode
+                    ? const Color(0xFF14131E)
+                    : Colors.white)
+                .withOpacity(0.9),
+            iconTheme: IconThemeData(
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
+            ),
+            actions: [
+              // ✅ Schedule Interview Button
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: "Schedule Interview",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ScheduleInterviewPage(
+                        candidateId: 1, // ✅ Replace with selected candidate ID
+                      ),
+                    ),
+                  ).then((_) => fetchInterviews());
+                },
+              ),
+            ],
+          ),
+          body: loading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.red))
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: interviews.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No interviews scheduled",
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade400
+                                  : Colors.black54,
                             ),
                           ),
-                        );
-                      },
-                    ),
-            ),
+                        )
+                      : ListView.builder(
+                          itemCount: interviews.length,
+                          itemBuilder: (_, index) {
+                            final i = interviews[index];
+                            return Card(
+                              color: (themeProvider.isDarkMode
+                                      ? const Color(0xFF14131E)
+                                      : Colors.white)
+                                  .withOpacity(0.9),
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: ListTile(
+                                title: Text(
+                                  "Candidate: ${i['candidate_name']}",
+                                  style: TextStyle(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black87,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  "Job: ${i['job_title']}\nDate: ${i['date']}",
+                                  style: TextStyle(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.grey.shade400
+                                        : Colors.black54,
+                                  ),
+                                ),
+                                trailing: CustomButton(
+                                  text: "Cancel",
+                                  onPressed: () =>
+                                      cancelInterview(i['id'] as int),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+        ),
+      ),
     );
   }
 }

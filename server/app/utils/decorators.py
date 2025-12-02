@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import jsonify, request, current_app
-from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
+from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity, decode_token
 from app.models import User
 import logging
 
@@ -15,33 +15,58 @@ def role_required(*roles):
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
-            # Skip JWT checks for preflight
+            # Allow CORS preflight
             if request.method == "OPTIONS":
                 return '', 200
 
             try:
-                # 1️⃣ Try standard header check
+                jwt_verified = False
+                claims = None
+                identity = None
+
+                # 1️⃣ Try JWT from Authorization Header
                 try:
                     verify_jwt_in_request()
+                    claims = get_jwt()
+                    identity = get_jwt_identity()
+                    jwt_verified = True
                 except Exception:
-                    # 2️⃣ If no header, try JWT from cookies
-                    token = request.cookies.get("access_token")
-                    if not token:
-                        raise
-                    verify_jwt_in_request(locations=["cookies"])
+                    pass
 
-                claims = get_jwt()
-                identity = get_jwt_identity()
+                # 2️⃣ Try JWT from Cookie
+                if not jwt_verified:
+                    try:
+                        verify_jwt_in_request(locations=["cookies"])
+                        claims = get_jwt()
+                        identity = get_jwt_identity()
+                        jwt_verified = True
+                    except Exception:
+                        pass
+
+                # 3️⃣ Try JWT from URL Query (?access_token=...)
+                if not jwt_verified:
+                    access_token = request.args.get("access_token")
+                    if access_token:
+                        try:
+                            claims = decode_token(access_token)
+                            identity = claims.get("sub")
+                            jwt_verified = True
+                        except Exception as e:
+                            logging.error(f"Failed to decode query token: {e}")
+
+                if not jwt_verified:
+                    return jsonify({"error": "Missing or invalid JWT"}), 401
+
                 logging.info(f"JWT claims: {claims}, identity: {identity}")
 
                 token_role = claims.get("role")
                 logging.info(f"Token role: {token_role}, Allowed roles: {allowed_roles}")
 
-                # Check role from JWT first
+                # ✅ Check role from token
                 if token_role and token_role in allowed_roles:
                     return fn(*args, **kwargs)
 
-                # Fallback to DB lookup
+                # ✅ Fallback to DB lookup if needed
                 if not identity:
                     return jsonify({"error": "Token identity missing"}), 401
 
@@ -52,7 +77,7 @@ def role_required(*roles):
                 if db_role in allowed_roles:
                     return fn(*args, **kwargs)
 
-                # Unauthorized if role not allowed
+                # ❌ Unauthorized role
                 return jsonify({
                     "error": "Unauthorized access",
                     "required_roles": allowed_roles,
