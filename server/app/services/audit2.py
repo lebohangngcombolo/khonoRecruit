@@ -8,37 +8,28 @@ logger = logging.getLogger(__name__)
 
 
 class AuditService:
-    """
-    Centralized audit logger for recording admin actions,
-    with contextual metadata and request tracing.
-    """
-
     @staticmethod
     def record_action(
         admin_id: int,
         action: str,
         target_user_id: int = None,
         details: str = None,
-        metadata: dict = None
+        extra_data: dict = None  # <-- renamed
     ):
         """
         Log an action performed by an admin or system process.
         Automatically captures IP and User-Agent from request.
         """
         try:
-            ip_address = None
-            user_agent = None
-
-            if request:
-                ip_address = request.remote_addr
-                user_agent = request.headers.get("User-Agent", "")
+            ip_address = request.remote_addr if request else None
+            user_agent = request.headers.get("User-Agent", "") if request else None
 
             log_entry = AuditLog(
                 admin_id=admin_id,
                 action=action,
                 target_user_id=target_user_id,
                 details=details,
-                metadata=metadata,
+                extra_data=extra_data,  # <-- use correct field name
                 ip_address=ip_address,
                 user_agent=user_agent,
                 timestamp=datetime.utcnow()
@@ -46,7 +37,6 @@ class AuditService:
 
             db.session.add(log_entry)
             db.session.commit()
-
             logger.info(f"Audit recorded: {action} by admin_id={admin_id}")
 
         except Exception as e:
@@ -57,8 +47,10 @@ class AuditService:
     def log(user_id: int, action: str, **kwargs):
         """
         Alias for record_action for backward compatibility.
+        Maps old 'metadata' kwarg to 'extra_data'.
         """
-        AuditService.record_action(admin_id=user_id, action=action, **kwargs)
+        extra_data = kwargs.get("metadata")  # support old calls
+        AuditService.record_action(admin_id=user_id, action=action, extra_data=extra_data)
 
 
 # === Helper Decorators (Optional Integration) ===

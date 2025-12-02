@@ -21,6 +21,8 @@ class Config:
     # JWT
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_TOKEN_LOCATION = ["headers", "query_string"]  # Allow token in headers or query string
+    JWT_QUERY_STRING_NAME = "access_token"            # Query param name
     
     # Email
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -46,6 +48,17 @@ class Config:
     
     # Frontend URL
     FRONTEND_URL = os.getenv('FRONTEND_URL')
+    
+    # SSO Configuration for Company Hub Integration
+    SSO_JWT_SECRET = os.getenv('SSO_JWT_SECRET', 'our-super-secret-code-123')  # Same as hub!
+    PORTAL_HUB_URL = os.getenv('PORTAL_HUB_URL', 'http://localhost:5001')  # Hub address
+    
+    RATELIMIT_STORAGE_URI = "memory://"
+    
+    SSO_CLIENT_ID = os.getenv('SSO_CLIENT_ID') 
+    SSO_CLIENT_SECRET = os.getenv('SSO_CLIENT_SECRET')
+    SSO_METADATA_URL = os.getenv('SSO_METADATA_URL')
+    SSO_USERINFO_URL = os.getenv('SSO_USERINFO_URL')
     
 class DevelopmentConfig(Config):
     DEBUG = True

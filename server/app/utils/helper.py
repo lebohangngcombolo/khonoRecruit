@@ -7,10 +7,10 @@ from app.extensions import db
 
 # ------------------ Candidate Helpers ------------------
 
-def get_current_candidate() -> Candidate:
+def get_current_candidate(auto_create: bool = True) -> Candidate:
     """
     Returns the Candidate object associated with the current JWT identity.
-    Raises 404 if not found.
+    If auto_create=True, will create a Candidate for a user if missing.
     """
     user_id = get_jwt_identity()
     if not user_id:
@@ -23,6 +23,19 @@ def get_current_candidate() -> Candidate:
         return None
 
     candidate = Candidate.query.filter_by(user_id=user.id).first()
+
+    if not candidate and auto_create:
+        # Auto-create Candidate row for admins, hiring_managers, or missing candidates
+        candidate = Candidate(user_id=user.id)
+        db.session.add(candidate)
+        try:
+            db.session.commit()
+            current_app.logger.info(f"Auto-created candidate for user id {user.id}")
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to auto-create candidate for user {user.id}: {e}")
+            return None
+
     if not candidate:
         current_app.logger.error(f"Candidate not found for user id {user_id}")
         return None

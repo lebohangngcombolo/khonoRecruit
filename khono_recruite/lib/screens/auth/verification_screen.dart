@@ -1,10 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_textfield.dart';
+import '../../widgets/six_digit_code_field.dart'; // Import the custom widget
 import '../../providers/theme_provider.dart';
 import '../enrollment/enrollment_screen.dart';
 
@@ -18,7 +17,7 @@ class VerificationScreen extends StatefulWidget {
 
 class _VerificationScreenState extends State<VerificationScreen>
     with SingleTickerProviderStateMixin {
-  final TextEditingController codeController = TextEditingController();
+  String verificationCode = '';
   bool loading = false;
 
   late AnimationController _animationController;
@@ -40,14 +39,27 @@ class _VerificationScreenState extends State<VerificationScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    codeController.dispose();
     super.dispose();
   }
 
+  void _onCodeChanged(String code) {
+    setState(() {
+      verificationCode = code;
+    });
+  }
+
+  void _onCodeCompleted(String code) {
+    setState(() {
+      verificationCode = code;
+    });
+    // Optionally auto-submit when code is complete
+    // verify();
+  }
+
   void verify() async {
-    if (codeController.text.length != 6) {
+    if (verificationCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter 6-digit code")),
+        const SnackBar(content: Text("Please enter the complete 6-digit code")),
       );
       return;
     }
@@ -56,7 +68,7 @@ class _VerificationScreenState extends State<VerificationScreen>
 
     final response = await AuthService.verifyEmail({
       "email": widget.email,
-      "code": codeController.text.trim(),
+      "code": verificationCode.trim(),
     });
 
     setState(() => loading = false);
@@ -87,115 +99,188 @@ class _VerificationScreenState extends State<VerificationScreen>
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/bg1.jpg"),
+                image: AssetImage("assets/images/dark.png"),
                 fit: BoxFit.cover,
               ),
             ),
           ),
 
-          // ---------- Centered Glass Card ----------
+          // ---------- Top Left Logo ----------
+          Positioned(
+            top: 40,
+            left: 24,
+            child: Image.asset(
+              'assets/images/logo2.png', // Replace with your left logo path
+              width: 300,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // ---------- Top Right Logo ----------
+          Positioned(
+            top: 40,
+            right: 24,
+            child: Image.asset(
+              'assets/images/logo.png', // Replace with your right logo path
+              width: 300,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // ---------- Centered Content - Glass container removed ----------
           Center(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: MouseRegion(
                 onEnter: (_) => kIsWeb ? _animationController.forward() : null,
                 onExit: (_) => kIsWeb ? _animationController.reverse() : null,
                 child: ScaleTransition(
                   scale: _scaleAnimation,
                   child: Container(
-                    width: size.width > 800 ? 400 : size.width * 0.9,
+                    width: size.width > 800 ? 420 : size.width * 0.85,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 32),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withOpacity(0.05),
-                          Colors.white.withOpacity(0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 16),
+                        // Modern header with icon
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.verified_user_outlined,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Email Verification",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            "Code sent to ${widget.email}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // 6-Digit Code Input using custom widget
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Text(
+                                  "Enter verification code",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SixDigitCodeField(
+                                onCodeChanged: _onCodeChanged,
+                                onCodeCompleted: _onCodeCompleted,
+                                autoFocus: true,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Verify Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: CustomButton(
+                            text: "Verify & Continue",
+                            onPressed: verify,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Resend code option
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Didn't receive code? ",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 13,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text("Resend code functionality")),
+                                  );
+                                },
+                                child: const Text(
+                                  "Resend",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Theme toggle
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              themeProvider.isDarkMode
+                                  ? Icons.light_mode
+                                  : Icons.dark_mode,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            onPressed: () => themeProvider.toggleTheme(),
+                          ),
                         ),
                       ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 16),
-                            const Text(
-                              "GLASS CARD",
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                      color: Colors.black26,
-                                      blurRadius: 4,
-                                      offset: Offset(2, 2))
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              "Verify Email",
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                "Enter the 6-digit code sent to ${widget.email}",
-                                style: const TextStyle(
-                                    fontSize: 16, color: Colors.white70),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            CustomTextField(
-                              label: "6-digit Code",
-                              controller: codeController,
-                              inputType: TextInputType.number,
-                              textColor: Colors.white,
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: CustomButton(
-                                  text: "Verify", onPressed: verify),
-                            ),
-                            const SizedBox(height: 24),
-                            IconButton(
-                              icon: Icon(
-                                  themeProvider.isDarkMode
-                                      ? Icons.light_mode
-                                      : Icons.dark_mode,
-                                  color: Colors.white),
-                              onPressed: () => themeProvider.toggleTheme(),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -204,7 +289,15 @@ class _VerificationScreenState extends State<VerificationScreen>
           ),
 
           if (loading)
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
         ],
       ),
     );

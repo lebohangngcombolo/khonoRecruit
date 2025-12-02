@@ -21,7 +21,7 @@ class ThemeUtils {
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: Colors.blue.shade50, // Light mode: blue shade
         ),
         cardTheme: CardThemeData(
           // ✅ Correct type
@@ -39,9 +39,11 @@ class ThemeUtils {
         colorScheme: ColorScheme.dark(
           primary: primaryColor,
           secondary: secondaryColor,
-          surface: Colors.grey.shade900,
+          surface:
+              const Color.fromARGB(255, 9, 13, 18), // Dark mode: blue shade
         ),
-        scaffoldBackgroundColor: Colors.grey.shade900,
+        scaffoldBackgroundColor:
+            const Color.fromARGB(255, 7, 11, 17), // Dark mode: blue shade
         appBarTheme: AppBarTheme(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
@@ -50,11 +52,12 @@ class ThemeUtils {
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.grey.shade800,
+          fillColor:
+              const Color.fromARGB(255, 35, 43, 53), // Dark mode: blue shade
         ),
         cardTheme: CardThemeData(
           // ✅ Correct type
-          color: Colors.grey.shade800,
+          color: const Color.fromARGB(255, 16, 26, 37), // Dark mode: blue shade
           elevation: 4,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

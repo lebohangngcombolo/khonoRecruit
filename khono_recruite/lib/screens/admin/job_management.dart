@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
 import '../../services/admin_service.dart';
+import '../../providers/theme_provider.dart';
 
 class JobManagement extends StatefulWidget {
   final Function(int jobId)? onJobSelected;
@@ -44,122 +46,160 @@ class _JobManagementState extends State<JobManagement> {
 
   @override
   Widget build(BuildContext context) {
-    return loading
-        ? const Center(
-            child: CircularProgressIndicator(color: Colors.redAccent))
-        : Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Job Management",
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    CustomButton(
-                      text: "Add Job",
-                      onPressed: () => openJobForm(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Divider(color: Colors.grey),
-                const SizedBox(height: 20),
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
-                // Job List
-                Expanded(
-                  child: jobs.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No jobs available",
+    return Scaffold(
+      // 🌆 Dynamic background implementation
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(themeProvider.backgroundImage),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: loading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.redAccent))
+              : Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Job Management",
                             style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 16,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: themeProvider.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black87,
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: jobs.length,
-                          itemBuilder: (_, index) {
-                            final job = jobs[index];
-                            return Card(
-                              color: Colors.white,
-                              elevation: 3,
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(
-                                      color: Colors.grey, width: 0.3)),
-                              child: ListTile(
-                                title: Text(
-                                  job['title'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 18,
+                          CustomButton(
+                            text: "Add Job",
+                            onPressed: () => openJobForm(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Divider(
+                          color: themeProvider.isDarkMode
+                              ? Colors.grey.shade800
+                              : Colors.grey),
+                      const SizedBox(height: 20),
+
+                      // Job List
+                      Expanded(
+                        child: jobs.isEmpty
+                            ? Center(
+                                child: Text(
+                                  "No jobs available",
+                                  style: TextStyle(
+                                    color: themeProvider.isDarkMode
+                                        ? Colors.grey.shade400
+                                        : Colors.black54,
+                                    fontSize: 16,
                                   ),
                                 ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(
-                                    job['description'] ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit,
-                                          color: Colors.blueAccent),
-                                      onPressed: () => openJobForm(job: job),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.redAccent),
-                                      onPressed: () async {
-                                        try {
-                                          await admin
-                                              .deleteJob(job['id'] as int);
-                                          fetchJobs();
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                            content:
-                                                Text("Error deleting job: $e"),
-                                          ));
-                                        }
-                                      },
-                                    ),
-                                    if (widget.onJobSelected != null)
-                                      IconButton(
-                                        icon: const Icon(Icons.check_circle,
-                                            color: Colors.green),
-                                        tooltip: "Select Job",
-                                        onPressed: () => widget
-                                            .onJobSelected!(job['id'] as int),
+                              )
+                            : ListView.builder(
+                                itemCount: jobs.length,
+                                itemBuilder: (_, index) {
+                                  final job = jobs[index];
+                                  return Card(
+                                    color: (themeProvider.isDarkMode
+                                            ? const Color(0xFF14131E)
+                                            : Colors.white)
+                                        .withOpacity(0.9),
+                                    elevation: 3,
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.grey.shade800
+                                                : Colors.grey,
+                                            width: 0.3)),
+                                    child: ListTile(
+                                      title: Text(
+                                        job['title'] ?? '',
+                                        style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 18,
+                                        ),
                                       ),
-                                  ],
-                                ),
+                                      subtitle: Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          job['description'] ?? '',
+                                          style: TextStyle(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.grey.shade400
+                                                : Colors.black54,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                color: Colors.blueAccent),
+                                            onPressed: () =>
+                                                openJobForm(job: job),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                color: Colors.redAccent),
+                                            onPressed: () async {
+                                              try {
+                                                await admin.deleteJob(
+                                                    job['id'] as int);
+                                                fetchJobs();
+                                              } catch (e) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                      "Error deleting job: $e"),
+                                                ));
+                                              }
+                                            },
+                                          ),
+                                          if (widget.onJobSelected != null)
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.green),
+                                              tooltip: "Select Job",
+                                              onPressed: () =>
+                                                  widget.onJobSelected!(
+                                                      job['id'] as int),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          );
+        ),
+      ),
+    );
   }
 }
 
@@ -286,13 +326,18 @@ class _JobFormDialogState extends State<JobFormDialog>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Dialog(
       insetPadding: const EdgeInsets.all(20),
       child: Container(
         width: 650,
         height: 720,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: (themeProvider.isDarkMode
+                  ? const Color(0xFF14131E)
+                  : Colors.white)
+              .withOpacity(0.95),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -304,7 +349,9 @@ class _JobFormDialogState extends State<JobFormDialog>
                 Tab(text: "Assessment"),
               ],
               labelColor: Colors.redAccent,
-              unselectedLabelColor: Colors.black54,
+              unselectedLabelColor: themeProvider.isDarkMode
+                  ? Colors.grey.shade400
+                  : Colors.black54,
               indicatorColor: Colors.redAccent,
               indicatorWeight: 3,
             ),
@@ -403,23 +450,49 @@ class _JobFormDialogState extends State<JobFormDialog>
                             itemBuilder: (_, index) {
                               final q = questions[index];
                               return Card(
+                                color: (themeProvider.isDarkMode
+                                        ? const Color(0xFF14131E)
+                                        : Colors.white)
+                                    .withOpacity(0.9),
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
                                   child: Column(
                                     children: [
                                       TextFormField(
-                                        decoration: const InputDecoration(
-                                            labelText: "Question"),
+                                        decoration: InputDecoration(
+                                          labelText: "Question",
+                                          labelStyle: TextStyle(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.grey.shade400
+                                                : Colors.black87,
+                                          ),
+                                        ),
                                         initialValue: q["question"],
                                         onChanged: (v) => q["question"] = v,
+                                        style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
                                       ),
                                       ...List.generate(4, (i) {
                                         return TextFormField(
                                           decoration: InputDecoration(
-                                              labelText: "Option ${i + 1}"),
+                                            labelText: "Option ${i + 1}",
+                                            labelStyle: TextStyle(
+                                              color: themeProvider.isDarkMode
+                                                  ? Colors.grey.shade400
+                                                  : Colors.black87,
+                                            ),
+                                          ),
                                           initialValue: q["options"][i],
                                           onChanged: (v) => q["options"][i] = v,
+                                          style: TextStyle(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.white
+                                                : Colors.black87,
+                                          ),
                                         );
                                       }),
                                       DropdownButton<int>(
@@ -428,20 +501,37 @@ class _JobFormDialogState extends State<JobFormDialog>
                                           4,
                                           (i) => DropdownMenuItem(
                                             value: i,
-                                            child: Text(
-                                                "Correct: Option ${i + 1}"),
+                                            child:
+                                                Text("Correct: Option ${i + 1}",
+                                                    style: TextStyle(
+                                                      color: themeProvider
+                                                              .isDarkMode
+                                                          ? Colors.white
+                                                          : Colors.black87,
+                                                    )),
                                           ),
                                         ),
                                         onChanged: (v) =>
                                             setState(() => q["answer"] = v!),
                                       ),
                                       TextFormField(
-                                        decoration: const InputDecoration(
-                                            labelText: "Weight"),
+                                        decoration: InputDecoration(
+                                          labelText: "Weight",
+                                          labelStyle: TextStyle(
+                                            color: themeProvider.isDarkMode
+                                                ? Colors.grey.shade400
+                                                : Colors.black87,
+                                          ),
+                                        ),
                                         initialValue: q["weight"].toString(),
                                         keyboardType: TextInputType.number,
                                         onChanged: (v) => q["weight"] =
                                             double.tryParse(v) ?? 1,
+                                        style: TextStyle(
+                                          color: themeProvider.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -466,7 +556,14 @@ class _JobFormDialogState extends State<JobFormDialog>
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text("Cancel"),
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: themeProvider.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.black87,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   CustomButton(text: "Save Job", onPressed: saveJob),

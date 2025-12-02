@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.extensions import db, cloudinary_client
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.extensions import bcrypt
@@ -10,7 +10,7 @@ from app.models import (
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
-from app.services.cv_parser_service import analyse_resume_openrouter, upload_cv_to_cloudinary
+from app.services.cv_parser_service import HybridResumeAnalyzer
 from app.utils.decorators import role_required
 from app.utils.helper import get_current_candidate
 from app.services.audit2 import AuditService
@@ -60,6 +60,15 @@ def apply_job(job_id):
         )
         db.session.add(application)
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Applied for Job",
+            target_user_id=user_id,
+            details=f"Applied for job ID {job_id}",
+            extra_data={"job_id": job_id, "application_id": application.id}
+        )
 
         return jsonify({"message": "Applied successfully!", "application_id": application.id}), 201
 
@@ -73,6 +82,9 @@ def apply_job(job_id):
 @role_required(["candidate"])
 def get_available_jobs():
     try:
+        # Get the candidate's user ID from JWT
+        user_id = get_jwt_identity()
+
         jobs = Requisition.query.all()
         result = []
 
@@ -94,6 +106,15 @@ def get_available_jobs():
                 "vacancy": str(job.vacancy or 0),
                 "created_by": job.created_by
             })
+
+        # Audit log (candidate viewed jobs)
+        AuditService.record_action(
+            admin_id=user_id,          # user_id is the candidate ID
+            action="Candidate Viewed Available Jobs",
+            target_user_id=user_id,
+            details="Retrieved list of available jobs"
+        )
+
         return jsonify(result), 200
 
     except Exception as e:
@@ -121,11 +142,12 @@ def upload_resume(application_id):
 
         file = request.files["resume"]
 
-        resume_url = upload_cv_to_cloudinary(file)
+        # --- Upload to Cloudinary ---
+        resume_url = HybridResumeAnalyzer.upload_cv(file)
         if not resume_url:
             return jsonify({"error": "Failed to upload resume"}), 500
 
-        # Extract PDF text if needed
+        # --- Extract PDF text if needed ---
         resume_text = request.form.get("resume_text", "")
         if not resume_text and file.filename.lower().endswith(".pdf"):
             file.stream.seek(0)
@@ -134,15 +156,18 @@ def upload_resume(application_id):
             for page in pdf_doc:
                 resume_text += page.get_text()
 
-        parser_result = analyse_resume_openrouter(resume_text, job_id=job.id)
+        # --- Hybrid Resume Analysis ---
+        analyzer = HybridResumeAnalyzer()
+        parser_result = analyzer.analyse(resume_text, job.id)
 
+        # --- Save results ---
         application.resume_url = resume_url
         application.cv_score = parser_result.get("match_score", 0)
         application.cv_parser_result = parser_result
         application.recommendation = parser_result.get("recommendation", "")
         db.session.commit()
 
-        # Notify admins
+        # --- Notify admins ---
         admins = User.query.filter_by(role="admin").all()
         for admin in admins:
             notif = Notification(
@@ -151,6 +176,20 @@ def upload_resume(application_id):
             )
             db.session.add(notif)
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Uploaded Resume",
+            target_user_id=user_id,
+            details=f"Uploaded resume for application ID {application_id}",
+            extra_data={
+                "application_id": application_id,
+                "job_id": job.id,
+                "cv_score": parser_result.get("match_score", 0),
+                "recommendation": parser_result.get("recommendation", "")
+            }
+        )
 
         return jsonify({
             "message": "Resume uploaded and analyzed",
@@ -190,6 +229,14 @@ def get_applications():
                 "overall_score": app.overall_score,
                 "recommendation": app.recommendation
             })
+            
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Viewed Applications",
+            target_user_id=user_id,
+            details="Retrieved list of candidate applications"
+        )
         return jsonify(result)
     except Exception as e:
         current_app.logger.error(f"Get applications error: {e}", exc_info=True)
@@ -207,6 +254,15 @@ def get_assessment(application_id):
             return jsonify({"error": "Unauthorized"}), 403
 
         result = AssessmentResult.query.filter_by(application_id=application.id).first()
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Viewed Assessment",
+            target_user_id=user_id,
+            details=f"Viewed assessment for application ID {application_id}",
+            extra_data={"application_id": application_id, "job_title": application.requisition.title if application.requisition else None}
+        )
+
         return jsonify({
             "job_title": application.requisition.title if application.requisition else None,
             "assessment_pack": application.requisition.assessment_pack if application.requisition else {},
@@ -266,6 +322,20 @@ def submit_assessment(application_id):
         application.status = "assessment_submitted"
         application.assessed_date = datetime.utcnow()
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Submitted Assessment",
+            target_user_id=user_id,
+            details=f"Submitted assessment for application ID {application_id}",
+            extra_data={
+                "application_id": application_id,
+                "assessment_score": percentage_score,
+                "overall_score": application.overall_score,
+                "recommendation": result.recommendation
+            }
+        )
 
         return jsonify({
             "message": "Assessment submitted",
@@ -279,7 +349,7 @@ def submit_assessment(application_id):
         return jsonify({"error": "Internal server error"}), 500
 
 @candidate_bp.route("/profile", methods=["GET"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def get_profile():
     try:
         candidate = get_current_candidate()
@@ -301,12 +371,22 @@ def get_profile():
 
 # ----------------- UPDATE PROFILE -----------------
 @candidate_bp.route("/profile", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_profile():
     try:
         candidate = get_current_candidate()
+
+        # Auto-create candidate if missing but user exists
         if not candidate:
-            return jsonify({"success": False, "message": "Candidate not found"}), 404
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"success": False, "message": "User not found"}), 404
+
+            candidate = Candidate(user_id=user.id)
+            db.session.add(candidate)
+            db.session.commit()
+            current_app.logger.info(f"Created missing candidate for user id {user.id}")
 
         user = candidate.user
         data = request.get_json() or {}
@@ -316,7 +396,6 @@ def update_profile():
             if key == "dob":
                 if value:
                     try:
-                        # Expecting 'YYYY-MM-DD' format
                         value = datetime.strptime(value, "%Y-%m-%d").date()
                     except ValueError:
                         return jsonify({"success": False, "message": "Invalid date format"}), 400
@@ -339,6 +418,15 @@ def update_profile():
                 setattr(user, key, value)
 
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Updated Profile",
+            target_user_id=user_id,
+            details="Updated candidate profile information",
+            extra_data={"updated_fields": list(data.keys())}
+        )
 
         return jsonify({
             "success": True,
@@ -357,7 +445,7 @@ def update_profile():
 
 # ----------------- UPLOAD DOCUMENT -----------------
 @candidate_bp.route("/upload_document", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def upload_document():
     try:
         candidate = get_current_candidate()
@@ -380,6 +468,15 @@ def upload_document():
 
         candidate.cv_url = url
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Uploaded Document",
+            target_user_id=user_id,
+            details="Uploaded candidate document",
+            extra_data={"document_type": filename.rsplit('.', 1)[1].lower(), "filename": filename}
+        )
 
         return jsonify({
             "success": True,
@@ -395,10 +492,23 @@ def upload_document():
 
 # ----------------- UPLOAD PROFILE PICTURE -----------------
 @candidate_bp.route("/upload_profile_picture", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def upload_profile_picture():
     try:
+        # ---- Get or create Candidate ----
         candidate = get_current_candidate()
+        if not candidate:
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"success": False, "message": "User not found"}), 404
+
+            candidate = Candidate(user_id=user.id)
+            db.session.add(candidate)
+            db.session.commit()
+            current_app.logger.info(f"Created missing candidate for user id {user.id}")
+
+        # ---- Validate file ----
         if "image" not in request.files:
             return jsonify({"success": False, "message": "No image uploaded"}), 400
 
@@ -412,7 +522,7 @@ def upload_profile_picture():
         if ext not in allowed_images:
             return jsonify({"success": False, "message": "Invalid image type"}), 400
 
-        # Upload to Cloudinary with forced JPG format
+        # ---- Upload to Cloudinary ----
         result = cloudinary.uploader.upload(
             file,
             folder="profile_pics/",
@@ -424,9 +534,17 @@ def upload_profile_picture():
         if not url:
             return jsonify({"success": False, "message": "Failed to upload image"}), 500
 
-        # Save to candidate profile
+        # ---- Save to candidate profile ----
         candidate.profile_picture = url
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Uploaded Profile Picture",
+            target_user_id=user_id,
+            details="Uploaded new profile picture"
+        )
 
         return jsonify({
             "success": True,
@@ -438,9 +556,10 @@ def upload_profile_picture():
         current_app.logger.error(f"Upload profile picture error: {e}", exc_info=True)
         db.session.rollback()
         return jsonify({"success": False, "message": "Internal server error"}), 500
+
 # ----------------- UPDATE GENERAL SETTINGS -----------------
 @candidate_bp.route("/settings", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_settings():
     try:
         user_id = get_jwt_identity()
@@ -453,6 +572,15 @@ def update_settings():
         user.settings = updated_settings
 
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Updated Settings",
+            target_user_id=user_id,
+            details="Updated general settings",
+            extra_data={"updated_settings": list(data.keys())}
+        )
         return jsonify({
             "success": True,
             "message": "Settings updated successfully",
@@ -466,7 +594,7 @@ def update_settings():
 
 # ----------------- CHANGE PASSWORD -----------------
 @candidate_bp.route("/settings/change_password", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def change_password():
     try:
         # Get current user
@@ -523,7 +651,7 @@ def change_password():
         }), 500
 # ----------------- UPDATE NOTIFICATION PREFERENCES -----------------
 @candidate_bp.route("/settings/notifications", methods=["PUT"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def update_notification_preferences():
     try:
         user_id = get_jwt_identity()
@@ -548,7 +676,7 @@ def update_notification_preferences():
 
 # ----------------- DEACTIVATE ACCOUNT -----------------
 @candidate_bp.route("/settings/deactivate", methods=["POST"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def deactivate_account():
     try:
         user_id = get_jwt_identity()
@@ -557,6 +685,15 @@ def deactivate_account():
 
         user.is_active = False
         db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Deactivated Account",
+            target_user_id=user_id,
+            details="Candidate deactivated their account",
+            extra_data={"reason": reason}
+        )
 
         current_app.logger.info(f"User {user.email} deactivated account. Reason: {reason}")
         return jsonify({"success": True, "message": "Account deactivated successfully"}), 200
@@ -566,7 +703,7 @@ def deactivate_account():
         return jsonify({"success": False, "message": "Internal server error"}), 500
     
 @candidate_bp.route("/settings", methods=["GET"])
-@role_required(["candidate"])
+@role_required(["candidate", "admin", "hiring_manager"])
 def get_settings():
     user_id = get_jwt_identity()
     user = User.query.get_or_404(user_id)
@@ -574,3 +711,158 @@ def get_settings():
         "success": True,
         "data": user.settings or {}
     }), 200
+    
+@candidate_bp.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_candidate_notifications():
+    """
+    Get all notifications for the current candidate
+    Returns: List of notification objects (matching your Flutter service expectation)
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Get all notifications for the user, ordered by most recent first
+        notifications = Notification.query.filter_by(
+            user_id=current_user_id
+        ).order_by(Notification.created_at.desc()).all()
+        
+        # Convert to list of dictionaries using your existing to_dict method
+        notifications_data = [notification.to_dict() for notification in notifications]
+        
+        # Return the list directly (matching your Flutter service expectation)
+        return jsonify(notifications_data), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Get notifications error: {str(e)}")
+        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
+
+# ----------------- SAVE APPLICATION DRAFT -----------------
+@candidate_bp.route("/applications/<int:application_id>/draft", methods=["POST"])
+@role_required(["candidate"])
+def save_application_draft(application_id):
+    """
+    Save or update a draft for an existing application.
+    Supports multiple screens (job_details, assessment, etc.) with merged draft data.
+    """
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if not candidate:
+            return jsonify({"error": "Candidate profile not found"}), 404
+
+        data = request.get_json() or {}
+        draft_data = data.get("draft_data", {})  # The actual form/answers
+        last_saved_screen = data.get("last_saved_screen", "job_details")
+
+        application = Application.query.filter_by(
+            id=application_id, candidate_id=candidate.id
+        ).first()
+        if not application:
+            return jsonify({"error": "Application not found"}), 404
+
+        # Merge per-screen draft data
+        existing_draft = application.draft_data or {}
+        existing_draft[last_saved_screen] = draft_data
+
+        # Update application
+        application.draft_data = existing_draft
+        application.is_draft = True
+        application.status = "draft"
+        application.last_saved_screen = last_saved_screen
+        application.saved_at = datetime.utcnow()
+
+        db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Saved Application Draft",
+            target_user_id=user_id,
+            details=f"Saved draft for application ID {application_id}",
+            extra_data={"application_id": application_id, "last_saved_screen": last_saved_screen}
+        )
+
+        return jsonify({
+            "message": "Draft saved successfully",
+            "application_id": application.id,
+            "draft_data": application.draft_data,  # structured per page
+            "last_saved_screen": last_saved_screen,
+            "saved_at": application.saved_at.isoformat() if application.saved_at else None
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Save draft error: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ----------------- GET ALL DRAFT APPLICATIONS -----------------
+@candidate_bp.route("/applications/drafts", methods=["GET"])
+@role_required(["candidate"])
+def get_application_drafts():
+    """
+    Retrieve all saved (draft) applications for the current candidate.
+    Each draft includes per-screen saved data for resuming the application.
+    """
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if not candidate:
+            return jsonify([]), 200
+
+        drafts = Application.query.filter_by(candidate_id=candidate.id, is_draft=True).all()
+
+        draft_list = []
+        for d in drafts:
+            draft_dict = d.to_dict()
+            # Ensure draft_data is structured per screen
+            draft_dict["draft_data"] = d.draft_data or {}
+            draft_list.append(draft_dict)
+
+        return jsonify(draft_list), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Get application drafts error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+
+# ----------------- SUBMIT SAVED DRAFT -----------------
+@candidate_bp.route("/applications/submit_draft/<int:draft_id>", methods=["PUT"])
+@role_required(["candidate"])
+def submit_draft(draft_id):
+    """
+    Converts a saved draft application into a real (applied) application.
+    """
+    try:
+        user_id = get_jwt_identity()
+        candidate = Candidate.query.filter_by(user_id=user_id).first_or_404()
+
+        draft = Application.query.filter_by(
+            id=draft_id, candidate_id=candidate.id, is_draft=True
+        ).first_or_404()
+
+        draft.is_draft = False
+        draft.status = "applied"
+        draft.created_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Audit log
+        AuditService.record_action(
+            admin_id=user_id,
+            action="Candidate Submitted Draft Application",
+            target_user_id=user_id,
+            details=f"Submitted draft application ID {draft_id}",
+            extra_data={"draft_id": draft_id, "application_id": draft.id}
+        )
+
+        return jsonify({
+            "message": "Draft submitted successfully",
+            "application": draft.to_dict()
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Submit draft error: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
